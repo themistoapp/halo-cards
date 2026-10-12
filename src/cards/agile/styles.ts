@@ -17,9 +17,7 @@ export const styles = [themeStyles, shadowStyles, css`
   .big { font-size: 28px; line-height: 32px; font-weight: 600; letter-spacing: -.04em; margin-top: 3px; white-space: nowrap; }
   .big small { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 3px; }
   .note { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
   .low { --c: var(--lo); } .mid { --c: var(--mid); } .high { --c: var(--hi); }
-  .dot.low, .dot.mid, .dot.high { background: var(--c); }
 
   .chart { flex: 1; min-height: 0; position: relative; }
   .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }

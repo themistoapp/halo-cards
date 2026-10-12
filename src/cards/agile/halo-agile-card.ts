@@ -66,8 +66,7 @@ export class HaloAgileCard extends LitElement {
   }
 
   private _figure(f: Figure) {
-    return html`<div><div class="lab">${f.label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div>
-      ${f.note ? html`<div class="note">${f.band ? html`<i class="dot ${f.band}"></i>` : nothing}${f.note}</div>` : nothing}</div>`;
+    return html`<div><div class="lab">${f.label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
   }
 
   private _chart(m: AgileModel, compact: boolean) {
