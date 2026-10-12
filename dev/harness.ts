@@ -33,6 +33,12 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("lock.m140i", "locked"), e("device_tracker.m140i", "home"), e("zone.home", "0", { friendly_name: "Home" }),
       e("sensor.van_soc", "64", { unit_of_measurement: "%" }), e("sensor.van_range", "148", { unit_of_measurement: "mi" }), e("sensor.van_odo", "18902", { unit_of_measurement: "mi" }),
       e("binary_sensor.van_charging", "on"), e("device_tracker.van", "depot"),
+      e("light.pendant", "on", { friendly_name: "Pendant", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 2700, brightness: 230 }),
+      e("light.downlight", "on", { friendly_name: "Downlights", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 4000, brightness: 140 }),
+      e("light.shelf", "on", { friendly_name: "Shelf bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [255, 90, 160], brightness: 200 }),
+      e("light.tower", "on", { friendly_name: "Corner bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [70, 140, 255], brightness: 255 }),
+      e("light.hall", "off", { friendly_name: "Hall", supported_color_modes: ["color_temp"] }),
+      e("light.lamp", "on", { friendly_name: "Lamp", supported_color_modes: ["onoff"] }),
     ]),
     ...over,
   };
@@ -67,6 +73,10 @@ const media = { type: "custom:halo-media-card", entity: "media_player.lounge", p
 const m140i = { type: "custom:halo-vehicle-card", name: "M140i", fuel_type: "ice", image_preset: "m140i", colour: "#b3262f", level: "sensor.fuel", tank_size: 52, range: "sensor.petrol_range", odometer: "sensor.petrol_odo", lock: "lock.m140i", location: "device_tracker.m140i" };
 const van = { type: "custom:halo-vehicle-card", name: "e-Vivaro", fuel_type: "ev", image_preset: "e-vivaro", colour: "#2fbf4a", level: "sensor.van_soc", range: "sensor.van_range", odometer: "sensor.van_odo", charging: "binary_sensor.van_charging", location: "device_tracker.van" };
 
+const lights = { type: "custom:halo-light-card", name: "Living room", lights: [
+  { entity: "light.pendant", type: "pendant" }, { entity: "light.downlight", type: "downlight" }, { entity: "light.shelf", name: "Shelf", type: "strip" },
+  { entity: "light.tower", name: "Corner", type: "pole" }, { entity: "light.hall", type: "downlight" }, { entity: "light.lamp" } ] };
+
 type Spec = { id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
@@ -81,6 +91,10 @@ const specs: Spec[] = [
   { id: "media-compact", title: "Media 12x4", tag: "halo-media-card", cfg: media, w: 378, h: 248 },
   { id: "media-mini", title: "Media 12x2 idle", tag: "halo-media-card", cfg: { ...media, entity: "media_player.study" }, w: 378, h: 120 },
   { id: "media-idle", title: "Media idle full", tag: "halo-media-card", cfg: { ...media, entity: "media_player.study", players: [] }, w: 378, h: 520 },
+  { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
+  { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
+  { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
+  { id: "light-night", title: "Lights night", tag: "halo-light-card", cfg: lights, w: 378, h: 330, dark: true },
   { id: "veh-m140i", title: "M140i 12x4", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248 },
   { id: "veh-van", title: "e-Vivaro 12x4", tag: "halo-vehicle-card", cfg: van, w: 378, h: 248 },
   { id: "veh-m140i-night", title: "M140i 12x4 night", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248, dark: true },

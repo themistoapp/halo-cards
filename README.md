@@ -9,6 +9,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 8 (works from 12 × 5 up) |
 | Media (Sonos) | `custom:halo-media-card` | 12 × 6 default; 12 × 9 and up adds favourites, 12 × 4 and 12 × 2 are compact (layout follows the height) |
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
+| Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 
 ## Install (HACS)
 
@@ -102,6 +103,25 @@ For an electric vehicle use `fuel_type: ev` and `charging: binary_sensor.van_cha
 - **Layout:** 12 × 4 puts the car above the figures; 12 × 3 puts it on the left.
 
 All cards accept `shadow: false` to turn off the Halo drop shadow (default on).
+
+## Halo Lights card (`custom:halo-light-card`)
+
+Several lights as tiles. Each tile can show a fitting (downlight, pendant, horizontal or vertical light bar) whose opening glows in the light's own colour and brightness, and is dark when the light is off. Tap toggles, drag sideways dims, hold opens the light's more-info.
+
+```yaml
+type: custom:halo-light-card
+name: Living room
+lights:
+  - entity: light.pendant
+    type: pendant        # downlight | pendant | strip (horizontal bar) | pole (vertical bar) | none
+  - entity: light.shelf
+    name: Shelf
+    type: strip
+  - light.lamp           # plain entity id: icon only
+show_all_off: true       # "All off" button (default on)
+colour: "#ffe3bd"        # glow for lights that report no colour (default warm white)
+shadow: true
+```
 
 ## Development
 

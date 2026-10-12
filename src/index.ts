@@ -2,16 +2,19 @@ import { HaloEnergyCard } from "./cards/energy/halo-energy-card";
 import { HaloEnergyCardEditor } from "./cards/energy/editor";
 import { HaloMediaCard } from "./cards/media/halo-media-card";
 import { HaloMediaCardEditor } from "./cards/media/editor";
+import { HaloLightCard } from "./cards/light/halo-light-card";
+import { HaloLightCardEditor } from "./cards/light/editor";
 import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
 import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
 
-export const VERSION = "0.2.4";
+export const VERSION = "0.2.0";
 
 // Each card stands alone: its own element, config and editor. Use any of them without the others.
 const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
   ["halo-energy-card", HaloEnergyCard, "halo-energy-card-editor", HaloEnergyCardEditor, "Halo Energy", "EcoFlow Stream energy card: live flows, history graphs, backup reserve and operating mode."],
   ["halo-media-card", HaloMediaCard, "halo-media-card-editor", HaloMediaCardEditor, "Halo Media", "Sonos and other players: colours from the album art, transport, volume, speaker groups and favourites."],
   ["halo-vehicle-card", HaloVehicleCard, "halo-vehicle-card-editor", HaloVehicleCardEditor, "Halo Vehicle", "Compact car card: level bar, range, odometer, lock or charging, and where it is."],
+  ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
 ];
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }
