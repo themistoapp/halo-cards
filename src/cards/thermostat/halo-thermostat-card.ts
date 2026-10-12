@@ -18,6 +18,9 @@ const tick = (r1: number, r2: number, deg: number, cls: string, w: number) => {
   return svg`<line class=${cls} x1=${x1.toFixed(2)} y1=${y1.toFixed(2)} x2=${x2.toFixed(2)} y2=${y2.toFixed(2)} stroke-width=${w}></line>`;
 };
 
+/** Rough width of the big figure, so the degree sign can hang off its right edge and leave the digits centred. */
+const textWidth = (str: string, size: number) => [...str].reduce((a, c) => a + ((c === "." ? 0.3 : c === "–" ? 0.5 : 0.58) - 0.045) * size, 0);
+
 interface Pending { tgt?: number; low?: number; high?: number }
 
 export class HaloThermostatCard extends LitElement {
@@ -91,16 +94,20 @@ export class HaloThermostatCard extends LitElement {
     return p ? { ...m, ...(p.tgt !== undefined ? { tgt: p.tgt } : {}), ...(p.low !== undefined ? { low: p.low, high: p.high } : {}) } : m;
   }
 
+  /** The big figure: the target, or the room temperature while the thermostat is off. */
   private _heroText(m: ThermoModel) {
     if (!m.available) return "–";
-    if (m.mode === "off") return "Off";
+    if (m.mode === "off") return m.cur === undefined ? "–" : fmtTemp(m.cur);
     if (m.range && m.low !== undefined && m.high !== undefined) return `${fmtTemp(m.low)}–${fmtTemp(m.high)}`;
     return m.tgt === undefined ? "–" : fmtTemp(m.tgt);
   }
+  /** A degree sign goes after a single temperature, not a range or a dash. */
+  private _hasDeg(m: ThermoModel) { return m.available && (m.mode === "off" ? m.cur !== undefined : !m.range && m.tgt !== undefined); }
   private _nowText(m: ThermoModel) {
     if (!m.available) return "Unavailable";
-    const parts = [m.cur === undefined ? undefined : `Now ${fmtTemp(m.cur)}°`, m.humidity === undefined ? undefined : `${m.humidity}% humidity`].filter(Boolean);
-    return parts.join(" · ");
+    const hum = m.humidity === undefined ? undefined : `${m.humidity}% humidity`;
+    const parts = m.mode === "off" ? ["Off", hum] : [m.cur === undefined ? undefined : `Now ${fmtTemp(m.cur)}°`, hum];
+    return parts.filter(Boolean).join(" · ");
   }
 
   private _modes(m: ThermoModel) {
@@ -142,7 +149,8 @@ export class HaloThermostatCard extends LitElement {
     return html`<div class="dialbox"><svg viewBox="0 0 346 292" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Thermostat dial">
       ${this._ringTicks(m)}
       <text class="lim" x="18" y="262" text-anchor="middle">${fmtTemp(Math.round(m.min))}°</text><text class="lim" x="328" y="262" text-anchor="middle">${fmtTemp(Math.round(m.max))}°</text>
-      <text class="hero ${m.mode === "off" || !m.available ? "off" : ""}" x=${m.mode === "off" || hero.length > 3 ? 173 : 166} y=${CY + (big === 76 ? 22 : 14)} text-anchor="middle" font-size=${big}>${hero}${m.mode !== "off" && m.available && !m.range ? svg`<tspan font-size="34" dy="-22" letter-spacing="0">°</tspan>` : nothing}</text>
+      <text class="hero ${!m.available ? "off" : ""}" x="173" y=${CY + (big === 76 ? 22 : 14)} text-anchor="middle" font-size=${big}>${hero}</text>
+      ${this._hasDeg(m) ? svg`<text class="hero ${!m.available ? "off" : ""}" x=${173 + textWidth(hero, big) / 2 + 2} y=${CY + (big === 76 ? 22 : 14) - big * 0.29} font-size=${big * 0.447} letter-spacing="0">°</text>` : nothing}
       <text class="sub" x="173" y=${CY + (big === 76 ? 52 : 44)} text-anchor="middle">${this._nowText(m)}</text>
       ${this._btn(m, 115, -1)}${this._btn(m, 231, 1)}
     </svg></div>`;
@@ -171,7 +179,7 @@ export class HaloThermostatCard extends LitElement {
     return html`<div class="inner c"><div class="nm">${m.name}</div>
       <div class="hr">
         <button class="rb2" ?disabled=${off} aria-label="Lower target" @click=${() => this._press(m, -1)}><svg viewBox="0 0 16 16"><path d="M3 8h10"/></svg></button>
-        <div class="hv ${off ? "off" : ""}">${hero}${off || m.range ? nothing : html`<sup>°</sup>`}</div>
+        <div class="hv ${!m.available ? "off" : ""}"><span class="dg">${hero}${this._hasDeg(m) ? html`<sup>°</sup>` : nothing}</span></div>
         <button class="rb2" ?disabled=${off} aria-label="Raise target" @click=${() => this._press(m, 1)}><svg viewBox="0 0 16 16"><path d="M3 8h10M8 3v10"/></svg></button>
       </div>
       <div class="nw">${this._nowText(m)}</div>
@@ -185,7 +193,7 @@ export class HaloThermostatCard extends LitElement {
     const compact = this._h > 0 && this._h < 230;
     const hex = m.tone === "heat" ? (dark ? HEAT.night : HEAT.day) : m.tone === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
     const c = shadesFromHex(hex, dark) ?? (dark ? GREY_NIGHT : GREY_DAY);
-    const vars = { "--x1": "50%", "--y1": compact ? "125%" : "112%", "--x2": "50%", "--y2": "50%", "--k": String(m.k), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca };
+    const vars = { "--x1": "50%", "--y1": compact ? "125%" : "112%", "--x2": "50%", "--y2": "50%", "--k": String(hex ? m.k : 0), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca };
     return html`<ha-card class="${dark ? "dark" : ""} ${m.tone} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       ${compact ? this._compact(m) : html`<div class="inner"><header><h2>${m.name}</h2></header>${this._dial(m)}${this._modes(m)}</div>`}

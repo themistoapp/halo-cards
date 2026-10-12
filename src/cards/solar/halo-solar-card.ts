@@ -4,7 +4,7 @@ import type { HomeAssistant } from "../../shared/types";
 import { observeSize } from "../../shared/util";
 import { subscribeHistory } from "../energy/history";
 import type { Sample } from "../energy/logic";
-import { buildSolar, fmtClock, fmtKwh, parseForecast, smoothPath, startOfDay, type Hour, type HaloSolarConfig, type RawForecast, type SolarModel } from "./logic";
+import { buildSolar, fmtKwh, parseForecast, smoothPath, startOfDay, type Hour, type HaloSolarConfig, type RawForecast, type SolarModel } from "./logic";
 import { styles } from "./styles";
 
 type Day = "today" | "tomorrow";
@@ -110,14 +110,10 @@ export class HaloSolarCard extends LitElement {
       return svg`<line class="grid ${i ? "dash" : ""}" x1=${L} x2=${w - R} y1=${y} y2=${y}></line><text class="ax" x=${L - 6} y=${y + 3.5} text-anchor="end">${Number(v.toFixed(2))}</text>`;
     });
     const xs = compact ? nothing : m.ticks.map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor="middle">${String(t).padStart(2, "0")}</text>`);
-    const pk = m.peak && !compact ? (() => {
-      const px = X(m.peak.x), py = Y(m.peak.kw), flip = px > w * 0.6;
-      return svg`<circle class="pk" cx=${px} cy=${py} r="3"></circle><text class="pl" x=${flip ? px - 8 : px + 8} y=${py - 11} text-anchor=${flip ? "end" : "start"}>Peak ${m.peak.kw.toFixed(1)} kW · ${fmtClock(m.peak.x)}</text>`;
-    })() : nothing;
     return html`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Solar forecast chart">
       <defs><linearGradient id="fa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sol)" stop-opacity=".38"></stop><stop offset="1" stop-color="var(--sol)" stop-opacity=".04"></stop></linearGradient></defs>
       ${grid}${xs}
-      <path d=${area} fill="url(#fa)"></path><path class="fa" d=${line}></path>${pk}
+      <path d=${area} fill="url(#fa)"></path><path class="fa" d=${line}></path>
       ${ap.length > 1 && m.nowX !== undefined ? svg`<line class="nowline" x1=${X(m.nowX)} x2=${X(m.nowX)} y1=${compact ? 0 : T} y2=${y0}></line>
         <path class="act" d=${smoothPath(ap, y0)}></path><circle class="dot" cx=${X(m.nowX)} cy=${Y(m.nowKw ?? 0)} r=${compact ? 3 : 4}></circle>` : nothing}
     </svg>`;
@@ -146,7 +142,7 @@ export class HaloSolarCard extends LitElement {
     const total = m.empty ? "–" : fmtKwh(m.forecastKwh);
 
     if (compact) {
-      const sub = day === "today" ? (gen ? `${fmtKwh(m.generatedKwh!)} generated${m.pct !== undefined ? ` · ${m.pct}%` : ""}` : "") : m.peak ? `Peak ${m.peak.kw.toFixed(1)} kW · ${fmtClock(m.peak.x)}` : "";
+      const sub = day === "today" ? (gen ? `${fmtKwh(m.generatedKwh!)} generated${m.pct !== undefined ? ` · ${m.pct}%` : ""}` : "") : vs !== undefined ? `${vs > 0 ? "+" : ""}${vs}% vs today` : "";
       return html`<ha-card class=${cls}><div class="inner c"><div class="l"><div class="lab">Solar · forecast</div>
         <div class="big">${total}<small>kWh</small></div>${sub ? html`<div class="note">${sub}</div>` : nothing}</div>
         <div class="r">${this._chips(hasTomorrow)}<div class="chart">${this._chart(m, true)}</div></div></div></ha-card>`;

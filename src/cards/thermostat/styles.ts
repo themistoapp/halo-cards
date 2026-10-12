@@ -40,7 +40,8 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .c .nm { position: absolute; left: 12px; top: 10px; font: 500 10px/12px var(--code-font-family, ui-monospace, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); max-width: 28%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .c .hr { display: flex; align-items: center; justify-content: center; gap: 18px; height: 44px; }
   .c .hv { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -.045em; min-width: 80px; text-align: center; font-variant-numeric: tabular-nums; }
-  .c .hv sup { font-size: 18px; letter-spacing: 0; vertical-align: top; position: relative; top: 4px; }
+  .c .hv .dg { position: relative; display: inline-block; }
+  .c .hv sup { font-size: 18px; letter-spacing: 0; position: absolute; left: 100%; top: 4px; line-height: 1; }
   .c .hv.off { color: var(--ink-2); }
   .c .nw { text-align: center; font-size: 12px; line-height: 16px; color: var(--ink-2); }
   .c button.rb2 { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; padding: 0; cursor: pointer; }

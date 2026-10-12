@@ -28,8 +28,6 @@ export const styles = [themeStyles, shadowStyles, css`
   .act { stroke: var(--ink); stroke-width: 2.2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
   .nowline { stroke: var(--ink); stroke-opacity: .28; stroke-dasharray: 3 3; }
   .dot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
-  .pk { fill: var(--surface); stroke: var(--sol); stroke-width: 1.6; }
-  .pl { fill: var(--ink-2); font: 500 11px var(--paper-font-body1_-_font-family, system-ui, sans-serif); }
 
   .legend { display: flex; gap: 16px; font-size: 12px; line-height: 16px; color: var(--ink-2); }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
