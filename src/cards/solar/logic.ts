@@ -67,6 +67,8 @@ export interface SolarModel {
   peak?: { kw: number; x: number };
   /** Today only. */
   generatedKwh?: number;
+  /** Forecast still to come today (kWh). */
+  remainingKwh?: number;
   pct?: number;
   nowX?: number;
   nowKw?: number;
@@ -89,6 +91,8 @@ export function buildSolar(opts: { hours: Hour[]; day: "today" | "tomorrow"; now
   const forecastKwh = hrs.reduce((a, h) => a + h.wh, 0) / 1000;
   const top = forecast.reduce((a, p) => (p.kw > a.kw ? p : a), forecast[0]);
 
+  const soFar = opts.day === "today" ? hrs.reduce((a, h) => a + h.wh * Math.min(Math.max((opts.now - h.t) / HOUR, 0), 1), 0) / 1000 : undefined;
+  const remainingKwh = soFar === undefined ? undefined : Math.max(forecastKwh - soFar, 0);
   let actual: Pt[] = [], generatedKwh: number | undefined, pct: number | undefined, nowX: number | undefined, nowKw: number | undefined;
   if (opts.day === "today" && opts.samples) {
     const start = dayStart + Math.max(Math.floor(first) - 1, 0) * HOUR;
@@ -99,8 +103,7 @@ export function buildSolar(opts: { hours: Hour[]; day: "today" | "tomorrow"; now
       generatedKwh = vals.reduce<number>((a, v) => a + Math.max(v ?? 0, 0) / 6, 0);
       const lit = actual.findIndex((p) => p.kw > 0.01);
       actual = lit < 0 ? [] : actual.slice(Math.max(lit - 1, 0));
-      const so = hrs.reduce((a, h) => a + h.wh * Math.min(Math.max((opts.now - h.t) / HOUR, 0), 1), 0) / 1000;
-      pct = so > 0.05 ? Math.round((generatedKwh / so) * 100) : undefined;
+      pct = soFar !== undefined && soFar > 0.05 ? Math.round((generatedKwh / soFar) * 100) : undefined;
       const lastP = actual[actual.length - 1];
       if (lastP) { nowX = hourOfDay(opts.now, dayStart); nowKw = lastP.kw; actual = [...actual, { x: nowX, kw: lastP.kw }]; }
     }
@@ -110,7 +113,7 @@ export function buildSolar(opts: { hours: Hour[]; day: "today" | "tomorrow"; now
   const x0 = Math.max(Math.floor(first) - 1, 0), x1 = Math.min(Math.max(Math.ceil(last) + 1, x0 + 8), 24);
   const ticks: number[] = [];
   for (let t = Math.ceil(x0 / 3) * 3; t <= x1; t += 3) ticks.push(t);
-  return { x0, x1, ticks, axis: niceAxis(maxKw), forecast, actual, forecastKwh, peak: { kw: top.kw, x: top.x }, generatedKwh, pct, nowX, nowKw, empty: false };
+  return { x0, x1, ticks, axis: niceAxis(maxKw), forecast, actual, forecastKwh, peak: { kw: top.kw, x: top.x }, generatedKwh, remainingKwh, pct, nowX, nowKw, empty: false };
 }
 
 /** Smooth curve through the points (Catmull-Rom as cubic Beziers), never dipping below zero. */

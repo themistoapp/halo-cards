@@ -54,6 +54,12 @@ describe("forecast chart", () => {
     expect(m.ticks.every((t) => t % 3 === 0)).toBe(true);
     expect(m.x1 - m.x0).toBeGreaterThanOrEqual(8);
   });
+  it("works out the forecast still to come today", () => {
+    expect(buildSolar({ hours, day: "today", now: NOW }).remainingKwh).toBe(0); // 14:00: every forecast hour is over
+    expect(buildSolar({ hours, day: "today", now: at(12, 12, 30) }).remainingKwh).toBeCloseTo(2, 5); // 3 of 5 kWh done by 12:30
+    expect(buildSolar({ hours, day: "today", now: at(12, 9) }).remainingKwh).toBe(5);
+    expect(buildSolar({ hours, day: "tomorrow", now: NOW }).remainingKwh).toBeUndefined();
+  });
   it("does tomorrow separately and has no generated figure", () => {
     const m = buildSolar({ hours, day: "tomorrow", now: NOW, samples: [{ t: at(12, 8), v: 900 }] });
     expect([m.forecastKwh, m.generatedKwh, m.nowX]).toEqual([0.5, undefined, undefined]);

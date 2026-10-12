@@ -203,6 +203,7 @@ const specs: Spec[] = [
   { id: "sol-c", title: "Solar compact 12x2", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120 },
   { id: "sol-c-tom", title: "Solar compact tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, setup: (c) => { c._day = "tomorrow"; } },
   { id: "sol-c-night", title: "Solar compact night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, dark: true },
+  { id: "sol-wide", title: "Solar wide 640x376", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 640, h: 376 },
   { id: "sol-nsp", title: "Solar NSP 480x376", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 480, h: 376 },
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },

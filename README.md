@@ -157,7 +157,7 @@ shadow: true
 
 ## Halo Solar Forecast card (`custom:halo-solar-card`)
 
-Forecast.Solar for today and tomorrow (chips at the top), with your actual generation drawn over today's forecast. It shows the forecast total, and what has been generated so far and how that compares with the forecast up to now. Short (under about 230px) it becomes a compact card with a small chart.
+Forecast.Solar for today and tomorrow (a Today / Tomorrow pill above the chart), with your actual generation drawn over today's forecast. It shows the forecast total, and what has been generated so far and how that compares with the forecast up to now. When the card is wide enough (about 440px) the figures become Generated, Remaining forecast, Today's forecast and Tomorrow's forecast. Short (under about 230px) it becomes a compact card with a small chart.
 
 The forecast comes from the same data as the Energy dashboard, so **Forecast.Solar must be added to the solar panels in the Energy dashboard** (Settings, Dashboards, Energy, Solar panels, "Add forecast"). With several arrays they are added together unless you name one with `forecast_entry` (its config entry id).
 

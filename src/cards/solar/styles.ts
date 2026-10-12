@@ -7,12 +7,16 @@ export const styles = [themeStyles, shadowStyles, css`
   .inner { padding: 16px; gap: 12px; }
   header { min-height: 30px; }
 
-  .chips { display: flex; gap: 6px; flex: none; }
-  .chips button { font: inherit; font-size: 12px; line-height: 16px; font-weight: 500; padding: 5px 12px; border-radius: 99px; cursor: pointer; color: var(--ink);
-    border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 72%, transparent); }
-  .chips button[aria-pressed="true"] { background: var(--action); color: var(--action-ink); border-color: transparent; }
+  /* One pill with both days, same as the thermostat's modes. */
+  .seg { flex: none; display: flex; padding: 3px; border-radius: 99px; background: var(--sunken); }
+  .seg button { flex: 1; border: 0; background: none; padding: 7px 14px; border-radius: 99px; font: inherit; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ink-2); cursor: pointer; white-space: nowrap; transition: background .2s ease, color .2s ease; }
+  .seg button[aria-pressed="true"] { background: var(--action); color: var(--action-ink); box-shadow: var(--press); }
 
   .stats { display: flex; gap: 36px; }
+  .stats.wide { gap: 0; }
+  .stats.wide > div { flex: 1; min-width: 0; }
+  .stats.wide .big { font-size: 28px; line-height: 32px; }
+  .stats.wide .big small { font-size: 12px; margin-left: 3px; }
   .big { font-size: 36px; line-height: 38px; font-weight: 600; letter-spacing: -.04em; margin-top: 3px; white-space: nowrap; }
   .big small { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 4px; }
   .note { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; }
@@ -41,6 +45,6 @@ export const styles = [themeStyles, shadowStyles, css`
   .c .big { font-size: 40px; line-height: 44px; margin-top: 2px; letter-spacing: -.045em; }
   .c .note { font-size: 13px; line-height: 18px; }
   .c .r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; align-self: stretch; justify-content: center; }
-  .c .chips button { font-size: 11px; line-height: 14px; padding: 3px 9px; }
+  .c .seg { padding: 2px; } .c .seg button { font-size: 11px; line-height: 14px; padding: 3px 9px; }
   .c .chart { flex: 1; min-height: 0; width: 100%; }
 `];

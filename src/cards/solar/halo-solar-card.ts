@@ -119,10 +119,15 @@ export class HaloSolarCard extends LitElement {
     </svg>`;
   }
 
-  private _chips(hasTomorrow: boolean) {
+  /** One pill with both days, like the thermostat's modes. */
+  private _seg(hasTomorrow: boolean) {
     if (!hasTomorrow) return nothing;
-    return html`<div class="chips" role="group" aria-label="Day">${(["today", "tomorrow"] as Day[]).map((d) =>
+    return html`<div class="seg" role="group" aria-label="Day">${(["today", "tomorrow"] as Day[]).map((d) =>
       html`<button aria-pressed=${String(this._day === d)} @click=${() => { this._day = d; }}>${d === "today" ? "Today" : "Tomorrow"}</button>`)}</div>`;
+  }
+
+  private _stat(label: string, value: string, note?: string, cls = "") {
+    return html`<div><div class="lab">${label}</div><div class="big">${value}<small>kWh</small></div>${note ? html`<div class="note ${cls}">${note}</div>` : nothing}</div>`;
   }
 
   override render() {
@@ -145,14 +150,20 @@ export class HaloSolarCard extends LitElement {
       const sub = day === "today" ? (gen ? `${fmtKwh(m.generatedKwh!)} generated${m.pct !== undefined ? ` · ${m.pct}%` : ""}` : "") : vs !== undefined ? `${vs > 0 ? "+" : ""}${vs}% vs today` : "";
       return html`<ha-card class=${cls}><div class="inner c"><div class="l"><div class="lab">Solar · forecast</div>
         <div class="big">${total}<small>kWh</small></div>${sub ? html`<div class="note">${sub}</div>` : nothing}</div>
-        <div class="r">${this._chips(hasTomorrow)}<div class="chart">${this._chart(m, true)}</div></div></div></ha-card>`;
+        <div class="r">${this._seg(hasTomorrow)}<div class="chart">${this._chart(m, true)}</div></div></div></ha-card>`;
     }
+    // Wide enough: four figures that do not depend on the chosen day.
+    const wide = this._w >= 440;
+    const fc = (v?: number) => (v === undefined ? "–" : fmtKwh(v));
+    const stats = wide
+      ? html`${cfg.actual && today.generatedKwh !== undefined ? this._stat("Generated", fmtKwh(today.generatedKwh), today.pct !== undefined ? `${today.pct}% of forecast so far` : undefined, today.pct !== undefined && today.pct >= 90 ? "good" : "") : nothing}
+        ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh), "forecast")}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh), "forecast")}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh), "forecast") : nothing}`
+      : html`<div><div class="lab">Forecast</div><div class="big">${total}<small>kWh</small></div>${vs !== undefined ? html`<div class="note">${vs > 0 ? "+" : ""}${vs}% vs today</div>` : nothing}</div>
+        ${gen ? html`<div><div class="lab">Generated</div><div class="big">${fmtKwh(m.generatedKwh!)}<small>kWh</small></div>${m.pct !== undefined ? html`<div class="note ${pctCls}">${m.pct}% of forecast so far</div>` : nothing}</div>` : nothing}`;
     return html`<ha-card class=${cls}><div class="inner">
-      <header><h2>${cfg.name ?? "Solar forecast"}</h2>${this._chips(hasTomorrow)}</header>
-      <div class="stats">
-        <div><div class="lab">Forecast</div><div class="big">${total}<small>kWh</small></div>${vs !== undefined ? html`<div class="note">${vs > 0 ? "+" : ""}${vs}% vs today</div>` : nothing}</div>
-        ${gen ? html`<div><div class="lab">Generated</div><div class="big">${fmtKwh(m.generatedKwh!)}<small>kWh</small></div>${m.pct !== undefined ? html`<div class="note ${pctCls}">${m.pct}% of forecast so far</div>` : nothing}</div>` : nothing}
-      </div>
+      <header><h2>${cfg.name ?? "Solar forecast"}</h2></header>
+      <div class="stats ${wide ? "wide" : ""}">${stats}</div>
+      ${this._seg(hasTomorrow)}
       <div class="chart">${this._chart(m, false)}</div>
       <div class="legend"><span><i class="sw-f"></i>Forecast</span>${gen ? html`<span><i class="sw-a"></i>Generated</span>` : nothing}</div>
     </div></ha-card>`;
