@@ -153,7 +153,7 @@ export class HaloMediaCard extends LitElement {
     const art = m.art ? `url("${m.art}")` : undefined;
     const pct = m.dur ? (m.pos / m.dur) * 100 : 0;
     const title = m.title ?? "Nothing playing";
-    const merged = mode === "regular" || mode === "full";
+    const merged = mode !== "mini";
     return html`<div class="glass np ${merged ? "merged" : ""}">
       <div class="npr"><div class="art" style=${styleMap({ background: art ? `${art} center / cover` : "var(--sunken)" })}></div>
       <div class="tx"><div class="ti">${title}</div><div class="ar">${m.artist ?? ""}</div>
@@ -241,13 +241,12 @@ export class HaloMediaCard extends LitElement {
     if (mode === "mini") {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
         ${img ? html`<img class="thumb" src=${img.src} alt="" />` : nothing}
-        <div class="who"><b>${name}</b><span>${m.title ?? "Nothing playing"}</span></div>
+        <div class="who"><b>${m.title ?? "Nothing playing"}</b>${m.artist ? html`<span>${m.artist}</span>` : nothing}</div>
         ${m.can.play ? this._playButton(m) : nothing}</div></ha-card>`;
     }
     if (mode === "compact") {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
-        ${this._header(m, name)}
-        ${this._nowPlaying(m, "compact")}${this._volume(m)}</div></ha-card>`;
+        ${this._nowPlaying(m, "compact")}</div></ha-card>`;
     }
     return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
       ${this._header(m, name)}

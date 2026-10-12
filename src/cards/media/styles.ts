@@ -63,8 +63,8 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .f .im { width: 74px; height: 74px; border-radius: 12px; box-shadow: var(--press); background: var(--sunken) center / cover; }
   .f .nm { font-size: 11px; line-height: 14px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Compact (12 x 4) and mini (12 x 2) */
-  .compact .inner { gap: 8px; padding: 14px; justify-content: space-between; }
+  /* Compact (about 12 x 3 to 12 x 4): one card with the track, play and volume. Mini (12 x 2): one row. */
+  .compact .inner { gap: 8px; padding: 14px; justify-content: center; }
   .compact .np { padding: 10px; }
   .compact .art { width: 56px; height: 56px; }
   .compact .play { width: 48px; height: 48px; flex: none; }
@@ -82,7 +82,7 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .mini .inner { flex-direction: row; align-items: center; gap: 12px; padding: 12px 16px; }
   .mini .thumb { height: 70px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
   .mini .who { flex: 1; min-width: 0; }
-  .mini .who b { display: block; font-size: 13px; line-height: 18px; font-weight: 500; }
+  .mini .who b { display: block; font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mini .who span { font-size: 12px; line-height: 16px; color: var(--ink-2); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
 `];
