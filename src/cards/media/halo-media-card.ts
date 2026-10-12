@@ -2,7 +2,7 @@ import { LitElement, html, nothing, svg, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { GREY_DAY, GREY_NIGHT, randomOrigin, registerBloomProps } from "../../shared/bloom";
-import { artPalette, paletteFromUrl, type Palette } from "../../shared/colour";
+import { artPalette, paletteFromUrl, type ArtColours, type Palette } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { observeHeight } from "../../shared/util";
 import { bloomK, buildMedia, favouritesOf, fmtTime, nextRepeat, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
@@ -38,7 +38,7 @@ export class HaloMediaCard extends LitElement {
   @state() private _config?: HaloMediaConfig;
   @state() private _hass?: HomeAssistant;
   @state() private _height = 0;
-  @state() private _palette?: { h: number; s: number; ha: number };
+  @state() private _palette?: ArtColours;
   @state() private _thumbs: Record<string, string> = {};
   @state() private _draft?: number;
 

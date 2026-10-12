@@ -41,41 +41,58 @@ export function shadesFromHex(hex: string | undefined, dark: boolean): Palette |
   return c ? shades(c.h, Math.max(c.s, 0.35), dark) : undefined;
 }
 
+export interface ArtColours { h: number; s: number; l: number; ha: number; distinct: boolean }
+
 /**
  * Picks a main and an accent hue from RGBA pixels. Near-black, near-white and washed-out pixels are
- * ignored; hues are grouped in twelve bins weighted by colourfulness. Returns undefined for artwork
- * with no real colour in it (greyscale, or empty).
+ * ignored; hues are grouped in twelve bins (centred on the primaries, so red does not split across the
+ * wrap-around) weighted by colourfulness, and averaged as angles. Returns undefined for artwork with
+ * no real colour in it (greyscale, or empty).
  */
-export function paletteFromPixels(data: ArrayLike<number>): { h: number; s: number; ha: number } | undefined {
-  const bins = Array.from({ length: 12 }, () => ({ w: 0, h: 0, s: 0 }));
+export function paletteFromPixels(data: ArrayLike<number>): ArtColours | undefined {
+  const bins = Array.from({ length: 12 }, () => ({ w: 0, x: 0, y: 0, s: 0, l: 0 }));
   let total = 0;
   for (let i = 0; i + 3 < data.length; i += 4) {
     if (data[i + 3] < 200) continue;
     const { h, s, l } = rgbToHsl(data[i], data[i + 1], data[i + 2]);
     if (l < 0.12 || l > 0.92 || s < 0.18) continue;
     const w = s * (1 - Math.abs(2 * l - 1));
-    const b = bins[Math.min(11, Math.floor(h * 12))];
-    b.w += w; b.h += h * w; b.s += s * w; total += w;
+    const b = bins[Math.floor(((h * 360 + 15) % 360) / 30)];
+    b.w += w; b.x += Math.cos(h * 2 * Math.PI) * w; b.y += Math.sin(h * 2 * Math.PI) * w; b.s += s * w; b.l += l * w; total += w;
   }
   const px = data.length / 4;
   if (!px || total / px < 0.04) return undefined;
-  const ranked = bins.map((b) => ({ ...b, h: b.w ? b.h / b.w : 0, s: b.w ? b.s / b.w : 0 })).filter((b) => b.w > 0).sort((a, b) => b.w - a.w);
+  const ranked = bins.filter((b) => b.w > 0).map((b) => ({ w: b.w, h: (Math.atan2(b.y, b.x) / (2 * Math.PI) + 1) % 1, s: b.s / b.w, l: b.l / b.w })).sort((a, b) => b.w - a.w);
   const main = ranked[0];
   const dist = (a: number, b: number) => { const d = Math.abs(a - b); return Math.min(d, 1 - d); };
   const other = ranked.find((b) => dist(b.h, main.h) >= 40 / 360 && b.w >= main.w * 0.2);
-  return { h: main.h, s: main.s, ha: other ? other.h : main.h + 25 / 360 };
+  return { h: main.h, s: main.s, l: main.l, ha: other ? other.h : main.h, distinct: !!other };
 }
 
-export function artPalette(p: { h: number; s: number; ha: number }, dark: boolean): Palette {
-  const base = shades(p.h, p.s, dark);
-  const acc = shades(p.ha, p.s, dark);
-  return { c0: base.c0, c1: base.c1, ca: acc.c0 };
+/**
+ * Bloom colours from artwork: the main hue at the artwork's own lightness, a lighter tint, and the
+ * second hue as the accent. With one colour only, the accent is the same hue deeper, never a shifted hue.
+ */
+export function artPalette(p: ArtColours, dark: boolean): Palette {
+  const clampL = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+  if (!dark) {
+    return {
+      c0: hslToHex(p.h, Math.min(p.s * 1.05, 0.9), clampL(p.l, 0.5, 0.66)),
+      c1: hslToHex(p.h, Math.min(p.s, 0.8), 0.84),
+      ca: p.distinct ? hslToHex(p.ha, Math.min(p.s, 0.85), 0.66) : hslToHex(p.h, Math.min(p.s * 1.05, 0.9), 0.5),
+    };
+  }
+  return {
+    c0: hslToHex(p.h, Math.min(p.s, 0.7), clampL(p.l * 0.5, 0.2, 0.32)),
+    c1: hslToHex(p.h, Math.min(p.s, 0.6), 0.18),
+    ca: p.distinct ? hslToHex(p.ha, Math.min(p.s, 0.7), 0.3) : hslToHex(p.h, Math.min(p.s, 0.7), 0.38),
+  };
 }
 
-const cache = new Map<string, Promise<{ h: number; s: number; ha: number } | undefined>>();
+const cache = new Map<string, Promise<ArtColours | undefined>>();
 
 /** Reads the colours of an image. Resolves undefined if it can't be read (blocked by its host, or no colour). */
-export function paletteFromUrl(url: string): Promise<{ h: number; s: number; ha: number } | undefined> {
+export function paletteFromUrl(url: string): Promise<ArtColours | undefined> {
   let p = cache.get(url);
   if (!p) {
     p = new Promise((resolve) => {
