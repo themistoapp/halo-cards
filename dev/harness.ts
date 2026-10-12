@@ -1,7 +1,15 @@
 import "../src/index";
+import { MDI } from "./mdi-sample";
 import type { HomeAssistant } from "../src/shared/types";
 
 // Browser-only mock of Home Assistant: static states, a synthetic history, and a gallery of every card and size.
+if (!customElements.get("ha-icon")) customElements.define("ha-icon", class extends HTMLElement {
+  private _i = "";
+  set icon(v: string) { this._i = v; this._draw(); }
+  get icon() { return this._i; }
+  connectedCallback() { this.style.cssText = "display:inline-flex;width:20px;height:20px"; this._draw(); }
+  private _draw() { const d = MDI[this._i] ?? MDI["mdi:palette"]; (this.shadowRoot ?? this.attachShadow({ mode: "open" })).innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="${d}"/></svg>`; }
+});
 if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
 const q = new URLSearchParams(location.search);
 const only = q.get("only");
@@ -33,6 +41,8 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("lock.m140i", "locked"), e("device_tracker.m140i", "home"), e("zone.home", "0", { friendly_name: "Home" }),
       e("sensor.van_soc", "64", { unit_of_measurement: "%" }), e("sensor.van_range", "148", { unit_of_measurement: "mi" }), e("sensor.van_odo", "18902", { unit_of_measurement: "mi" }),
       e("binary_sensor.van_charging", "on"), e("device_tracker.van", "depot"),
+      e("scene.movie", "2026-10-12T19:00:00Z", { friendly_name: "Movie", icon: "mdi:movie-open" }), e("scene.relax", "2026-10-12T18:00:00Z", { friendly_name: "Relax", icon: "mdi:sofa" }),
+      e("scene.bright", "2026-10-12T08:00:00Z", { friendly_name: "Bright", icon: "mdi:white-balance-sunny" }), e("scene.night", "2026-10-12T22:00:00Z", { friendly_name: "Night", icon: "mdi:weather-night" }),
       e("light.pendant", "on", { friendly_name: "Pendant", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 2700, brightness: 230 }),
       e("light.downlight", "on", { friendly_name: "Downlights", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 4000, brightness: 140 }),
       e("light.shelf", "on", { friendly_name: "Shelf bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [255, 90, 160], brightness: 200 }),
@@ -77,6 +87,8 @@ const lights = { type: "custom:halo-light-card", name: "Living room", lights: [
   { entity: "light.pendant", type: "pendant" }, { entity: "light.downlight", type: "downlight" }, { entity: "light.shelf", name: "Shelf", type: "strip" },
   { entity: "light.tower", name: "Corner", type: "pole" }, { entity: "light.hall", type: "downlight" }, { entity: "light.lamp" } ] };
 
+const scenes = { type: "custom:halo-scenes-card", scenes: [{ entity: "scene.movie", colour: "#7a5cf0" }, { entity: "scene.relax", colour: "#e8803d" }, { entity: "scene.bright", colour: "#e8b923" }, { entity: "scene.night", colour: "#3d6ee8" }] };
+
 type Spec = { id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
@@ -95,6 +107,11 @@ const specs: Spec[] = [
   { id: "nsp-m", title: "Media NSP 480x386", tag: "halo-media-card", cfg: media, w: 480, h: 386 },
   { id: "nsp-mfull", title: "Media NSP tall 480x560", tag: "halo-media-card", cfg: media, w: 480, h: 560 },
   { id: "nsp-m376", title: "Media NSP 480x376", tag: "halo-media-card", cfg: media, w: 480, h: 376 },
+  { id: "scenes", title: "Scenes 12x2", tag: "halo-scenes-card", cfg: scenes, w: 378, h: 120 },
+  { id: "scenes-nsp", title: "Scenes 12x2 NSP", tag: "halo-scenes-card", cfg: scenes, w: 480, h: 120 },
+  { id: "scenes-plain", title: "Scenes no colours", tag: "halo-scenes-card", cfg: { ...scenes, scenes: ["scene.movie", "scene.relax", "scene.bright", "scene.night"] }, w: 378, h: 120 },
+  { id: "scenes-night", title: "Scenes night", tag: "halo-scenes-card", cfg: scenes, w: 378, h: 120, dark: true },
+  { id: "scenes-titled", title: "Scenes titled 12x3", tag: "halo-scenes-card", cfg: { ...scenes, name: "Scenes" }, w: 378, h: 176 },
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
