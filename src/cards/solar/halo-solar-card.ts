@@ -27,6 +27,8 @@ export class HaloSolarCard extends LitElement {
   @state() private _w = 0;
   @state() private _h = 0;
   @state() private _cs = { w: 0, h: 0 };
+  @state() private _hov?: number;
+  private _hovTimer?: number;
   private _unobserve?: () => void;
   private _unsub?: () => void;
   private _timer?: number;
@@ -56,7 +58,7 @@ export class HaloSolarCard extends LitElement {
     this._load(); this._resubscribe();
   }
   override disconnectedCallback() {
-    super.disconnectedCallback(); this._unobserve?.(); clearInterval(this._timer); this._gen++;
+    super.disconnectedCallback(); this._unobserve?.(); clearInterval(this._timer); clearTimeout(this._hovTimer); this._gen++;
     this._unsub?.(); this._unsub = undefined; this._histKey = "";
   }
   override shouldUpdate() { return !!this._config && !!this._hass; }
@@ -92,6 +94,37 @@ export class HaloSolarCard extends LitElement {
     if (Math.abs(r.width - this._cs.w) > 1 || Math.abs(r.height - this._cs.h) > 1) this._cs = { w: r.width, h: r.height };
   }
 
+  /** Value of a piecewise-linear series at hour x. */
+  private _at(pts: { x: number; kw: number }[], x: number): number | undefined {
+    if (pts.length < 2 || x < pts[0].x || x > pts[pts.length - 1].x) return undefined;
+    const i = pts.findIndex((p) => p.x >= x);
+    if (i <= 0) return pts[0].kw;
+    const a = pts[i - 1], b = pts[i];
+    return b.x === a.x ? b.kw : a.kw + ((b.kw - a.kw) * (x - a.x)) / (b.x - a.x);
+  }
+
+  private _point = (e: PointerEvent, m: SolarModel) => {
+    if (m.empty) return;
+    const el = e.currentTarget as HTMLElement, r = el.getBoundingClientRect();
+    const L = 28, R = 6, x = m.x0 + ((e.clientX - r.left - L) / (r.width - L - R)) * (m.x1 - m.x0);
+    this._hov = x >= m.x0 && x <= m.x1 ? x : undefined;
+    clearTimeout(this._hovTimer);
+    if (e.pointerType !== "mouse") this._hovTimer = window.setTimeout(() => (this._hov = undefined), 4000);
+  };
+  private _clearMouse = (e: PointerEvent) => { if (e.pointerType === "mouse") this._hov = undefined; };
+
+  private _readout(m: SolarModel, day: Day) {
+    if (m.empty) return html`<div class="readout"></div>`;
+    const hhmm = (x: number) => { const t = Math.round(x * 60); return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+    const kw = (v: number) => v.toFixed(2);
+    const at = this._hov ?? (day === "today" ? m.nowX : undefined);
+    if (at === undefined) return html`<div class="readout">TOMORROW - ${fmtKwh(m.forecastKwh)} kWh forecast</div>`;
+    const f = this._at(m.forecast, at) ?? 0;
+    const a = day === "today" && at <= (m.nowX ?? -1) ? this._at(m.actual, at) : undefined;
+    const label = this._hov !== undefined ? hhmm(at) : "NOW";
+    return html`<div class="readout">${label} - ${kw(f)} kW forecast${a !== undefined ? `, ${kw(a)} actual` : ""}</div>`;
+  }
+
   private _chart(m: SolarModel, compact: boolean) {
     const { w, h } = this._cs;
     if (w < 10 || h < 10) return nothing;
@@ -114,6 +147,7 @@ export class HaloSolarCard extends LitElement {
       <defs><linearGradient id="fa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sol)" stop-opacity=".38"></stop><stop offset="1" stop-color="var(--sol)" stop-opacity=".04"></stop></linearGradient></defs>
       ${grid}${xs}
       <path d=${area} fill="url(#fa)"></path><path class="fa" d=${line}></path>
+      ${this._hov !== undefined ? svg`<line class="hovline" x1=${X(this._hov)} x2=${X(this._hov)} y1=${T} y2=${y0}></line><circle class="dot" cx=${X(this._hov)} cy=${Y(this._at(m.forecast, this._hov) ?? 0)} r="4"></circle>` : nothing}
       ${ap.length > 1 && m.nowX !== undefined ? svg`<line class="nowline" x1=${X(m.nowX)} x2=${X(m.nowX)} y1=${compact ? 0 : T} y2=${y0}></line>
         <path class="act" d=${smoothPath(ap, y0)}></path><circle class="dot" cx=${X(m.nowX)} cy=${Y(m.nowKw ?? 0)} r=${compact ? 3 : 4}></circle>` : nothing}
     </svg>`;
@@ -141,7 +175,6 @@ export class HaloSolarCard extends LitElement {
     const day: Day = this._day === "tomorrow" && hasTomorrow ? "tomorrow" : "today";
     const m = day === "today" ? today : tomorrow;
     const gen = day === "today" && cfg.actual && m.generatedKwh !== undefined;
-    const pctCls = m.pct === undefined ? "" : m.pct >= 90 ? "good" : "";
     const vs = day === "tomorrow" && !today.empty && today.forecastKwh > 0 ? Math.round(((tomorrow.forecastKwh - today.forecastKwh) / today.forecastKwh) * 100) : undefined;
     const cls = `${dark ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}`;
     const total = m.empty ? "–" : fmtKwh(m.forecastKwh);
@@ -152,20 +185,16 @@ export class HaloSolarCard extends LitElement {
         <div class="big">${total}<small>kWh</small></div>${sub ? html`<div class="note">${sub}</div>` : nothing}</div>
         <div class="r">${this._seg(hasTomorrow)}<div class="chart">${this._chart(m, true)}</div></div></div></ha-card>`;
     }
-    // Wide enough: four figures that do not depend on the chosen day.
-    const wide = this._w >= 440;
+    // Four figures that do not depend on the chosen day: generated, remaining, today's forecast, tomorrow's.
     const fc = (v?: number) => (v === undefined ? "–" : fmtKwh(v));
-    const stats = wide
-      ? html`${cfg.actual && today.generatedKwh !== undefined ? this._stat("Generated", fmtKwh(today.generatedKwh), today.pct !== undefined ? `${today.pct}%` : undefined, today.pct !== undefined && today.pct >= 90 ? "good" : "") : nothing}
-        ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh))}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh))}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh)) : nothing}`
-      : html`<div><div class="lab">Forecast</div><div class="big">${total}<small>kWh</small></div>${vs !== undefined ? html`<div class="note">${vs > 0 ? "+" : ""}${vs}% vs today</div>` : nothing}</div>
-        ${gen ? html`<div><div class="lab">Generated</div><div class="big">${fmtKwh(m.generatedKwh!)}<small>kWh</small></div>${m.pct !== undefined ? html`<div class="note ${pctCls}">${m.pct}%</div>` : nothing}</div>` : nothing}`;
+    const stats = html`${cfg.actual && today.generatedKwh !== undefined ? this._stat("Generated", fmtKwh(today.generatedKwh), today.pct !== undefined ? `${today.pct}%` : undefined, today.pct !== undefined && today.pct >= 90 ? "good" : "") : nothing}
+      ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh))}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh))}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh)) : nothing}`;
     return html`<ha-card class=${cls}><div class="inner">
       <header><h2>${cfg.name ?? "Solar forecast"}</h2></header>
-      <div class="stats ${wide ? "wide" : ""}">${stats}</div>
+      <div class="stats">${stats}</div>
       ${this._seg(hasTomorrow)}
-      <div class="chart">${this._chart(m, false)}</div>
-      <div class="legend"><span><i class="sw-f"></i>Forecast</span>${gen ? html`<span><i class="sw-a"></i>Generated</span>` : nothing}</div>
+      <div class="chart" @pointermove=${(e: PointerEvent) => this._point(e, m)} @pointerdown=${(e: PointerEvent) => this._point(e, m)} @pointerleave=${this._clearMouse}>${this._chart(m, false)}</div>
+      ${this._readout(m, day)}
     </div></ha-card>`;
   }
 }

@@ -6,7 +6,7 @@ import { buildAgile, fmtP, watchedAgile, type AgileModel, type Figure, type Halo
 import { styles } from "./styles";
 
 type Day = "today" | "tomorrow";
-const MIN_FIGURE = 88;
+const MIN_FIGURE = 64;
 
 export class HaloAgileCard extends LitElement {
   static override styles = styles;
@@ -67,8 +67,9 @@ export class HaloAgileCard extends LitElement {
       html`<button aria-pressed=${String(this._day === d)} @click=${() => { this._day = d; }}>${d === "today" ? "Today" : "Tomorrow"}</button>`)}</div>`;
   }
 
-  private _figure(f: Figure) {
-    return html`<div><div class="lab">${f.label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
+  private _figure(f: Figure, tight = false) {
+    const label = tight ? ({ current: "Current", next: "Next" } as Record<string, string>)[f.id] ?? f.label : f.label;
+    return html`<div><div class="lab">${label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
   }
 
   /** Points at the bar under the finger or mouse. Mouse readouts clear on leave; touch ones fade after a few seconds. */
@@ -103,7 +104,7 @@ export class HaloAgileCard extends LitElement {
     const xs = compact ? nothing : [0, 6, 12, 18].map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor=${t === 0 ? "start" : "middle"}>${String(t).padStart(2, "0")}</text>`);
     const bars = m.bars.map((b, i) => {
       const top = Y(Math.max(b.p, 0)), bottom = Y(Math.min(b.p, 0)), x = X(b.x) + gap / 2, bw = Math.max(X(b.x + b.w) - X(b.x) - gap, 1);
-      return svg`<rect class="bar ${b.band} ${b.past ? "past" : ""} ${b.current ? "now" : ""} ${i === this._sel ? "sel" : ""}" x=${x} y=${top} width=${bw} height=${Math.max(bottom - top, 1)} rx=${compact ? 0.8 : 1.5}></rect>`;
+      return svg`<rect class="bar ${b.band} ${b.current ? "now" : ""} ${i === this._sel ? "sel" : ""}" x=${x} y=${top} width=${bw} height=${Math.max(bottom - top, 1)} rx=${compact ? 0.8 : 1.5}></rect>`;
     });
     return html`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Agile rates chart">
       ${grid}${xs}${bars}
@@ -131,9 +132,10 @@ export class HaloAgileCard extends LitElement {
     // As many of the ticked figures as fit, in order.
     const fit = this._w > 0 ? Math.max(Math.floor((this._w - 32) / MIN_FIGURE), 1) : m.figures.length;
     const shown = m.figures.slice(0, fit);
+    const tight = this._w > 0 && (this._w - 32) / Math.max(shown.length, 1) < 88;
     return html`<ha-card class=${cls}><div class="inner">
       <header><h2>${cfg.name ?? "Agile rates"}</h2></header>
-      ${shown.length ? html`<div class="stats">${shown.map((f) => this._figure(f))}</div>` : nothing}
+      ${shown.length ? html`<div class="stats ${tight ? "tight" : ""}">${shown.map((f) => this._figure(f, tight))}</div>` : nothing}
       ${this._seg(hasTomorrow)}
       <div class="chart" @pointermove=${(e: PointerEvent) => this._point(e, m)} @pointerdown=${(e: PointerEvent) => this._point(e, m)} @pointerleave=${this._clearMouse}>${this._chart(m, false)}</div>
       ${this._readout(m)}

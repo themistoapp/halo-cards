@@ -215,6 +215,7 @@ const specs: Spec[] = [
   { id: "ag-nsp", title: "Agile NSP 480x376", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 480, h: 376 },
   { id: "ag-sub", title: "Agile 3 figures", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", figures: ["current", "lowest", "highest"] }, w: 378, h: 376 },
   { id: "sol", title: "Solar today 12x6", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376 },
+  { id: "sol-hov", title: "Solar reading", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._hov = 11.5; } },
   { id: "sol-tom", title: "Solar tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
   { id: "sol-night", title: "Solar night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, dark: true },
   { id: "sol-noact", title: "Solar no PV entity", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card" }, w: 378, h: 376 },
