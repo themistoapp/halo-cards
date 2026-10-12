@@ -10,6 +10,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Media (Sonos) | `custom:halo-media-card` | 12 × 6 default; 12 × 9 and up adds favourites, 12 × 4 and 12 × 2 are compact (layout follows the height) |
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
+| Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 
 ## Install (HACS)
@@ -134,6 +135,21 @@ entity: climate.hallway
 name: Hallway           # optional
 hvac_modes: [heat, cool, heat_cool, off]   # modes to show as buttons; leave out for everything the thermostat supports
 humidity: sensor.hallway_humidity          # only if the thermostat doesn't report humidity
+shadow: true
+```
+
+## Halo Weather card (`custom:halo-weather-card`)
+
+Weather for any `weather` entity (built against Met.no). Tall, it shows the temperature and condition, a row of details and the next hours (`layout: today`), or a row per day with a low-to-high bar (`layout: week`). Short (under about 230px) it becomes a compact card with the next few hours beside it. The background glows amber for sun, blue for rain, indigo at night, grey for cloud. Tap for the entity's more-info.
+
+The forecast is not in the entity any more, so the card subscribes to Home Assistant's hourly and daily forecasts itself and hides whatever the entity doesn't offer. "Feels like" only shows if the entity has `apparent_temperature` (Met.no doesn't).
+
+```yaml
+type: custom:halo-weather-card
+entity: weather.home
+name: Swindon           # optional, defaults to the entity's name
+layout: today           # or week
+details: [humidity, wind, pressure]   # up to four of: humidity, wind, pressure, cloud, dew_point, visibility
 shadow: true
 ```
 

@@ -48,6 +48,11 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.idle", "heat", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "idle", current_temperature: 21.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
+      e("sun.sun", "above_horizon"),
+      e("weather.home", "partlycloudy", { friendly_name: "Swindon", temperature: 14.4, humidity: 72, pressure: 1008.3, pressure_unit: "hPa", wind_speed: 22.4, wind_speed_unit: "km/h", wind_bearing: 225, cloud_coverage: 48, dew_point: 9.1, supported_features: 3 }),
+      e("weather.rain", "rainy", { friendly_name: "Swindon", temperature: 11.2, humidity: 91, pressure: 998, pressure_unit: "hPa", wind_speed: 30, wind_speed_unit: "km/h", wind_bearing: 250, supported_features: 3 }),
+      e("weather.night", "clear-night", { friendly_name: "Swindon", temperature: 8.6, humidity: 80, pressure: 1016, pressure_unit: "hPa", wind_speed: 8, wind_speed_unit: "km/h", wind_bearing: 20, supported_features: 3 }),
+      e("weather.nofc", "sunny", { friendly_name: "Swindon", temperature: 21, humidity: 40, supported_features: 0 }),
       e("light.pendant", "on", { friendly_name: "Pendant", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 2700, brightness: 230 }),
       e("light.downlight", "on", { friendly_name: "Downlights", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 4000, brightness: 140 }),
       e("light.shelf", "on", { friendly_name: "Shelf bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [255, 90, 160], brightness: 200 }),
@@ -65,6 +70,16 @@ const shape: Record<string, (x: number) => number> = {
   "sensor.home_power": (x) => 1400 + Math.sin(x * 7) * 500,
 };
 
+
+const CONDS = ["partlycloudy", "partlycloudy", "sunny", "cloudy", "rainy", "rainy", "pouring", "cloudy", "sunny", "sunny"];
+function forecast(kind: string, night = false) {
+  const t = new Date(); t.setMinutes(0, 0, 0);
+  if (kind === "hourly") return Array.from({ length: 24 }, (_, i) => { const d = new Date(t.getTime() + i * 3600e3); return { datetime: d.toISOString(), condition: night && CONDS[i % CONDS.length] === "sunny" ? "clear-night" : CONDS[i % CONDS.length], temperature: 14 + Math.round(Math.sin(i / 3) * 3), is_daytime: !night }; });
+  const d0 = new Date(); d0.setHours(12, 0, 0, 0);
+  const days: [string, number, number][] = [["partlycloudy", 16, 9], ["rainy", 13, 8], ["pouring", 12, 7], ["sunny", 14, 6], ["cloudy", 15, 8], ["rainy", 13, 9], ["sunny", 17, 7]];
+  return days.map(([condition, temperature, templow], i) => ({ datetime: new Date(d0.getTime() + i * 86400e3).toISOString(), condition, temperature, templow }));
+}
+
 function makeHass(dark: boolean, over = {}): HomeAssistant {
   const st = states(over) as Record<string, any>;
   return {
@@ -72,7 +87,8 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
     entities: { "media_player.lounge": { device_id: "d1" }, "media_player.study": { device_id: "d2" } },
     devices: { d1: { model: "Era 300" }, d2: { model: "Sonos One" } },
     connection: {
-      async subscribeMessage(cb: (m: unknown) => void, msg: { entity_ids: string[]; start_time: string }) {
+      async subscribeMessage(cb: (m: unknown) => void, msg: { entity_ids: string[]; start_time: string; type?: string; forecast_type?: string }) {
+        if (msg.type === "weather/subscribe_forecast") { setTimeout(() => cb({ type: msg.forecast_type, forecast: forecast(msg.forecast_type!, (msg as any).entity_id === "weather.night") }), 30); return () => {}; }
         const t0 = Date.parse(msg.start_time), t1 = Date.now(); const out: Record<string, { s: string; lu: number }[]> = {};
         for (const id of msg.entity_ids) out[id] = Array.from({ length: 120 }, (_, i) => ({ s: String((shape[id]?.(i / 119)) ?? 0), lu: (t0 + (i / 119) * (t1 - t0)) / 1000 }));
         setTimeout(() => cb({ states: out }), 50); return () => {};
@@ -131,6 +147,17 @@ const specs: Spec[] = [
   { id: "th-c480", title: "Compact 480", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 480, h: 120 },
   { id: "th-c-cool", title: "Compact cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 120 },
   { id: "th-c-night", title: "Compact night", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 120, dark: true },
+  { id: "wx", title: "Weather today 12x7", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 378, h: 440 },
+  { id: "wx-wk", title: "Weather week 12x7", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", layout: "week" }, w: 378, h: 440 },
+  { id: "wx-night", title: "Weather night", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.night" }, w: 378, h: 440, dark: true, over: { "sun.sun": e("sun.sun", "below_horizon")[1] } },
+  { id: "wx-rain", title: "Weather rain", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.rain" }, w: 378, h: 440 },
+  { id: "wx-c", title: "Weather compact 12x2", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 378, h: 120 },
+  { id: "wx-c480", title: "Weather compact 480", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 480, h: 120 },
+  { id: "wx-c-night", title: "Weather compact night", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.night" }, w: 378, h: 120, dark: true, over: { "sun.sun": e("sun.sun", "below_horizon")[1] } },
+  { id: "wx-c-rain", title: "Weather compact rain", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.rain" }, w: 378, h: 120 },
+  { id: "wx-nsp", title: "Weather today NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 480, h: 376 },
+  { id: "wx-nsp-wk", title: "Weather week NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", layout: "week" }, w: 480, h: 376 },
+  { id: "wx-nofc", title: "No forecast", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.nofc" }, w: 378, h: 440 },
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
