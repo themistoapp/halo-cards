@@ -6,6 +6,7 @@ import type { HaloMediaConfig } from "./logic";
 const SCHEMA = [
   { name: "entity", required: true, selector: { entity: { domain: "media_player" } } },
   { name: "name", selector: { text: {} } },
+  { name: "shadow", selector: { boolean: {} } },
   { name: "speaker", selector: { select: { mode: "dropdown", options: [
     { value: "auto", label: "Auto (from the device model)" }, { value: "beam-sub-mini", label: "Beam + Sub Mini" },
     { value: "era-300", label: "Era 300" }, { value: "one", label: "One" }, { value: "none", label: "None" } ] } } },
@@ -14,6 +15,7 @@ const SCHEMA = [
   { name: "favourites_entity", selector: { entity: { domain: "sensor" } } },
 ];
 const LABELS: Record<string, string> = {
+  shadow: "Drop shadow",
   entity: "Media player", name: "Title (room)", speaker: "Speaker picture", image: "Your own picture (URL)",
   speakers: "Speakers to show as group chips", favourites_entity: "Sonos favourites sensor",
 };
@@ -24,7 +26,7 @@ export class HaloMediaCardEditor extends LitElement {
   setConfig(config: HaloMediaConfig) { this._config = config; }
   override render() {
     if (!this.hass || !this._config) return html``;
-    return html`<ha-form .hass=${this.hass} .data=${this._config} .schema=${SCHEMA}
+    return html`<ha-form .hass=${this.hass} .data=${{ shadow: true, ...this._config }} .schema=${SCHEMA}
       .computeLabel=${(s: { name: string }) => LABELS[s.name] ?? s.name}
       @value-changed=${(e: CustomEvent) => {
         this._config = e.detail.value;

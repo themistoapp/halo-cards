@@ -1,7 +1,7 @@
 import { css } from "lit";
-import { bloomStyles, themeStyles } from "../../shared/bloom";
+import { bloomStyles, shadowStyles, themeStyles } from "../../shared/bloom";
 
-export const styles = [themeStyles, bloomStyles, css`
+export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .inner { gap: 6px; padding: 14px; }
   .compact3 .inner { padding: 12px 14px; }
   .pic { flex: 1; min-height: 0; display: grid; place-items: center; position: relative; }

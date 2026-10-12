@@ -4,6 +4,8 @@ import { clamp, isAvailable, numState, prettyPlace, unitOf } from "../../shared/
 export interface HaloVehicleConfig {
   type: string;
   name?: string;
+  /** Drop shadow behind the card (default on). */
+  shadow?: boolean;
   fuel_type?: "ice" | "ev";
   /** Picture: a built-in render, or your own URL in `image`. */
   image_preset?: "none" | "m140i" | "e-vivaro";

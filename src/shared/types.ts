@@ -21,6 +21,8 @@ export interface HomeAssistant {
 
 export interface HaloEnergyConfig {
   type: string;
+  /** Drop shadow behind the card (default on). */
+  shadow?: boolean;
   name?: string;
   solar_power?: string;
   solar_energy?: string;

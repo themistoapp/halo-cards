@@ -1,7 +1,7 @@
 import { css } from "lit";
-import { bloomStyles, themeStyles } from "../../shared/bloom";
+import { bloomStyles, shadowStyles, themeStyles } from "../../shared/bloom";
 
-export const styles = [themeStyles, bloomStyles, css`
+export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .inner { gap: 10px; padding: 16px; }
   .hero { position: relative; flex: 1; min-height: 70px; display: grid; place-items: center; }
   .ring { position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c0) 40%, transparent), transparent); animation: pulse 3.2s ease-in-out infinite; }

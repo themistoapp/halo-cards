@@ -52,7 +52,7 @@ export const themeStyles = css`
     --action-ink: var(--surface);
     --warn: #b45f06; --bad: #c2362b;
     --press: 0 1px 2px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.14);
-    position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
+    display: block; position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
     color: var(--ink); font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif);
   }
   ha-card.dark { --sunken: color-mix(in srgb, var(--ink) 14%, transparent); --warn: #f4a36a; --bad: #ff7b72; --press: 0 1px 2px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4); }
@@ -68,4 +68,10 @@ export const themeStyles = css`
   .dark .glass { background: color-mix(in srgb, var(--surface) 72%, transparent); }
   .lab { font-size: 10px; line-height: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); font-family: var(--code-font-family, ui-monospace, monospace); }
   button { font-family: inherit; color: inherit; }
+`;
+
+/** Soft drop shadow, stronger at night, on by default (shadow: false leaves the theme's own). */
+export const shadowStyles = css`
+  ha-card.halo-shadow { box-shadow: 0 14px 36px -4px rgba(20, 20, 40, .22), 0 3px 8px rgba(20, 20, 40, .12); }
+  ha-card.halo-shadow.dark { box-shadow: 0 14px 36px -4px rgba(0, 0, 0, .65), 0 3px 8px rgba(0, 0, 0, .45); }
 `;

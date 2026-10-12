@@ -6,6 +6,7 @@ const ent = (name: string, domain: string | string[]) => ({ name, selector: { en
 
 const SCHEMA = [
   { name: "name", selector: { text: {} } },
+  { name: "shadow", selector: { boolean: {} } },
   { type: "expandable", title: "Solar", schema: [ent("solar_power", "sensor"), ent("solar_energy", "sensor"), ent("solar_forecast", "sensor")] },
   { type: "expandable", title: "Battery", schema: [ent("battery_soc", "sensor"), ent("battery_power", "sensor"), { name: "battery_invert", selector: { boolean: {} } }] },
   { type: "expandable", title: "Grid", schema: [ent("grid_power", "sensor"), ent("grid_cost", "sensor"), { name: "grid_invert", selector: { boolean: {} } }] },
@@ -15,6 +16,7 @@ const SCHEMA = [
 ];
 
 const LABELS: Record<string, string> = {
+  shadow: "Drop shadow",
   name: "Title", solar_power: "Solar power", solar_energy: "Solar energy today", solar_forecast: "Solar forecast today",
   battery_soc: "Battery level (%)", battery_power: "Battery power", battery_invert: "Battery: positive means charging",
   grid_power: "Grid power", grid_cost: "Grid cost today", grid_invert: "Grid: positive means exporting",
@@ -31,7 +33,7 @@ export class HaloEnergyCardEditor extends LitElement {
 
   override render() {
     if (!this.hass || !this._config) return html``;
-    return html`<ha-form .hass=${this.hass} .data=${this._config} .schema=${SCHEMA}
+    return html`<ha-form .hass=${this.hass} .data=${{ shadow: true, ...this._config }} .schema=${SCHEMA}
       .computeLabel=${(s: { name: string }) => LABELS[s.name] ?? s.name}
       @value-changed=${(e: CustomEvent) => {
         this._config = e.detail.value;

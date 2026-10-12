@@ -66,7 +66,7 @@ export class HaloVehicleCard extends LitElement {
     const c = shadesFromHex(cfg.colour, dark) ?? (dark ? GREY_NIGHT : GREY_DAY);
     const vars = {
       "--x1": this._origins.a[0], "--y1": this._origins.a[1], "--x2": this._origins.b[0], "--y2": this._origins.b[1],
-      "--k": String(m.k), "--k2": String(+(m.k * 0.55).toFixed(2)), "--c0": c.c0, "--c1": c.c1, "--ca": c.ca,
+      "--k": String(m.k), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca,
     };
     const compact3 = this._height > 0 && this._height < 220;
     const src = cfg.image || (cfg.image_preset && cfg.image_preset !== "none" ? VEHICLE_IMAGES[cfg.image_preset] : undefined);
@@ -84,7 +84,7 @@ export class HaloVehicleCard extends LitElement {
         </div>`
       : html`<div class="empty">Choose your vehicle's entities in the editor.</div>`;
     const head = html`<header><h2>${m.name}</h2>${m.chip ? html`<span class="chip"><svg viewBox="0 0 24 24">${ICONS.pin}</svg><span>${m.chip}</span></span>` : nothing}</header>`;
-    return html`<ha-card class="${dark ? "dark" : ""} ${compact3 ? "compact3" : ""}" style=${styleMap(vars)}>
+    return html`<ha-card class="${dark ? "dark" : ""} ${compact3 ? "compact3" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       <div class="inner">${head}${compact3 ? html`<div class="row3">${pic}${tile}</div>` : html`${pic}${tile}`}</div>
     </ha-card>`;

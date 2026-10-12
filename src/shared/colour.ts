@@ -30,10 +30,10 @@ export function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-/** Bloom colours from a hue and saturation: the colour, a lighter tint, and an accent 25 degrees round the wheel. */
+/** Bloom colours from one hue: a deeper core, a lighter tint towards the edge, and a mid tone. Always the same hue. */
 export function shades(h: number, s: number, dark: boolean): Palette {
-  if (!dark) return { c0: hslToHex(h, Math.min(s * 1.1, 0.9), 0.62), c1: hslToHex(h, Math.min(s, 0.8), 0.84), ca: hslToHex(h + 25 / 360, Math.min(s, 0.85), 0.66) };
-  return { c0: hslToHex(h, Math.min(s, 0.7), 0.26), c1: hslToHex(h, Math.min(s, 0.6), 0.18), ca: hslToHex(h + 25 / 360, Math.min(s, 0.7), 0.3) };
+  if (!dark) return { c0: hslToHex(h, Math.min(s * 1.1, 0.9), 0.52), c1: hslToHex(h, Math.min(s, 0.8), 0.82), ca: hslToHex(h, Math.min(s, 0.85), 0.66) };
+  return { c0: hslToHex(h, Math.min(s, 0.7), 0.3), c1: hslToHex(h, Math.min(s, 0.6), 0.17), ca: hslToHex(h, Math.min(s, 0.7), 0.24) };
 }
 
 export function shadesFromHex(hex: string | undefined, dark: boolean): Palette | undefined {

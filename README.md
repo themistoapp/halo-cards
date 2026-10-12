@@ -99,6 +99,8 @@ For an electric vehicle use `fuel_type: ev` and `charging: binary_sensor.van_cha
 - **Status pill:** Locked or Unlocked for petrol, Charging or Not charging for electric. Tap it for the entity's more-info.
 - **Layout:** 12 × 4 puts the car above the figures; 12 × 3 puts it on the left.
 
+All cards accept `shadow: false` to turn off the Halo drop shadow (default on).
+
 ## Development
 
 ```sh

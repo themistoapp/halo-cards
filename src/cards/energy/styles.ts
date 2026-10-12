@@ -1,6 +1,7 @@
 import { css } from "lit";
+import { shadowStyles } from "../../shared/bloom";
 
-export const styles = css`
+export const styles = [shadowStyles, css`
   :host { display: block; height: 100%; }
   ha-card {
     --surface: var(--ha-card-background, var(--card-background-color, #fff));
@@ -14,7 +15,7 @@ export const styles = css`
     --s0:#f2c14e; --s1:#f7dc93; --sa:#f47fa4;
     --b0:#6fcf9a; --b1:#a9e5c3; --ba:#2fc4b8;
     --r0:#aeb3bf; --r1:#d3d6dd;
-    position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
+    display: block; position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
     color: var(--ink); font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif);
   }
   ha-card.dark {
@@ -118,4 +119,4 @@ export const styles = css`
     .bg, svg.graph { animation: none; }
     .bg, .lb > i, .seg .th, .seg button { transition: none; }
   }
-`;
+`];

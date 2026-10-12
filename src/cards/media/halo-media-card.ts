@@ -205,12 +205,12 @@ export class HaloMediaCard extends LitElement {
     const c = this._colours(dark, active);
     const vars = {
       "--x1": this._origins.a[0], "--y1": this._origins.a[1], "--x2": this._origins.b[0], "--y2": this._origins.b[1],
-      "--k": String(bloomK(m.phase, m.volume)), "--k2": String(+(bloomK(m.phase, m.volume) * 0.55).toFixed(2)),
+      "--k": String(bloomK(m.phase, m.volume)), "--k2": active && this._palette?.distinct ? String(+(bloomK(m.phase, m.volume) * 0.55).toFixed(2)) : "0",
       "--c0": c.c0, "--c1": c.c1, "--ca": c.ca,
     };
     const img = this._image(m);
     const mode = this._height && this._height < 150 ? "mini" : this._height && this._height < 300 ? "compact" : "full";
-    const cls = `${dark ? "dark" : ""} ${mode}`;
+    const cls = `${dark ? "dark" : ""} ${mode} ${cfg.shadow === false ? "" : "halo-shadow"}`;
     const bg = html`<div class="bg"></div><div class="grain"></div>`;
 
     if (mode === "mini") {

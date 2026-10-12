@@ -5,6 +5,8 @@ export interface HaloMediaConfig {
   type: string;
   entity: string;
   name?: string;
+  /** Drop shadow behind the card (default on). */
+  shadow?: boolean;
   /** Speaker picture: auto matches the device model. */
   speaker?: "auto" | "none" | "beam-sub-mini" | "era-300" | "one";
   /** Your own picture (URL) instead of the built-in speaker. */

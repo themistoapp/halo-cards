@@ -149,7 +149,7 @@ export class HaloEnergyCard extends LitElement {
     const lay = layoutFor(m.tiles.length);
     const grid = { gridTemplateColumns: `repeat(${lay.cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${lay.rows}, minmax(0, 1fr))` };
     const time = m.updated?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return html`<ha-card class=${hass.themes?.darkMode ? "dark" : ""} style=${styleMap(vars)}>
+    return html`<ha-card class="${hass.themes?.darkMode ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       <div class="inner">
         <header><h2>${cfg.name ?? "EcoFlow Stream"}</h2>${time ? html`<span class="chip">Updated ${time}</span>` : nothing}</header>
