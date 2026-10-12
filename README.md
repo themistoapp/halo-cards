@@ -62,7 +62,7 @@ Every entity is optional. Anything missing or unavailable is hidden:
 | `idle_watts` | `10` | Below this a flow reads Idle |
 | `history_start_hour` | `7` | Graphs run from this hour to now (last six hours early in the day) |
 
-Power entities may report W or kW (read from `unit_of_measurement`; no unit means W).
+Power entities may report W or kW (read from `unit_of_measurement`; no unit means W). Hero figures are always shown in W.
 
 ## Halo Media card (`custom:halo-media-card`)
 

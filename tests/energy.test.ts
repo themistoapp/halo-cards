@@ -25,10 +25,10 @@ describe("buildModel", () => {
   it("builds all four tiles with their detail lines", () => {
     const m = buildModel(full(), cfg);
     expect(m.tiles.map((t) => t.key)).toEqual(["solar", "battery", "grid", "house"]);
-    expect(m.tiles[0]).toMatchObject({ figure: "0.82", detail: "5.4 of 9.1 kWh forecast" });
-    expect(m.tiles[1]).toMatchObject({ figure: "0.35", unit: "kW", detail: "62% · Discharging", entity: "sensor.bp" });
-    expect(m.tiles[2]).toMatchObject({ figure: "0.63", detail: "Importing · £1.59 today" });
-    expect(m.tiles[3]).toMatchObject({ figure: "1.80" });
+    expect(m.tiles[0]).toMatchObject({ figure: "820", detail: "5.4 of 9.1 kWh forecast" });
+    expect(m.tiles[1]).toMatchObject({ figure: "350", unit: "W", detail: "62% · Discharging", entity: "sensor.bp" });
+    expect(m.tiles[2]).toMatchObject({ figure: "630", detail: "Importing · £1.59 today" });
+    expect(m.tiles[3]).toMatchObject({ figure: "1800" });
     expect(m.tiles[3].detail).toBeUndefined();
     expect(m.soc).toBe(62);
     expect(m.reserve).toMatchObject({ value: 65, step: 5 });
@@ -49,7 +49,7 @@ describe("buildModel", () => {
     h.states["sensor.soc"] = ent("sensor.soc", "unknown");
     const m = buildModel(h, cfg);
     expect(m.soc).toBeUndefined();
-    expect(m.tiles[1]).toMatchObject({ unit: "kW", figure: "0.35", detail: "Discharging" });
+    expect(m.tiles[1]).toMatchObject({ unit: "W", figure: "350", detail: "Discharging" });
   });
 
   it("falls back to the charge level when there is no battery power", () => {

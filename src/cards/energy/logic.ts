@@ -46,7 +46,8 @@ export function kwh(e?: HassEntity): number | undefined {
   return String(e!.attributes?.unit_of_measurement ?? "kWh").toLowerCase() === "wh" ? v / 1000 : v;
 }
 
-export const fmtKw = (v: number) => Math.abs(v).toFixed(2);
+/** Hero power figures are shown in watts. */
+export const fmtKw = (v: number) => String(Math.round(Math.abs(v) * 1000));
 const fmtKwh = (v: number) => v.toFixed(1);
 
 function cost(e?: HassEntity): string | undefined {
@@ -82,7 +83,7 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
       today !== undefined && forecast !== undefined ? `${fmtKwh(today)} of ${fmtKwh(forecast)} kWh forecast`
       : today !== undefined ? `${fmtKwh(today)} kWh today`
       : forecast !== undefined ? `${fmtKwh(forecast)} kWh forecast` : undefined;
-    tiles.push({ key: "solar", figure: fmtKw(solarKw), unit: "kW", detail, entity: cfg.solar_power, history: { entity: cfg.solar_power!, scale: "kw" } });
+    tiles.push({ key: "solar", figure: fmtKw(solarKw), unit: "W", detail, entity: cfg.solar_power, history: { entity: cfg.solar_power!, scale: "kw" } });
   }
 
   // Battery: power is the headline, with the charge level and direction beneath. Either one is enough to show the tile.
@@ -93,7 +94,7 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
   if (batKw !== undefined) {
     const word = Math.abs(batKw) < idle ? "Idle" : batKw > 0 ? "Discharging" : "Charging";
     const detail = [soc !== undefined ? `${Math.round(soc)}%` : undefined, word].filter(Boolean).join(" · ");
-    tiles.push({ key: "battery", figure: fmtKw(batKw), unit: "kW", detail, entity: cfg.battery_power, history: { entity: cfg.battery_power!, scale: "kw" } });
+    tiles.push({ key: "battery", figure: fmtKw(batKw), unit: "W", detail, entity: cfg.battery_power, history: { entity: cfg.battery_power!, scale: "kw" } });
   } else if (soc !== undefined) {
     tiles.push({ key: "battery", figure: String(Math.round(soc)), unit: "%", entity: cfg.battery_soc, history: { entity: cfg.battery_soc!, scale: "percent" } });
   }
@@ -105,13 +106,13 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
     const word = Math.abs(gridKw) < idle ? "Idle" : gridKw > 0 ? "Importing" : "Exporting";
     const c = cost(st(cfg.grid_cost));
     const detail = [word, c ? `${c} today` : undefined].filter(Boolean).join(" · ");
-    tiles.push({ key: "grid", figure: fmtKw(gridKw), unit: "kW", detail, entity: cfg.grid_power, history: { entity: cfg.grid_power!, scale: "kw" } });
+    tiles.push({ key: "grid", figure: fmtKw(gridKw), unit: "W", detail, entity: cfg.grid_power, history: { entity: cfg.grid_power!, scale: "kw" } });
   }
 
   // House
   const homeKw = kw(st(cfg.home_power));
   if (homeKw !== undefined) {
-    tiles.push({ key: "house", figure: fmtKw(homeKw), unit: "kW", entity: cfg.home_power, history: { entity: cfg.home_power!, scale: "kw" } });
+    tiles.push({ key: "house", figure: fmtKw(homeKw), unit: "W", entity: cfg.home_power, history: { entity: cfg.home_power!, scale: "kw" } });
   }
 
   // Blooms: each source with a power entity gets a share of what is being supplied right now.
