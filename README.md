@@ -78,8 +78,8 @@ players:                       # optional: one card for the whole house
 
 - **Background:** two blooms in colours read from the album art, growing with volume (smaller when paused). Idle or off, or artwork with no colour in it (most radio logos), gives a grey bloom. Colours can only be read from artwork Home Assistant serves itself (the usual case); artwork blocked by its host also falls back to grey.
 - **Speaker picture:** chosen from the device model (Beam, Arc, Ray, Era 300, One), or set `speaker: beam-sub-mini | era-300 | one | none`, or give your own `image` URL.
-- **Shows only what the player supports:** shuffle, repeat, previous, next, mute and volume follow the player's features. With `players` set, the title becomes a dropdown to switch player (your choice is remembered per browser) and the other players appear top right as scrollable chips; tap to join or leave the group. `speakers` can limit the chips to a subset. Favourites come from `sensor.sonos_favorites` (enable it under Settings → Devices → Sonos → Entities), narrowed by `favourites_include` or added to with `favourites`.
-- **Favourites:** the star in the transport row slides the favourites open and shrinks and zooms the speaker picture to make room. It is remembered per browser.
+- **Shows only what the player supports:** shuffle, previous, next, mute and volume follow the player's features. With `players` set, the title becomes a dropdown to switch player (your choice is remembered per browser) and the other players appear top right as scrollable chips; tap to join or leave the group. `speakers` can limit the chips to a subset. Favourites come from `sensor.sonos_favorites` (enable it under Settings → Devices → Sonos → Entities), narrowed by `favourites_include` or added to with `favourites`.
+- **Favourites:** the star in the transport row slides the favourites up as a translucent panel over the bottom of the speaker picture, just above the transport. It is remembered per browser.
 - Streams with no duration show "Live". Grouped speakers follow the member that is playing.
 
 ## Halo Vehicle card (`custom:halo-vehicle-card`)

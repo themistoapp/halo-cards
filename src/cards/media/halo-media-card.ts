@@ -5,7 +5,7 @@ import { GREY_DAY, GREY_NIGHT, randomOrigin, registerBloomProps } from "../../sh
 import { artPalette, paletteFromUrl, type ArtColours, type Palette } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { observeHeight } from "../../shared/util";
-import { bloomK, buildMedia, favouritesOf, fmtTime, nextRepeat, playersOf, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
+import { bloomK, buildMedia, favouritesOf, fmtTime, playersOf, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
 import { SPEAKER_HEIGHT, SPEAKER_IMAGES } from "./speakers";
 import { styles } from "./styles";
 
@@ -186,7 +186,6 @@ export class HaloMediaCard extends LitElement {
       ${c.prev ? html`<button class="b" aria-label="Previous" @click=${() => this._svc("media_previous_track", {}, m.source.entity_id)}>${icon(P.prev)}</button>` : nothing}
       ${c.play ? this._playButton(m) : nothing}
       ${c.next ? html`<button class="b" aria-label="Next" @click=${() => this._svc("media_next_track", {}, m.source.entity_id)}>${icon(P.next)}</button>` : nothing}
-      ${c.repeat ? html`<button class="b ${m.repeat !== "off" ? "on" : "dim"}" aria-label="Repeat" @click=${() => this._svc("repeat_set", { repeat: nextRepeat(m.repeat) }, m.source.entity_id)}>${icon(P.repeat)}</button>` : nothing}
       ${hasFavs ? html`<button class="b star ${this._favs ? "on" : "dim"}" aria-label="Favourites" aria-pressed=${String(this._favs)} @click=${() => this._toggleFavs()}>${icon(P.star)}</button>` : nothing}
     </div>`;
   }
@@ -222,15 +221,15 @@ export class HaloMediaCard extends LitElement {
 
   private _hasFavs(m: MediaModel) { return m.can.media && favouritesOf(this._hass!, this._cfg).length > 0; }
 
-  /** The strip is always in the layout; it opens and closes by height so the picture above can shrink with it. */
+  /** Favourites float over the bottom of the picture, just above the transport; only opacity and transform animate. */
   private _favourites(m: MediaModel) {
     if (!this._hasFavs(m)) return nothing;
     const favs: Favourite[] = favouritesOf(this._hass!, this._cfg);
-    return html`<div class="favwrap ${this._favs ? "on" : ""}" aria-hidden=${String(!this._favs)} ?inert=${!this._favs}><div><div class="fav">${favs.map((f) => {
+    return html`<div class="favwrap ${this._favs ? "on" : ""}" aria-hidden=${String(!this._favs)} ?inert=${!this._favs}><div class="fav">${favs.map((f) => {
       const img = f.image ?? this._thumbs[f.media_content_id];
       return html`<button class="f" tabindex=${this._favs ? 0 : -1} @click=${() => this._svc("play_media", { media_content_id: f.media_content_id, media_content_type: f.media_content_type })}>
         <div class="im" style=${styleMap({ background: img ? `url("${img}") center / cover` : placeholder(f.name) })}></div><div class="nm">${f.name}</div></button>`;
-    })}</div></div></div>`;
+    })}</div></div>`;
   }
 
   override render() {
@@ -261,10 +260,10 @@ export class HaloMediaCard extends LitElement {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
         ${this._nowPlaying(m, "compact")}</div></ha-card>`;
     }
-    const hasFavs = this._hasFavs(m), fav = hasFavs && this._favs;
+    const hasFavs = this._hasFavs(m);
     return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
       ${this._header(m, name)}
-      <div class="stage ${fav ? "fav" : ""}">
+      <div class="stage">
         <div class="hero ${m.phase}"><div class="ring"></div>${img ? html`<img src=${img.src} style=${styleMap({ height: `${img.h}px` })} alt="" />` : nothing}</div>
         ${this._favourites(m)}
       </div>

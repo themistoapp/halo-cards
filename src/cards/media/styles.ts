@@ -3,18 +3,16 @@ import { bloomStyles, shadowStyles, themeStyles } from "../../shared/bloom";
 
 export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .inner { gap: 10px; padding: 16px; }
-  .stage { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-  .hero { position: relative; flex: 1 1 0px; min-height: 56px; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; transition: flex .5s cubic-bezier(.4,0,.2,1), min-height .5s cubic-bezier(.4,0,.2,1); }
-  /* Favourites open: the picture shrinks to a band and zooms in. */
-  .stage.fav { justify-content: center; }
-  .stage.fav .hero { flex: 0 1 76px; min-height: 40px; overflow: hidden; border-radius: 14px; }
-  .regular .stage.fav .hero { flex-basis: 56px; min-height: 24px; }
+  .stage { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .hero { position: relative; flex: 1 1 0px; min-height: 56px; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+  /* Favourites: a translucent panel that fades and slides up over the bottom of the picture, above the transport. */
+  .favwrap { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px; border-radius: 18px; border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 62%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 14%, transparent);
+    opacity: 0; transform: translate3d(0, 18px, 0); pointer-events: none; will-change: transform, opacity;
+    transition: opacity .28s ease, transform .34s cubic-bezier(.2,.8,.2,1); }
+  .favwrap.on { opacity: 1; transform: translate3d(0, 0, 0); pointer-events: auto; }
   .regular .f, .regular .f .im { width: 58px; } .regular .f .im { height: 58px; }
-  .hero img { transform-origin: 50% 38%; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-  .stage.fav .hero img { transform: scale(1.75); }
-  .favwrap { flex: none; display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .5s cubic-bezier(.4,0,.2,1), opacity .35s ease; }
-  .favwrap.on { grid-template-rows: 1fr; opacity: 1; }
-  .favwrap > div { min-height: 0; overflow: hidden; }
   .b.star svg { transition: fill .25s ease, transform .35s cubic-bezier(.3,1.6,.5,1); }
   .b.star.on svg { fill: currentColor; transform: scale(1.08); }
   .ring { position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c0) 40%, transparent), transparent); animation: pulse 3.2s ease-in-out infinite; }
