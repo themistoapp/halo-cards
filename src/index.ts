@@ -4,6 +4,7 @@ import { HaloMediaCard } from "./cards/media/halo-media-card";
 import { HaloMediaCardEditor } from "./cards/media/editor";
 import { HaloLightCard } from "./cards/light/halo-light-card";
 import { HaloLightCardEditor } from "./cards/light/editor";
+import { HaloSizeCard } from "./cards/size/halo-size-card";
 import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
 import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
 
@@ -19,6 +20,11 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }
 window.customCards ||= [];
+// Test card: shows its own pixel size and the window it is on. Has no editor.
+if (!customElements.get("halo-size-card")) customElements.define("halo-size-card", HaloSizeCard);
+window.customCards ||= [];
+if (!window.customCards.some((c) => c.type === "halo-size-card")) window.customCards.push({ type: "halo-size-card", name: "Halo Size Test", description: "Shows the card's pixel size and the screen it is on. For finding what fits a wall panel.", preview: true });
+
 for (const [tag, cls, editorTag, editor, name, description] of CARDS) {
   if (!customElements.get(tag)) customElements.define(tag, cls);
   if (!customElements.get(editorTag)) customElements.define(editorTag, editor);
