@@ -7,27 +7,6 @@ import type { Sample } from "../energy/logic";
 import { buildSolar, fmtKwh, parseForecast, smoothPath, startOfDay, type Hour, type HaloSolarConfig, type RawForecast, type SolarModel } from "./logic";
 import { styles } from "./styles";
 
-/**
- * Icons beside the four figure labels (from the Themisto asset set). The dark linework uses currentColor, which the card sets
- * to its ink colour so it flips in night mode; the calendar's white face follows the card surface for the same reason.
- */
-const STAT_ICON: Record<string, ReturnType<typeof svg>> = {
-  Generated: svg`<svg class="si" viewBox="0 0 64 64" fill="none" aria-hidden="true"><defs><clipPath id="sfc-gen"><rect x="8" y="12" width="32" height="37" /></clipPath></defs>
-    <path d="M8 48C17 48 19 16 32 16C45 16 47 48 56 48V48H8Z" fill="#F9C74F" clip-path="url(#sfc-gen)" />
-    <path d="M8 48C17 48 19 16 32 16C45 16 47 48 56 48" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>`,
-  Remaining: svg`<svg class="si" viewBox="0 0 64 64" fill="none" aria-hidden="true"><defs><clipPath id="sfc-rem"><rect x="40" y="12" width="16" height="37" /></clipPath></defs>
-    <path d="M8 48C17 48 19 16 32 16C45 16 47 48 56 48V48H8Z" fill="#F9C74F" clip-path="url(#sfc-rem)" />
-    <path d="M8 48C17 48 19 16 32 16C45 16 47 48 56 48" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>`,
-  Today: svg`<svg class="si" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="10" fill="#F9C74F" />
-    <g stroke="#F9C74F" stroke-width="2" stroke-linecap="round"><path d="M32 9V15M32 49V55M9 32H15M49 32H55" /><path d="M15.7 15.7L20 20M44 44L48.3 48.3M48.3 15.7L44 20M20 44L15.7 48.3" /></g></svg>`,
-  Tomorrow: svg`<svg class="si" viewBox="0 0 64 64" fill="none" aria-hidden="true"><defs><clipPath id="sfc-cal"><rect x="14" y="17" width="42" height="39" rx="4" /></clipPath></defs>
-    <rect x="14" y="17" width="42" height="39" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="2" />
-    <path d="M14 17H56V30H14Z" fill="#E85D5D" clip-path="url(#sfc-cal)" />
-    <path d="M14 30H56" stroke="currentColor" stroke-width="2" />
-    <circle cx="15" cy="17" r="7" fill="#F9C74F" />
-    <g stroke="#F9C74F" stroke-width="2" stroke-linecap="round"><path d="M15 4V7M15 27V30M2 17H5M25 17H28" /><path d="M5.8 7.8L8 10M22 24L24.2 26.2M24.2 7.8L22 10M8 24L5.8 26.2" /></g></svg>`,
-};
-
 type Day = "today" | "tomorrow";
 const REFRESH = 30 * 60_000;
 
@@ -182,7 +161,7 @@ export class HaloSolarCard extends LitElement {
   }
 
   private _stat(label: string, value: string, note?: string, cls = "") {
-    return html`<div><div class="lab">${STAT_ICON[label] ?? nothing}${label}</div><div class="big">${value}<small>kWh</small></div>${note ? html`<div class="note ${cls}">${note}</div>` : nothing}</div>`;
+    return html`<div><div class="lab">${label}</div><div class="big">${value}<small>kWh</small></div>${note ? html`<div class="note ${cls}">${note}</div>` : nothing}</div>`;
   }
 
   override render() {
@@ -212,7 +191,7 @@ export class HaloSolarCard extends LitElement {
       ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh))}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh))}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh)) : nothing}`;
     return html`<ha-card class=${cls}><div class="inner">
       <header><h2>${cfg.name ?? "Solar forecast"}</h2></header>
-      <div class="stats ${this._w > 0 && this._w < 440 ? "tight" : ""}">${stats}</div>
+      <div class="stats">${stats}</div>
       ${this._seg(hasTomorrow)}
       <div class="chart" @pointermove=${(e: PointerEvent) => this._point(e, m)} @pointerdown=${(e: PointerEvent) => this._point(e, m)} @pointerleave=${this._clearMouse}>${this._chart(m, false)}</div>
       ${this._readout(m, day)}

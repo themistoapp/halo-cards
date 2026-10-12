@@ -14,12 +14,6 @@ export const styles = [themeStyles, shadowStyles, css`
 
   .stats { display: flex; }
   .stats > div { flex: 1; min-width: 0; }
-  .stats .lab { display: flex; align-items: center; gap: 4px; }
-  .si { flex: none; width: 18px; height: 18px; margin: -3px 0 -3px -2px; color: var(--ink); }
-  .stats.tight .lab { font-size: 9px; letter-spacing: .02em; gap: 2px; }
-  .stats.tight .si { width: 16px; height: 16px; margin: -2px 0 -2px -2px; }
-  .si * { vector-effect: non-scaling-stroke; }
-  .si [stroke] { stroke-width: 1.3px; }
   .big { font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: -.04em; margin-top: 2px; white-space: nowrap; }
   .big small { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 3px; }
   .note { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; }
