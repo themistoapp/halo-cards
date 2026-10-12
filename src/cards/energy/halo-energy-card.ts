@@ -1,4 +1,4 @@
-import { LitElement, html, nothing, svg } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { STREAM_IMAGE } from "./stream";
@@ -9,7 +9,7 @@ import {
   type Model, type Sample, type Tile,
 } from "./logic";
 import { styles } from "./styles";
-import { fireMoreInfo } from "../../shared/util";
+import { fireMoreInfo, observeHeight } from "../../shared/util";
 import type { HaloEnergyConfig, HomeAssistant } from "../../shared/types";
 
 // Registered at document level so the bloom sizes can animate (shadow-root @property is ignored).
@@ -31,6 +31,8 @@ export class HaloEnergyCard extends LitElement {
   @state() private _hass?: HomeAssistant;
   @state() private _history: Record<string, Sample[]> = {};
   @state() private _draft?: number;
+  @state() private _height = 0;
+  private _unobserve?: () => void;
 
   private _id = ++uid;
   private _origins = { s: randomOrigin(), b: randomOrigin(), g: randomOrigin() };
@@ -55,16 +57,18 @@ export class HaloEnergyCard extends LitElement {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    this._unobserve?.(); this._unobserve = undefined;
     this._unsub?.(); this._unsub = undefined; this._subKey = "";
   }
 
   override connectedCallback() {
     super.connectedCallback();
+    this._unobserve = observeHeight(this, (h) => { if (Math.abs(h - this._height) > 1) this._height = h; });
     this._resubscribe();
   }
 
   getCardSize() { return 12; }
-  getGridOptions() { return { columns: 12, rows: 12, min_columns: 6, min_rows: 8 }; }
+  getGridOptions() { return { columns: 12, rows: 8, min_columns: 6, min_rows: 5 }; }
 
   override shouldUpdate() { return !!this._config && !!this._hass; }
 
@@ -94,11 +98,11 @@ export class HaloEnergyCard extends LitElement {
     const p = graphPath(abs, graphMax(t.history.scale, abs));
     if (!p) return nothing;
     const gid = `g${this._id}-${t.key}`;
-    return svg`<svg class="graph" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
+    return html`<div class="gw"><svg class="graph" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
       <defs><linearGradient id=${gid} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" style="stop-color:var(--g0)" stop-opacity=".85"/><stop offset="1" style="stop-color:var(--a0)" stop-opacity=".45"/>
       </linearGradient></defs>
-      <path d=${p.area} fill="url(#${gid})"/><path class="ln" d=${p.line}/></svg>`;
+      <path d=${p.area} fill="url(#${gid})"/><path class="ln" d=${p.line}/></svg></div>`;
   }
 
   private _tile(t: Tile, hass: HomeAssistant, span: boolean) {
@@ -152,16 +156,18 @@ export class HaloEnergyCard extends LitElement {
     const lay = layoutFor(m.tiles.length);
     const grid = { gridTemplateColumns: `repeat(${lay.cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${lay.rows}, minmax(0, 1fr))` };
     const time = m.updated?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    return html`<ha-card class="${hass.themes?.darkMode ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
+    // Short slots lose the picture first, then everything tightens.
+    const mode = !this._height || this._height >= 620 ? "full" : this._height >= 400 ? "regular" : "tight";
+    return html`<ha-card class="${hass.themes?.darkMode ? "dark" : ""} ${mode} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       <div class="inner">
         <header><h2>${cfg.name ?? "EcoFlow Stream"}</h2>${time ? html`<span class="chip">Updated ${time}</span>` : nothing}</header>
-        <div class="hero">
+        ${mode === "tight" ? nothing : html`<div class="hero">
           <div class="halo"></div>
           <div class="stream"><img src=${STREAM_IMAGE} alt="EcoFlow STREAM" />
             ${m.soc !== undefined ? html`<div class="lb ${cfg.battery_soc ? "tap" : ""}" role="button" tabindex="0" aria-label="Battery ${Math.round(m.soc)}%" @click=${() => cfg.battery_soc && fireMoreInfo(this, cfg.battery_soc)}><i style=${styleMap({ height: `${m.soc}%` })}></i></div>` : nothing}
           </div>
-        </div>
+        </div>`}
         ${m.tiles.length
           ? html`<div class="tiles ${m.tiles.length === 1 ? "one" : ""}" style=${styleMap(grid)}>
               ${m.tiles.map((t, i) => this._tile(t, hass, lay.spanLast && i === m.tiles.length - 1))}</div>`

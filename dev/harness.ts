@@ -70,6 +70,12 @@ const van = { type: "custom:halo-vehicle-card", name: "e-Vivaro", fuel_type: "ev
 type Spec = { id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
+  { id: "e8", title: "Energy 12x8", tag: "halo-energy-card", cfg: energy, w: 378, h: 464 },
+  { id: "e7", title: "Energy 12x7", tag: "halo-energy-card", cfg: energy, w: 378, h: 408 },
+  { id: "e6", title: "Energy 12x6", tag: "halo-energy-card", cfg: energy, w: 378, h: 352 },
+  { id: "m6", title: "Media 12x6", tag: "halo-media-card", cfg: media, w: 378, h: 352 },
+  { id: "m7", title: "Media 12x7", tag: "halo-media-card", cfg: media, w: 378, h: 408 },
+  { id: "m9", title: "Media 12x9", tag: "halo-media-card", cfg: media, w: 378, h: 520 },
   { id: "media", title: "Media full", tag: "halo-media-card", cfg: media, w: 378, h: 760 },
   { id: "media-night", title: "Media full night", tag: "halo-media-card", cfg: media, w: 378, h: 760, dark: true },
   { id: "media-compact", title: "Media 12x4", tag: "halo-media-card", cfg: media, w: 378, h: 248 },

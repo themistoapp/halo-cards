@@ -6,8 +6,8 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 
 | Card | Type | Size (columns × rows) |
 | --- | --- | --- |
-| Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 12 |
-| Media (Sonos) | `custom:halo-media-card` | 12 × 12, 12 × 4, 12 × 2 (picks the layout from the height you drag it to) |
+| Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 8 (works from 12 × 5 up) |
+| Media (Sonos) | `custom:halo-media-card` | 12 × 6 default; 12 × 9 and up adds favourites, 12 × 4 and 12 × 2 are compact (layout follows the height) |
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
 
 ## Install (HACS)
@@ -19,7 +19,7 @@ Manual: copy `halo-cards.js` from a release to `/config/www/` and add it as a da
 
 ## Halo Energy card (`custom:halo-energy-card`)
 
-EcoFlow Stream card: product image with an LED strip filled to the battery level, four tiles (Solar, Battery, Grid, House) with today's history graph (tap a tile, or the LED strip, to open that entity's history in Home Assistant; the battery tile shows power with the charge % beneath), a background that blooms in proportion to where the power is coming from, a backup reserve slider and a Self-powered / AI mode pill. Default size is 12 × 12 in the Sections view.
+EcoFlow Stream card: product image with an LED strip filled to the battery level, four tiles (Solar, Battery, Grid, House) with today's history graph (tap a tile, or the LED strip, to open that entity's history in Home Assistant; the battery tile shows power with the charge % beneath), a background that blooms in proportion to where the power is coming from, a backup reserve slider and a Self-powered / AI mode pill. Default size is 12 × 8 in the Sections view; it also works down to 12 × 5. Short slots lose the picture first, then the tiles tighten, and each tile's graph only uses the space under its text.
 
 ```yaml
 type: custom:halo-energy-card

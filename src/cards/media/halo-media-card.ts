@@ -75,8 +75,8 @@ export class HaloMediaCard extends LitElement {
     if (!old || ids.some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();
   }
 
-  getCardSize() { return 12; }
-  getGridOptions() { return { columns: 12, rows: 12, min_columns: 6, min_rows: 2 }; }
+  getCardSize() { return 6; }
+  getGridOptions() { return { columns: 12, rows: 6, min_columns: 6, min_rows: 2 }; }
 
   override connectedCallback() {
     super.connectedCallback();
@@ -148,17 +148,21 @@ export class HaloMediaCard extends LitElement {
     return dark ? GREY_NIGHT : GREY_DAY;
   }
 
-  private _nowPlaying(m: MediaModel, compact: boolean): TemplateResult {
+  private _nowPlaying(m: MediaModel, mode: string): TemplateResult {
+    const compact = mode === "compact", times = mode === "full";
     const art = m.art ? `url("${m.art}")` : undefined;
     const pct = m.dur ? (m.pos / m.dur) * 100 : 0;
     const title = m.title ?? "Nothing playing";
-    return html`<div class="glass np">
-      <div class="art" style=${styleMap({ background: art ? `${art} center / cover` : "var(--sunken)" })}></div>
+    const merged = mode === "regular" || mode === "full";
+    return html`<div class="glass np ${merged ? "merged" : ""}">
+      <div class="npr"><div class="art" style=${styleMap({ background: art ? `${art} center / cover` : "var(--sunken)" })}></div>
       <div class="tx"><div class="ti">${title}</div><div class="ar">${m.artist ?? ""}</div>
         ${m.title ? html`<div class="pr">${m.dur ? html`<i style=${styleMap({ width: `${pct}%` })}></i>` : nothing}</div>
-          ${compact ? nothing : html`<div class="tm"><span>${m.dur ? fmtTime(m.pos) : ""}</span><span>${m.dur ? fmtTime(m.dur) : "Live"}</span></div>`}` : nothing}
+          ${!times ? nothing : html`<div class="tm"><span>${m.dur ? fmtTime(m.pos) : ""}</span><span>${m.dur ? fmtTime(m.dur) : "Live"}</span></div>`}` : nothing}
       </div>
       ${compact ? this._playButton(m) : nothing}
+      </div>
+      ${merged ? this._volume(m, true) : nothing}
     </div>`;
   }
 
@@ -177,10 +181,10 @@ export class HaloMediaCard extends LitElement {
     </div>`;
   }
 
-  private _volume(m: MediaModel) {
+  private _volume(m: MediaModel, inside = false) {
     if (!m.can.volume || m.volume === undefined) return nothing;
     const v = this._draft ?? Math.round(m.volume * 100);
-    return html`<div class="glass vol">
+    return html`<div class="${inside ? "vol in" : "glass vol"}">
       ${m.can.mute ? html`<button class="b" aria-label=${m.muted ? "Unmute" : "Mute"} @click=${() => this._svc("volume_mute", { is_volume_muted: !m.muted })}>${icon(m.muted ? P.mute : P.vol)}</button>` : html`<span class="b">${icon(P.vol)}</span>`}
       <input type="range" min="0" max="100" aria-label="Volume" .value=${String(v)} style=${styleMap({ "--p": `${v}%` })}
         @input=${(e: Event) => { this._draft = Number((e.target as HTMLInputElement).value); }}
@@ -230,7 +234,7 @@ export class HaloMediaCard extends LitElement {
       "--c0": c.c0, "--c1": c.c1, "--ca": c.ca,
     };
     const img = this._image(m);
-    const mode = this._height && this._height < 150 ? "mini" : this._height && this._height < 300 ? "compact" : "full";
+    const mode = this._height && this._height < 150 ? "mini" : this._height && this._height < 300 ? "compact" : this._height && this._height < 480 ? "regular" : "full";
     const cls = `${dark ? "dark" : ""} ${mode} ${cfg.shadow === false ? "" : "halo-shadow"}`;
     const bg = html`<div class="bg"></div><div class="grain"></div>`;
 
@@ -243,12 +247,12 @@ export class HaloMediaCard extends LitElement {
     if (mode === "compact") {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
         ${this._header(m, name)}
-        ${this._nowPlaying(m, true)}${this._volume(m)}</div></ha-card>`;
+        ${this._nowPlaying(m, "compact")}${this._volume(m)}</div></ha-card>`;
     }
     return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
       ${this._header(m, name)}
       <div class="hero ${m.phase}"><div class="ring"></div>${img ? html`<img src=${img.src} style=${styleMap({ height: `${img.h}px` })} alt="" />` : nothing}</div>
-      ${this._nowPlaying(m, false)}${m.can.play || m.can.prev || m.can.next ? this._transport(m) : nothing}${this._volume(m)}${this._favourites(m)}
+      ${this._nowPlaying(m, mode)}${m.can.play || m.can.prev || m.can.next ? this._transport(m) : nothing}${mode === "full" ? this._favourites(m) : nothing}
     </div></ha-card>`;
   }
 }

@@ -52,19 +52,20 @@ export const styles = [shadowStyles, css`
   .chip { padding: 3px 10px; border-radius: 99px; font-size: 11px; line-height: 16px; background: color-mix(in srgb, var(--surface) 72%, transparent); border: 1px solid var(--line); white-space: nowrap; }
 
   /* Hero: product image with a glowing LED strip filled to the battery level. */
-  .hero { position: relative; flex: none; height: 220px; display: grid; place-items: center; }
+  .hero { position: relative; flex: 0 1 220px; min-height: 0; display: flex; justify-content: center; container-type: size; }
+  @container (max-height: 69px) { .halo, .stream { display: none; } }
   .halo { position: absolute; inset: 10% 20%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--b0) 22%, transparent), transparent 70%); }
-  .stream { position: relative; height: 220px; width: calc(220px * 332 / 480); filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--ink) 28%, transparent)); }
+  .stream { position: relative; height: 100%; aspect-ratio: 332 / 480; filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--ink) 28%, transparent)); }
   .stream img { width: 100%; height: 100%; display: block; object-fit: contain; }
   .lb { position: absolute; left: 50.9%; top: 42.1%; height: 47.5%; width: max(2px, 1.8%); transform: translateX(-50%); border-radius: 99px; background: rgba(255,255,255,.14); }
   .lb > i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 99px; background: #3ee08a; box-shadow: 0 0 4px 1px #3ee08a, 0 0 14px 4px color-mix(in srgb, #3ee08a 55%, transparent); transition: height .6s ease; }
 
   /* Tiles */
-  .tiles { flex: 1; min-height: 0; display: grid; gap: 8px; }
+  .tiles { flex: 1 0 0; min-height: var(--tmin, 0px); display: grid; gap: 8px; }
   .tile {
-    --g0:#f2c14e; --a0:#f47fa4; --ln:#b97d00; --gh: 60px;
+    --g0:#f2c14e; --a0:#f47fa4; --ln:#b97d00; --px: 14px; --py: 14px;
     position: relative; overflow: hidden; box-sizing: border-box; min-width: 0;
-    border-radius: 14px; border: 1px solid var(--line); padding: 14px;
+    border-radius: 14px; border: 1px solid var(--line); padding: var(--py) var(--px);
     display: flex; flex-direction: column; justify-content: flex-start; gap: 6px;
     background: color-mix(in srgb, var(--surface) 80%, transparent);
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
@@ -79,8 +80,6 @@ export const styles = [shadowStyles, css`
   .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .tile.tap:focus-visible, .lb:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
   .tile.span { grid-column: 1 / -1; }
-  .tiles.one .tile { --gh: 50%; }
-  .tile > * { position: relative; z-index: 1; }
   .top { display: flex; align-items: center; gap: 8px; }
   .ico { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--surface) 72%, transparent); }
   .ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -88,7 +87,10 @@ export const styles = [shadowStyles, css`
   .fig { font-size: 38px; line-height: 1; font-weight: 400; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .unit { font-size: 14px; letter-spacing: 0; margin-left: 3px; }
   .det { font-size: 12px; line-height: 16px; margin-top: 2px; }
-  svg.graph { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: var(--gh); z-index: 0; transform-origin: 50% 100%; animation: rise 1.2s cubic-bezier(.22,.7,.2,1) backwards; }
+  /* The graph only ever takes the space left under the text (never behind it), and disappears if that is too little. */
+  .gw { flex: 1 1 0; min-height: 0; margin: 0 calc(var(--px) * -1) calc(var(--py) * -1); position: relative; container-type: size; }
+  .gw svg.graph { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 100%; animation: rise 1.2s cubic-bezier(.22,.7,.2,1) backwards; }
+  @container (max-height: 19px) { .gw svg.graph { display: none; } }
   svg.graph .ln { fill: none; stroke: var(--ln); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
   @keyframes rise { from { transform: scaleY(0); opacity: 0; } }
   .empty { flex: 1; display: grid; place-items: center; text-align: center; font-size: 13px; color: var(--ink-2); padding: 0 24px; }
@@ -116,6 +118,19 @@ export const styles = [shadowStyles, css`
   .seg.ai .th { left: 111px; width: 44px; }
   .seg.none .th { display: none; }
   .seg button:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; border-radius: 99px; }
+
+  /* Shorter slots: tighten everything (the picture has already given up its free space). */
+  .regular { --tmin: 252px; }
+  .tight { --tmin: 200px; }
+  .regular .inner, .tight .inner { padding: 14px; gap: 10px; }
+  .regular .tile, .tight .tile { --px: 12px; --py: 10px; gap: 3px; }
+  .regular .ico, .tight .ico { width: 26px; height: 26px; }
+  .regular .ico svg, .tight .ico svg { width: 15px; height: 15px; }
+  .regular .fig, .tight .fig { font-size: 30px; }
+  .regular .unit, .tight .unit { font-size: 12px; }
+  .regular .det, .tight .det { font-size: 11px; line-height: 14px; margin-top: 0; }
+  .regular .ctl, .tight .ctl { height: 56px; padding: 8px 12px; }
+  .regular .rsv input, .tight .rsv input { margin-top: 0; }
 
   @media (prefers-reduced-motion: reduce) {
     .bg, svg.graph { animation: none; }
