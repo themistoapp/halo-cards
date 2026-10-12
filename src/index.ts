@@ -5,7 +5,7 @@ import { HaloMediaCardEditor } from "./cards/media/editor";
 import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
 import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
 
-export const VERSION = "0.2.3";
+export const VERSION = "0.2.0";
 
 // Each card stands alone: its own element, config and editor. Use any of them without the others.
 const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [

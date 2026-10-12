@@ -40,8 +40,8 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .pick h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pick svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .pick select { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); opacity: 0; cursor: pointer; font-size: 16px; }
-  header .grp { flex: 1; min-width: 0; padding: 2px 0;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
+  header .grp { flex: 1; min-width: 0; padding: 2px 0; }
+  header .grp.more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 10px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 10px), transparent); }
   header .grp .p:first-child { margin-left: auto; }
   header .grp .p { padding: 4px 10px; font-size: 12px; line-height: 16px; }
   .lab { margin: 2px 2px -2px; }

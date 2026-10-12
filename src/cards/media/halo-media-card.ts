@@ -109,6 +109,7 @@ export class HaloMediaCard extends LitElement {
   }
 
   protected override updated() {
+    const g = this.renderRoot.querySelector<HTMLElement>("header .grp"); if (g) this._fade(g);
     const m = this._model();
     const tick = m?.phase === "playing" && m.dur > 0;
     if (tick && !this._timer) this._timer = window.setInterval(() => this.requestUpdate(), 1000);
@@ -195,10 +196,13 @@ export class HaloMediaCard extends LitElement {
         <h2>${name}</h2>${ids.length > 1 ? html`${icon(P.chev)}<select aria-label="Player" @change=${(e: Event) => this._pick((e.target as HTMLSelectElement).value)}>
           ${ids.map((id) => html`<option value=${id} ?selected=${id === this._cfg.entity}>${this._nameOf(id)}</option>`)}</select>` : nothing}
       </div>
-      ${m.speakers.length > 1 ? html`<div class="grp">${m.speakers.filter((s) => !s.main).map((s) => html`<button class="p ${s.inGroup ? "on" : ""}"
+      ${m.speakers.length > 1 ? html`<div class="grp" @scroll=${(e: Event) => this._fade(e.target as HTMLElement)}>${m.speakers.filter((s) => !s.main).map((s) => html`<button class="p ${s.inGroup ? "on" : ""}"
         @click=${() => s.inGroup ? this._svc("unjoin", {}, s.id) : this._svc("join", { group_members: [s.id] })}>${s.inGroup ? icon(P.check) : nothing}${s.name}</button>`)}</div>` : nothing}
     </header>`;
   }
+
+  /** Fade the chips' right edge only while more chips are hidden beyond it. */
+  private _fade(el: HTMLElement) { el.classList.toggle("more", el.scrollWidth > el.clientWidth + 1 && el.scrollLeft + el.clientWidth < el.scrollWidth - 1); }
 
   private _nameOf(id: string) { return String(this._hass!.states[id]?.attributes.friendly_name ?? id.split(".")[1]); }
 
