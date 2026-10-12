@@ -208,6 +208,7 @@ const specs: Spec[] = [
   { id: "wx-nsp-wk", title: "Current + weekly NSP 480x376 (trimmed)", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", sections: ["current", "weekly"] }, w: 480, h: 376 },
   { id: "wx-nofc", title: "No forecast", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.nofc" }, w: 378, h: 440 },
   { id: "ag", title: "Agile 12x6", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376 },
+  { id: "ag-sel", title: "Agile reading", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, setup: (c) => { c._sel = 35; } },
   { id: "ag-tom", title: "Agile tomorrow", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
   { id: "ag-night", title: "Agile night", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, dark: true },
   { id: "ag-c", title: "Agile compact 12x2", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 120 },

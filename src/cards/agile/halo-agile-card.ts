@@ -26,6 +26,8 @@ export class HaloAgileCard extends LitElement {
   @state() private _w = 0;
   @state() private _h = 0;
   @state() private _cs = { w: 0, h: 0 };
+  @state() private _sel?: number;
+  private _selTimer?: number;
   private _unobserve?: () => void;
   private _timer?: number;
 
@@ -49,7 +51,7 @@ export class HaloAgileCard extends LitElement {
     // The current and next rate change on the half hour.
     this._timer = window.setInterval(() => this.requestUpdate(), 60_000);
   }
-  override disconnectedCallback() { super.disconnectedCallback(); this._unobserve?.(); clearInterval(this._timer); }
+  override disconnectedCallback() { super.disconnectedCallback(); this._unobserve?.(); clearInterval(this._timer); clearTimeout(this._selTimer); }
   override shouldUpdate() { return !!this._config && !!this._hass; }
 
   override updated() {
@@ -69,6 +71,26 @@ export class HaloAgileCard extends LitElement {
     return html`<div><div class="lab">${f.label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
   }
 
+  /** Points at the bar under the finger or mouse. Mouse readouts clear on leave; touch ones fade after a few seconds. */
+  private _point = (e: PointerEvent, m: AgileModel) => {
+    const el = e.currentTarget as HTMLElement, r = el.getBoundingClientRect();
+    const L = 30, R = 4, hr = ((e.clientX - r.left - L) / (r.width - L - R)) * 24;
+    const i = m.bars.findIndex((b) => hr >= b.x && hr < b.x + b.w);
+    this._sel = i >= 0 ? i : undefined;
+    clearTimeout(this._selTimer);
+    if (e.pointerType !== "mouse") this._selTimer = window.setTimeout(() => (this._sel = undefined), 4000);
+  };
+  private _clearMouse = (e: PointerEvent) => { if (e.pointerType === "mouse") this._sel = undefined; };
+
+  private _readout(m: AgileModel) {
+    if (m.empty) return html`<div class="readout"></div>`;
+    const hhmm = (x: number) => { const t = Math.round(x * 60); return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+    const b = this._sel !== undefined ? m.bars[this._sel] : undefined;
+    if (b) return html`<div class="readout">${hhmm(b.x)} - ${fmtP(b.p)}p</div>`;
+    const lo = m.bars.reduce((a, c) => (c.p < a.p ? c : a));
+    return html`<div class="readout">LOWEST - ${fmtP(lo.p)}p at ${hhmm(lo.x)}</div>`;
+  }
+
   private _chart(m: AgileModel, compact: boolean) {
     const { w, h } = this._cs;
     if (w < 10 || h < 10) return nothing;
@@ -79,9 +101,9 @@ export class HaloAgileCard extends LitElement {
     const y0 = Y(0), gap = compact ? 0.6 : 1;
     const grid = compact ? nothing : m.ticks.map((t) => svg`<line class="grid ${t === 0 ? "zero" : "dash"}" x1=${L} x2=${w - R} y1=${Y(t)} y2=${Y(t)}></line><text class="ax" x=${L - 6} y=${Y(t) + 3.5} text-anchor="end">${t}</text>`);
     const xs = compact ? nothing : [0, 6, 12, 18].map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor=${t === 0 ? "start" : "middle"}>${String(t).padStart(2, "0")}</text>`);
-    const bars = m.bars.map((b) => {
+    const bars = m.bars.map((b, i) => {
       const top = Y(Math.max(b.p, 0)), bottom = Y(Math.min(b.p, 0)), x = X(b.x) + gap / 2, bw = Math.max(X(b.x + b.w) - X(b.x) - gap, 1);
-      return svg`<rect class="bar ${b.band} ${b.past ? "past" : ""} ${b.current ? "now" : ""}" x=${x} y=${top} width=${bw} height=${Math.max(bottom - top, 1)} rx=${compact ? 0.8 : 1.5}></rect>`;
+      return svg`<rect class="bar ${b.band} ${b.past ? "past" : ""} ${b.current ? "now" : ""} ${i === this._sel ? "sel" : ""}" x=${x} y=${top} width=${bw} height=${Math.max(bottom - top, 1)} rx=${compact ? 0.8 : 1.5}></rect>`;
     });
     return html`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Agile rates chart">
       ${grid}${xs}${bars}
@@ -109,13 +131,12 @@ export class HaloAgileCard extends LitElement {
     // As many of the ticked figures as fit, in order.
     const fit = this._w > 0 ? Math.max(Math.floor((this._w - 32) / MIN_FIGURE), 1) : m.figures.length;
     const shown = m.figures.slice(0, fit);
-    const cheap = cfg.cheap_below ?? 15, expensive = cfg.expensive_above ?? 30;
     return html`<ha-card class=${cls}><div class="inner">
       <header><h2>${cfg.name ?? "Agile rates"}</h2></header>
       ${shown.length ? html`<div class="stats">${shown.map((f) => this._figure(f))}</div>` : nothing}
       ${this._seg(hasTomorrow)}
-      <div class="chart">${this._chart(m, false)}</div>
-      <div class="legend"><span class="low"><i></i>Cheap ≤ ${fmtP(cheap)}p</span><span class="mid"><i></i>Up to ${fmtP(expensive)}p</span><span class="high"><i></i>Over ${fmtP(expensive)}p</span></div>
+      <div class="chart" @pointermove=${(e: PointerEvent) => this._point(e, m)} @pointerdown=${(e: PointerEvent) => this._point(e, m)} @pointerleave=${this._clearMouse}>${this._chart(m, false)}</div>
+      ${this._readout(m)}
     </div></ha-card>`;
   }
 }

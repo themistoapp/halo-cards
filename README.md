@@ -174,7 +174,7 @@ shadow: true
 
 ## Halo Agile card (`custom:halo-agile-card`)
 
-Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current rate, Next rate, Lowest, Average and Highest (for the chosen day); as many as fit are shown, and you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
+Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Under the chart a line reads the day's lowest rate; hover or touch the chart to read any slot instead. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current rate, Next rate, Lowest, Average and Highest (for the chosen day); as many as fit are shown, and you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
 
 Point it at the integration's **current day rates** and **next day rates** event entities (`event.octopus_energy_electricity_<serial>_<mpan>_current_day_rates` and `..._next_day_rates`). Rates come from their `rates` attribute; values in pounds are converted to pence automatically.
 

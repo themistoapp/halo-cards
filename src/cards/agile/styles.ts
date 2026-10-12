@@ -28,12 +28,13 @@ export const styles = [themeStyles, shadowStyles, css`
   .ax { fill: var(--ink-2); opacity: .8; font: 500 10px var(--code-font-family, ui-monospace, monospace); }
   rect.bar { fill: var(--c); }
   rect.bar.past { opacity: .45; }
+  .chart { touch-action: pan-y; cursor: crosshair; }
+  .chart svg { pointer-events: none; }
+  rect.bar.sel { stroke: var(--ink); stroke-width: 1.5; }
+  .readout { text-align: center; font: 500 12px/16px var(--code-font-family, ui-monospace, monospace); letter-spacing: .02em; color: var(--ink-2); height: 16px; white-space: nowrap; }
   rect.bar.now { stroke: var(--ink); stroke-width: 1.5; }
   .nowline { stroke: var(--ink); stroke-opacity: .28; stroke-dasharray: 3 3; }
 
-  .legend { display: flex; gap: 16px; font-size: 12px; line-height: 16px; color: var(--ink-2); flex-wrap: wrap; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend i { display: block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
 
   /* Compact */
   .c { flex-direction: row; align-items: center; gap: 14px; padding: 14px 16px; }
