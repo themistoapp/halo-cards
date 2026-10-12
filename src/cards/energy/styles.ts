@@ -76,6 +76,8 @@ export const styles = [shadowStyles, css`
   .dark .tile.battery { --g0:#1f7a52; --a0:#0f6f78; --ln:#6fcf9a; }
   .dark .tile.grid { --g0:#b5561d; --a0:#2457d6; --ln:#f4a36a; }
   .dark .tile.house { --g0:#5a606e; --a0:#5a606e; --ln:#b0b4bf; }
+  .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tile.tap:focus-visible, .lb:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
   .tile.span { grid-column: 1 / -1; }
   .tiles.one .tile { --gh: 50%; }
   .tile > * { position: relative; z-index: 1; }

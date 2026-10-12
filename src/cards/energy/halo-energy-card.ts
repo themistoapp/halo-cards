@@ -9,6 +9,7 @@ import {
   type Model, type Sample, type Tile,
 } from "./logic";
 import { styles } from "./styles";
+import { fireMoreInfo } from "../../shared/util";
 import type { HaloEnergyConfig, HomeAssistant } from "../../shared/types";
 
 // Registered at document level so the bloom sizes can animate (shadow-root @property is ignored).
@@ -101,7 +102,9 @@ export class HaloEnergyCard extends LitElement {
   }
 
   private _tile(t: Tile, hass: HomeAssistant, span: boolean) {
-    return html`<div class="tile ${t.key} ${span ? "span" : ""}">
+    const open = () => t.entity && fireMoreInfo(this, t.entity);
+    return html`<div class="tile ${t.key} ${span ? "span" : ""} ${t.entity ? "tap" : ""}" role=${t.entity ? "button" : nothing} tabindex=${t.entity ? 0 : nothing}
+      @click=${open} @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
       <div class="top"><span class="ico"><svg viewBox="0 0 24 24">${ICONS[t.key]}</svg></span><span class="label">${LABELS[t.key]}</span></div>
       <div><span class="fig">${t.figure}<span class="unit">${t.unit}</span></span></div>
       ${t.detail ? html`<div class="det">${t.detail}</div>` : nothing}
@@ -156,7 +159,7 @@ export class HaloEnergyCard extends LitElement {
         <div class="hero">
           <div class="halo"></div>
           <div class="stream"><img src=${STREAM_IMAGE} alt="EcoFlow STREAM" />
-            ${m.soc !== undefined ? html`<div class="lb" role="img" aria-label="Battery ${Math.round(m.soc)}%"><i style=${styleMap({ height: `${m.soc}%` })}></i></div>` : nothing}
+            ${m.soc !== undefined ? html`<div class="lb ${cfg.battery_soc ? "tap" : ""}" role="button" tabindex="0" aria-label="Battery ${Math.round(m.soc)}%" @click=${() => cfg.battery_soc && fireMoreInfo(this, cfg.battery_soc)}><i style=${styleMap({ height: `${m.soc}%` })}></i></div>` : nothing}
           </div>
         </div>
         ${m.tiles.length

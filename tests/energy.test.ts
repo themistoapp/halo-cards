@@ -26,7 +26,7 @@ describe("buildModel", () => {
     const m = buildModel(full(), cfg);
     expect(m.tiles.map((t) => t.key)).toEqual(["solar", "battery", "grid", "house"]);
     expect(m.tiles[0]).toMatchObject({ figure: "0.82", detail: "5.4 of 9.1 kWh forecast" });
-    expect(m.tiles[1]).toMatchObject({ figure: "62", unit: "%", detail: "Discharging · 0.35 kW" });
+    expect(m.tiles[1]).toMatchObject({ figure: "0.35", unit: "kW", detail: "62% · Discharging", entity: "sensor.bp" });
     expect(m.tiles[2]).toMatchObject({ figure: "0.63", detail: "Importing · £1.59 today" });
     expect(m.tiles[3]).toMatchObject({ figure: "1.80" });
     expect(m.tiles[3].detail).toBeUndefined();
@@ -49,7 +49,13 @@ describe("buildModel", () => {
     h.states["sensor.soc"] = ent("sensor.soc", "unknown");
     const m = buildModel(h, cfg);
     expect(m.soc).toBeUndefined();
-    expect(m.tiles[1]).toMatchObject({ unit: "kW", figure: "0.35" });
+    expect(m.tiles[1]).toMatchObject({ unit: "kW", figure: "0.35", detail: "Discharging" });
+  });
+
+  it("falls back to the charge level when there is no battery power", () => {
+    const h = full();
+    delete h.states["sensor.bp"];
+    expect(buildModel(h, cfg).tiles[1]).toMatchObject({ figure: "62", unit: "%", entity: "sensor.soc" });
   });
 
   it("hides the slider and the pill independently", () => {

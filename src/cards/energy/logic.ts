@@ -7,6 +7,8 @@ export interface Tile {
   figure: string;
   unit: string;
   detail?: string;
+  /** Entity opened (history graph) when the tile is tapped. */
+  entity?: string;
   /** Entity whose history is drawn, and how its numbers become graph values. */
   history?: { entity: string; scale: "kw" | "percent" };
 }
@@ -80,27 +82,20 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
       today !== undefined && forecast !== undefined ? `${fmtKwh(today)} of ${fmtKwh(forecast)} kWh forecast`
       : today !== undefined ? `${fmtKwh(today)} kWh today`
       : forecast !== undefined ? `${fmtKwh(forecast)} kWh forecast` : undefined;
-    tiles.push({ key: "solar", figure: fmtKw(solarKw), unit: "kW", detail, history: { entity: cfg.solar_power!, scale: "kw" } });
+    tiles.push({ key: "solar", figure: fmtKw(solarKw), unit: "kW", detail, entity: cfg.solar_power, history: { entity: cfg.solar_power!, scale: "kw" } });
   }
 
-  // Battery: SOC is the headline; power adds direction. Either one is enough to show the tile.
+  // Battery: power is the headline, with the charge level and direction beneath. Either one is enough to show the tile.
   const soc = num(st(cfg.battery_soc));
   const batRaw = kw(st(cfg.battery_power));
   // Positive = discharging (supplying the house) unless inverted.
   const batKw = batRaw === undefined ? undefined : cfg.battery_invert ? -batRaw : batRaw;
-  if (soc !== undefined || batKw !== undefined) {
-    let detail: string | undefined;
-    if (batKw !== undefined) {
-      const word = Math.abs(batKw) < idle ? "Idle" : batKw > 0 ? "Discharging" : "Charging";
-      detail = word === "Idle" ? word : `${word} · ${fmtKw(batKw)} kW`;
-    }
-    tiles.push({
-      key: "battery",
-      figure: soc !== undefined ? String(Math.round(soc)) : fmtKw(batKw!),
-      unit: soc !== undefined ? "%" : "kW",
-      detail,
-      history: soc !== undefined ? { entity: cfg.battery_soc!, scale: "percent" } : { entity: cfg.battery_power!, scale: "kw" },
-    });
+  if (batKw !== undefined) {
+    const word = Math.abs(batKw) < idle ? "Idle" : batKw > 0 ? "Discharging" : "Charging";
+    const detail = [soc !== undefined ? `${Math.round(soc)}%` : undefined, word].filter(Boolean).join(" · ");
+    tiles.push({ key: "battery", figure: fmtKw(batKw), unit: "kW", detail, entity: cfg.battery_power, history: { entity: cfg.battery_power!, scale: "kw" } });
+  } else if (soc !== undefined) {
+    tiles.push({ key: "battery", figure: String(Math.round(soc)), unit: "%", entity: cfg.battery_soc, history: { entity: cfg.battery_soc!, scale: "percent" } });
   }
 
   // Grid: positive = importing unless inverted.
@@ -110,13 +105,13 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
     const word = Math.abs(gridKw) < idle ? "Idle" : gridKw > 0 ? "Importing" : "Exporting";
     const c = cost(st(cfg.grid_cost));
     const detail = [word, c ? `${c} today` : undefined].filter(Boolean).join(" · ");
-    tiles.push({ key: "grid", figure: fmtKw(gridKw), unit: "kW", detail, history: { entity: cfg.grid_power!, scale: "kw" } });
+    tiles.push({ key: "grid", figure: fmtKw(gridKw), unit: "kW", detail, entity: cfg.grid_power, history: { entity: cfg.grid_power!, scale: "kw" } });
   }
 
   // House
   const homeKw = kw(st(cfg.home_power));
   if (homeKw !== undefined) {
-    tiles.push({ key: "house", figure: fmtKw(homeKw), unit: "kW", history: { entity: cfg.home_power!, scale: "kw" } });
+    tiles.push({ key: "house", figure: fmtKw(homeKw), unit: "kW", entity: cfg.home_power, history: { entity: cfg.home_power!, scale: "kw" } });
   }
 
   // Blooms: each source with a power entity gets a share of what is being supplied right now.

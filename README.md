@@ -19,7 +19,7 @@ Manual: copy `halo-cards.js` from a release to `/config/www/` and add it as a da
 
 ## Halo Energy card (`custom:halo-energy-card`)
 
-EcoFlow Stream card: product image with an LED strip filled to the battery level, four tiles (Solar, Battery, Grid, House) with today's history graph, a background that blooms in proportion to where the power is coming from, a backup reserve slider and a Self-powered / AI mode pill. Default size is 12 × 12 in the Sections view.
+EcoFlow Stream card: product image with an LED strip filled to the battery level, four tiles (Solar, Battery, Grid, House) with today's history graph (tap a tile, or the LED strip, to open that entity's history in Home Assistant; the battery tile shows power with the charge % beneath), a background that blooms in proportion to where the power is coming from, a backup reserve slider and a Self-powered / AI mode pill. Default size is 12 × 12 in the Sections view.
 
 ```yaml
 type: custom:halo-energy-card
@@ -41,7 +41,7 @@ Every entity is optional. Anything missing or unavailable is hidden:
 | Missing | Effect |
 | --- | --- |
 | a tile's power entity | that tile is hidden and the grid re-flows (4 → 2×2, 3 → last tile spans, 2 → stacked, 1 → one tall tile) |
-| `battery_soc` | no light bar; the battery tile shows power instead |
+| `battery_soc` | no light bar and no charge % on the battery tile |
 | `reserve_entity` / `mode_entity` | slider / pill hidden; the control tile goes when both are gone |
 | `solar_energy`, `solar_forecast`, `grid_cost` | the detail line drops that part |
 | no history | graph hidden |
