@@ -156,10 +156,10 @@ export class HaloSolarCard extends LitElement {
     const wide = this._w >= 440;
     const fc = (v?: number) => (v === undefined ? "–" : fmtKwh(v));
     const stats = wide
-      ? html`${cfg.actual && today.generatedKwh !== undefined ? this._stat("Generated", fmtKwh(today.generatedKwh), today.pct !== undefined ? `${today.pct}% of forecast so far` : undefined, today.pct !== undefined && today.pct >= 90 ? "good" : "") : nothing}
-        ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh), "forecast")}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh), "forecast")}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh), "forecast") : nothing}`
+      ? html`${cfg.actual && today.generatedKwh !== undefined ? this._stat("Generated", fmtKwh(today.generatedKwh), today.pct !== undefined ? `${today.pct}%` : undefined, today.pct !== undefined && today.pct >= 90 ? "good" : "") : nothing}
+        ${this._stat("Remaining", today.empty ? "–" : fc(today.remainingKwh))}${this._stat("Today", today.empty ? "–" : fmtKwh(today.forecastKwh))}${hasTomorrow ? this._stat("Tomorrow", fmtKwh(tomorrow.forecastKwh)) : nothing}`
       : html`<div><div class="lab">Forecast</div><div class="big">${total}<small>kWh</small></div>${vs !== undefined ? html`<div class="note">${vs > 0 ? "+" : ""}${vs}% vs today</div>` : nothing}</div>
-        ${gen ? html`<div><div class="lab">Generated</div><div class="big">${fmtKwh(m.generatedKwh!)}<small>kWh</small></div>${m.pct !== undefined ? html`<div class="note ${pctCls}">${m.pct}% of forecast so far</div>` : nothing}</div>` : nothing}`;
+        ${gen ? html`<div><div class="lab">Generated</div><div class="big">${fmtKwh(m.generatedKwh!)}<small>kWh</small></div>${m.pct !== undefined ? html`<div class="note ${pctCls}">${m.pct}%</div>` : nothing}</div>` : nothing}`;
     return html`<ha-card class=${cls}><div class="inner">
       <header><h2>${cfg.name ?? "Solar forecast"}</h2></header>
       <div class="stats ${wide ? "wide" : ""}">${stats}</div>
