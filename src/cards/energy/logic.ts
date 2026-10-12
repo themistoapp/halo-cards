@@ -20,7 +20,8 @@ export interface Model {
   /** Battery state of charge 0-100 for the light bar, or undefined to hide it. */
   soc?: number;
   reserve?: { entity: string; value: number; min: number; max: number; step: number };
-  mode?: { entity: string; self: string; ai: string; selected: "self" | "ai" | undefined };
+  /** Either one select (`entity`, with option names) or two switches (`selfEntity`, `aiEntity`). */
+  mode?: { entity?: string; self: string; ai: string; selfEntity?: string; aiEntity?: string; selected: "self" | "ai" | undefined };
   updated?: Date;
 }
 
@@ -149,6 +150,14 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
     }
   }
 
+  if (!mode && cfg.mode_self_entity && cfg.mode_ai_entity) {
+    const a = st(cfg.mode_self_entity), b = st(cfg.mode_ai_entity);
+    if (isAvailable(a) && isAvailable(b)) {
+      const on = (e: HassEntity) => e.state === "on";
+      mode = { selfEntity: cfg.mode_self_entity, aiEntity: cfg.mode_ai_entity, self: "Self-powered", ai: "AI", selected: on(a) && !on(b) ? "self" : on(b) && !on(a) ? "ai" : undefined };
+    }
+  }
+
   // Updated: the picked entity, otherwise the newest of everything the card uses.
   const watched = [cfg.solar_power, cfg.solar_energy, cfg.solar_forecast, cfg.battery_soc, cfg.battery_power, cfg.grid_power, cfg.grid_cost, cfg.home_power];
   const ids = cfg.updated_entity ? [cfg.updated_entity] : watched;
@@ -160,7 +169,7 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
 
 /** Entities the card reads, so it only re-renders when one of them changes. */
 export function watchedEntities(cfg: HaloEnergyConfig): string[] {
-  return [cfg.solar_power, cfg.solar_energy, cfg.solar_forecast, cfg.battery_soc, cfg.battery_power, cfg.grid_power, cfg.grid_cost, cfg.home_power, cfg.reserve_entity, cfg.mode_entity, cfg.updated_entity].filter((x): x is string => !!x);
+  return [cfg.solar_power, cfg.solar_energy, cfg.solar_forecast, cfg.battery_soc, cfg.battery_power, cfg.grid_power, cfg.grid_cost, cfg.home_power, cfg.reserve_entity, cfg.mode_entity, cfg.mode_self_entity, cfg.mode_ai_entity, cfg.updated_entity].filter((x): x is string => !!x);
 }
 
 // ---- history ---------------------------------------------------------------

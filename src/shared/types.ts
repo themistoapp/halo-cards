@@ -35,6 +35,9 @@ export interface HaloEnergyConfig {
   home_power?: string;
   reserve_entity?: string;
   mode_entity?: string;
+  /** Alternative to mode_entity: one switch per mode (turning one on turns the other off). */
+  mode_self_entity?: string;
+  mode_ai_entity?: string;
   updated_entity?: string;
   /** Option names on mode_entity. Defaults match EcoFlow's "Self-powered" and "AI". */
   mode_self?: string;

@@ -3,7 +3,7 @@ import { startOfDay } from "../solar/logic";
 
 export type FigureId = "current" | "next" | "lowest" | "average" | "highest";
 export const FIGURES: FigureId[] = ["current", "next", "lowest", "average", "highest"];
-export const FIGURE_LABELS: Record<FigureId, string> = { current: "Current rate", next: "Next rate", lowest: "Lowest", average: "Average", highest: "Highest" };
+export const FIGURE_LABELS: Record<FigureId, string> = { current: "Current", next: "Next rate", lowest: "Lowest", average: "Average", highest: "Highest" };
 
 export interface HaloAgileConfig {
   type: string;

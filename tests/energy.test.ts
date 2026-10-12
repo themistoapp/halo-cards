@@ -89,6 +89,13 @@ describe("buildModel", () => {
     expect(m.mode).toMatchObject({ self: "Smart", ai: "Cloud AI", selected: "self" });
   });
 
+  it("reads the mode from two separate switches", () => {
+    const sw = (a: string, b: string) => buildModel(hassOf([ent("switch.self", a), ent("switch.ai", b)]), { type: "x", mode_self_entity: "switch.self", mode_ai_entity: "switch.ai" }).mode;
+    expect(sw("on", "off")).toMatchObject({ selfEntity: "switch.self", aiEntity: "switch.ai", selected: "self" });
+    expect(sw("off", "on")?.selected).toBe("ai");
+    expect(sw("off", "off")?.selected).toBeUndefined();
+  });
+
   it("uses the picked entity for the updated time", () => {
     const h = full();
     h.states["sensor.x"] = { ...ent("sensor.x", "1"), last_updated: "2026-10-12T12:30:00Z" };

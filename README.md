@@ -57,6 +57,7 @@ Every entity is optional. Anything missing or unavailable is hidden:
 | `name` | `EcoFlow Stream` | Header title |
 | `updated_entity` | newest of the above | Entity whose `last_updated` drives the "Updated" chip |
 | `mode_self` / `mode_ai` | `Self-powered` / `AI` | Option names on the select. If they don't match, the first two options are used |
+| `mode_self_entity` / `mode_ai_entity` | none | Use these instead of `mode_entity` when each mode is its own switch. Tapping a mode turns its switch on (and the other off) |
 | `battery_invert` | `false` | Set if positive battery power means charging |
 | `grid_invert` | `false` | Set if positive grid power means export |
 | `idle_watts` | `10` | Below this a flow reads Idle |
@@ -174,7 +175,7 @@ shadow: true
 
 ## Halo Agile card (`custom:halo-agile-card`)
 
-Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Under the chart a line reads the day's lowest rate; hover or touch the chart to read any slot instead. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current rate, Next rate, Lowest, Average and Highest (for the chosen day); all five fit at 12 × 6 (the labels shorten); you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
+Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Under the chart a line reads the day's lowest rate; hover or touch the chart to read any slot instead. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current (with a little octopus), Next rate, Lowest (green down arrow), Average (blue bolt) and Highest (red up arrow), for the chosen day; all five fit at 12 × 6 (the labels shorten); you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
 
 Point it at the integration's **current day rates** and **next day rates** event entities (`event.octopus_energy_electricity_<serial>_<mpan>_current_day_rates` and `..._next_day_rates`). Rates come from their `rates` attribute; values in pounds are converted to pence automatically.
 

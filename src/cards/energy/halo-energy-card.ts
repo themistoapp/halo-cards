@@ -131,8 +131,8 @@ export class HaloEnergyCard extends LitElement {
       </div>` : nothing}
       ${m.mode ? html`<div class="seg ${m.mode.selected ?? "none"}" role="radiogroup" aria-label="Operating mode">
         <i class="th"></i>
-        <button class="ms" role="radio" aria-checked=${m.mode.selected === "self"} @click=${() => this._setMode(m.mode!.entity, m.mode!.self)}>Self-powered</button>
-        <button class="ma" role="radio" aria-checked=${m.mode.selected === "ai"} @click=${() => this._setMode(m.mode!.entity, m.mode!.ai)}>AI</button>
+        <button class="ms" role="radio" aria-checked=${m.mode.selected === "self"} @click=${() => this._setMode(m.mode!, "self")}>Self-powered</button>
+        <button class="ma" role="radio" aria-checked=${m.mode.selected === "ai"} @click=${() => this._setMode(m.mode!, "ai")}>AI</button>
       </div>` : nothing}
     </div>`;
   }
@@ -141,8 +141,16 @@ export class HaloEnergyCard extends LitElement {
     try { await this._hass?.callService("number", "set_value", { entity_id: entity, value }); }
     finally { this._draft = undefined; }
   }
-  private _setMode(entity: string, option: string) {
-    this._hass?.callService("select", "select_option", { entity_id: entity, option });
+  private _setMode(mode: NonNullable<Model["mode"]>, which: "self" | "ai") {
+    if (mode.selfEntity && mode.aiEntity) {
+      // Two switches: turn the chosen one on, and the other off in case the device does not do that itself.
+      const [on, off] = which === "self" ? [mode.selfEntity, mode.aiEntity] : [mode.aiEntity, mode.selfEntity];
+      if (mode.selected === which) return;
+      this._hass?.callService("homeassistant", "turn_on", { entity_id: on });
+      if (this._hass?.states[off]?.state === "on") this._hass?.callService("homeassistant", "turn_off", { entity_id: off });
+      return;
+    }
+    this._hass?.callService("select", "select_option", { entity_id: mode.entity, option: which === "self" ? mode.self : mode.ai });
   }
 
   override render() {

@@ -2,8 +2,8 @@ import { css } from "lit";
 import { shadowStyles, themeStyles } from "../../shared/bloom";
 
 export const styles = [themeStyles, shadowStyles, css`
-  ha-card { --lo: #1f9d63; --mid: #d89a1b; --hi: #d6453d; background: var(--surface); }
-  ha-card.dark { --lo: #4cc9a0; --mid: #f2b84a; --hi: #ff7b72; }
+  ha-card { --lo: #1f9d63; --mid: #d89a1b; --hi: #d6453d; --blue: #2f7bff; --purple: #8a5cf6; background: var(--surface); }
+  ha-card.dark { --lo: #4cc9a0; --mid: #f2b84a; --hi: #ff7b72; --blue: #6aa3ff; --purple: #b79bff; }
   .inner { padding: 14px 16px; gap: 10px; }
   header { min-height: 24px; }
 
@@ -13,9 +13,15 @@ export const styles = [themeStyles, shadowStyles, css`
   .seg button[aria-pressed="true"] { background: var(--action); color: var(--action-ink); box-shadow: var(--press); }
 
   .stats { display: flex; }
+  .stats .lab { display: flex; align-items: center; gap: 4px; }
+  .fi { flex: none; width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .fi.cur { width: 14px; height: 14px; color: var(--purple); margin-left: -1px; }
+  .fi.lo { color: var(--lo); } .fi.hi { color: var(--hi); } .fi.avg { color: var(--blue); }
   .stats > div { flex: 1; min-width: 0; }
   .big { font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: -.04em; margin-top: 2px; white-space: nowrap; }
   .big small { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 3px; }
+  .stats.tight .lab { font-size: 9px; letter-spacing: .02em; gap: 3px; }
+  .stats.tight .fi { width: 10px; height: 10px; } .stats.tight .fi.cur { width: 12px; height: 12px; }
   .stats.tight .big { font-size: 20px; line-height: 24px; }
   .stats.tight .big small { font-size: 11px; margin-left: 1px; }
   .note { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

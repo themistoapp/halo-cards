@@ -8,6 +8,14 @@ import { styles } from "./styles";
 type Day = "today" | "tomorrow";
 const MIN_FIGURE = 64;
 
+/** Little icons beside the figure labels. The octopus is drawn here (Simple Icons has no Octopus Energy mark). */
+const FIG_ICON: Record<string, ReturnType<typeof svg>> = {
+  current: svg`<svg class="fi cur" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12 2.5c-4.3 0-7.2 3-7.2 6.9 0 2.1.8 3.6 2 4.7-.2 1.7-1.2 2.6-2.7 3.2-.9.4-.7 1.7.3 1.7 2.6 0 4.4-1.2 5.2-3 .5-.1 1-.1 1.4-.1v.1c.1 1.6-.4 2.9-1.6 3.9-.8.7-.3 1.9.7 1.7 2.2-.4 3.6-2.1 3.8-5.1.4 0 .7 0 1 .1.7 1.8 2.6 3 5.2 3 1 0 1.2-1.3.3-1.7-1.5-.6-2.5-1.5-2.7-3.2 1.2-1.1 2-2.6 2-4.7 0-3.9-2.9-6.9-7.2-6.9zM9.3 9.2a1.1 1.1 0 1 0 2.2 0 1.1 1.1 0 1 0-2.2 0zM12.5 9.2a1.1 1.1 0 1 0 2.2 0 1.1 1.1 0 1 0-2.2 0z"/></svg>`,
+  lowest: svg`<svg class="fi lo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>`,
+  average: svg`<svg class="fi avg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" transform="rotate(90 12 12)" d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+  highest: svg`<svg class="fi hi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></svg>`,
+};
+
 export class HaloAgileCard extends LitElement {
   static override styles = styles;
 
@@ -69,7 +77,7 @@ export class HaloAgileCard extends LitElement {
 
   private _figure(f: Figure, tight = false) {
     const label = tight ? ({ current: "Current", next: "Next" } as Record<string, string>)[f.id] ?? f.label : f.label;
-    return html`<div><div class="lab">${label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
+    return html`<div><div class="lab">${FIG_ICON[f.id] ?? nothing}${label}</div><div class="big">${f.value}${f.value === "–" ? nothing : html`<small>p</small>`}</div></div>`;
   }
 
   /** Points at the bar under the finger or mouse. Mouse readouts clear on leave; touch ones fade after a few seconds. */
