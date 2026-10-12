@@ -35,3 +35,11 @@ export function observeHeight(el: HTMLElement, cb: (height: number) => void): ()
   ro.observe(el);
   return () => ro.disconnect();
 }
+
+/** Watches a host element's width and height. */
+export function observeSize(el: HTMLElement, cb: (width: number, height: number) => void): () => void {
+  if (typeof ResizeObserver === "undefined") return () => {};
+  const ro = new ResizeObserver((entries) => cb(entries[0].contentRect.width, entries[0].contentRect.height));
+  ro.observe(el);
+  return () => ro.disconnect();
+}

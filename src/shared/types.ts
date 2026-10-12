@@ -10,6 +10,7 @@ export interface HomeAssistant {
   states: Record<string, HassEntity>;
   themes?: { darkMode?: boolean };
   locale?: { language?: string };
+  config?: { unit_system?: { temperature?: string } };
   connection: {
     subscribeMessage<T>(cb: (msg: T) => void, msg: Record<string, unknown>): Promise<() => void>;
   };

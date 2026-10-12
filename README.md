@@ -9,6 +9,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 8 (works from 12 × 5 up) |
 | Media (Sonos) | `custom:halo-media-card` | 12 × 6 default; 12 × 9 and up adds favourites, 12 × 4 and 12 × 2 are compact (layout follows the height) |
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
+| Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 
 ## Install (HACS)
@@ -120,6 +121,19 @@ lights:
   - light.lamp           # plain entity id: icon only
 show_all_off: true       # "All off" button (default on)
 colour: "#ffe3bd"        # glow for lights that report no colour (default warm white)
+shadow: true
+```
+
+## Halo Thermostat card (`custom:halo-thermostat-card`)
+
+Nest-style thermostat for any `climate` entity. Tall, it is a dial of fine ticks with the target in the middle and − / + below; short (under about 230px), it becomes a compact bar with the target in the middle, − / + either side, "Now" and humidity under it, and the tick bar along the bottom. The background glows orange while heating and blue while cooling, so there is no status text. Temperatures are shown to the nearest 0.5 degrees and the target moves in 0.5 steps (or the thermostat's own step if larger). Presses are sent once you stop tapping. In heat/cool range mode, − / + move both ends of the range together.
+
+```yaml
+type: custom:halo-thermostat-card
+entity: climate.hallway
+name: Hallway           # optional
+hvac_modes: [heat, cool, heat_cool, off]   # modes to show as buttons; leave out for everything the thermostat supports
+humidity: sensor.hallway_humidity          # only if the thermostat doesn't report humidity
 shadow: true
 ```
 

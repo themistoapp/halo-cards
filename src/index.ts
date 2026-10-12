@@ -6,6 +6,8 @@ import { HaloLightCard } from "./cards/light/halo-light-card";
 import { HaloLightCardEditor } from "./cards/light/editor";
 import { HaloScenesCard } from "./cards/scenes/halo-scenes-card";
 import { HaloScenesCardEditor } from "./cards/scenes/editor";
+import { HaloThermostatCard } from "./cards/thermostat/halo-thermostat-card";
+import { HaloThermostatCardEditor } from "./cards/thermostat/editor";
 import { HaloSizeCard } from "./cards/size/halo-size-card";
 import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
 import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
@@ -17,6 +19,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-energy-card", HaloEnergyCard, "halo-energy-card-editor", HaloEnergyCardEditor, "Halo Energy", "EcoFlow Stream energy card: live flows, history graphs, backup reserve and operating mode."],
   ["halo-media-card", HaloMediaCard, "halo-media-card-editor", HaloMediaCardEditor, "Halo Media", "Sonos and other players: colours from the album art, transport, volume, speaker groups and favourites."],
   ["halo-vehicle-card", HaloVehicleCard, "halo-vehicle-card-editor", HaloVehicleCardEditor, "Halo Vehicle", "Compact car card: level bar, range, odometer, lock or charging, and where it is."],
+  ["halo-thermostat-card", HaloThermostatCard, "halo-thermostat-card-editor", HaloThermostatCardEditor, "Halo Thermostat", "Nest-style thermostat: a dial that glows orange or blue, target and room temperature, and the modes you choose."],
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
 ];

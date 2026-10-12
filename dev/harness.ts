@@ -43,6 +43,11 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("binary_sensor.van_charging", "on"), e("device_tracker.van", "depot"),
       e("scene.movie", "2026-10-12T19:00:00Z", { friendly_name: "Movie", icon: "mdi:movie-open" }), e("scene.relax", "2026-10-12T18:00:00Z", { friendly_name: "Relax", icon: "mdi:sofa" }),
       e("scene.bright", "2026-10-12T08:00:00Z", { friendly_name: "Bright", icon: "mdi:white-balance-sunny" }), e("scene.night", "2026-10-12T22:00:00Z", { friendly_name: "Night", icon: "mdi:weather-night" }),
+      e("climate.hallway", "heat", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 19.4, temperature: 22, min_temp: 9, max_temp: 32, target_temp_step: 0.5, current_humidity: 48 }),
+      e("climate.cooling", "cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "cooling", current_temperature: 24.1, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 52 }),
+      e("climate.idle", "heat", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "idle", current_temperature: 21.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
+      e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
+      e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
       e("light.pendant", "on", { friendly_name: "Pendant", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 2700, brightness: 230 }),
       e("light.downlight", "on", { friendly_name: "Downlights", supported_color_modes: ["color_temp"], color_mode: "color_temp", color_temp_kelvin: 4000, brightness: 140 }),
       e("light.shelf", "on", { friendly_name: "Shelf bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [255, 90, 160], brightness: 200 }),
@@ -89,6 +94,8 @@ const lights = { type: "custom:halo-light-card", name: "Living room", lights: [
 
 const scenes = { type: "custom:halo-scenes-card", scenes: [{ entity: "scene.movie", colour: "#7a5cf0" }, { entity: "scene.relax", colour: "#e8803d" }, { entity: "scene.bright", colour: "#e8b923" }, { entity: "scene.night", colour: "#3d6ee8" }] };
 
+const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
+
 type Spec = { id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
@@ -112,6 +119,18 @@ const specs: Spec[] = [
   { id: "scenes-plain", title: "Scenes no colours", tag: "halo-scenes-card", cfg: { ...scenes, scenes: ["scene.movie", "scene.relax", "scene.bright", "scene.night"] }, w: 378, h: 120 },
   { id: "scenes-night", title: "Scenes night", tag: "halo-scenes-card", cfg: scenes, w: 378, h: 120, dark: true },
   { id: "scenes-titled", title: "Scenes titled 12x3", tag: "halo-scenes-card", cfg: { ...scenes, name: "Scenes" }, w: 378, h: 176 },
+  { id: "th-heat", title: "Thermostat heating 12x7", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440 },
+  { id: "th-cool", title: "Cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 440 },
+  { id: "th-idle", title: "Idle", tag: "halo-thermostat-card", cfg: th("climate.idle"), w: 378, h: 440 },
+  { id: "th-off", title: "Off", tag: "halo-thermostat-card", cfg: th("climate.off"), w: 378, h: 440 },
+  { id: "th-range", title: "Heat/Cool range", tag: "halo-thermostat-card", cfg: th("climate.range"), w: 378, h: 440 },
+  { id: "th-night", title: "Night heating", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440, dark: true },
+  { id: "th-heat-modes", title: "Only Heat and Off ticked", tag: "halo-thermostat-card", cfg: th("climate.hallway", { hvac_modes: ["heat", "off"] }), w: 378, h: 440 },
+  { id: "th-nsp", title: "Dial at 480x376", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 480, h: 376 },
+  { id: "th-c", title: "Compact 12x2", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 120 },
+  { id: "th-c480", title: "Compact 480", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 480, h: 120 },
+  { id: "th-c-cool", title: "Compact cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 120 },
+  { id: "th-c-night", title: "Compact night", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 120, dark: true },
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
