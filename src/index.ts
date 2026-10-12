@@ -1,16 +1,25 @@
-import { HaloEnergyCard } from "./halo-energy-card";
-import { HaloEnergyCardEditor } from "./editor";
+import { HaloEnergyCard } from "./cards/energy/halo-energy-card";
+import { HaloEnergyCardEditor } from "./cards/energy/editor";
+import { HaloMediaCard } from "./cards/media/halo-media-card";
+import { HaloMediaCardEditor } from "./cards/media/editor";
+import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
+import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
 
-customElements.define("halo-energy-card", HaloEnergyCard);
-customElements.define("halo-energy-card-editor", HaloEnergyCardEditor);
+export const VERSION = "0.2.0";
+
+// Each card stands alone: its own element, config and editor. Use any of them without the others.
+const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
+  ["halo-energy-card", HaloEnergyCard, "halo-energy-card-editor", HaloEnergyCardEditor, "Halo Energy", "EcoFlow Stream energy card: live flows, history graphs, backup reserve and operating mode."],
+  ["halo-media-card", HaloMediaCard, "halo-media-card-editor", HaloMediaCardEditor, "Halo Media", "Sonos and other players: colours from the album art, transport, volume, speaker groups and favourites."],
+  ["halo-vehicle-card", HaloVehicleCard, "halo-vehicle-card-editor", HaloVehicleCardEditor, "Halo Vehicle", "Compact car card: level bar, range, odometer, lock or charging, and where it is."],
+];
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }
 window.customCards ||= [];
-window.customCards.push({
-  type: "halo-energy-card",
-  name: "Halo Energy",
-  description: "EcoFlow Stream energy card: live flows, history graphs, backup reserve and operating mode.",
-  preview: true,
-});
+for (const [tag, cls, editorTag, editor, name, description] of CARDS) {
+  if (!customElements.get(tag)) customElements.define(tag, cls);
+  if (!customElements.get(editorTag)) customElements.define(editorTag, editor);
+  if (!window.customCards.some((c) => c.type === tag)) window.customCards.push({ type: tag, name, description, preview: true });
+}
 
-console.info("%c HALO-CARDS %c 0.1.0 ", "background:#111;color:#fff;border-radius:3px 0 0 3px", "background:#3ee08a;color:#111;border-radius:0 3px 3px 0");
+console.info(`%c HALO-CARDS %c ${VERSION} `, "background:#111;color:#fff;border-radius:3px 0 0 3px", "background:#3ee08a;color:#111;border-radius:0 3px 3px 0");

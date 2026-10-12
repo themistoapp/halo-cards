@@ -1,4 +1,4 @@
-import type { HomeAssistant } from "./types";
+import type { HomeAssistant } from "../../shared/types";
 import type { Sample } from "./logic";
 
 type StreamMsg = { states?: Record<string, { s: string; lu?: number; lc?: number }[]> };

@@ -1,4 +1,4 @@
-import type { HassEntity, HaloEnergyConfig, HomeAssistant } from "./types";
+import type { HassEntity, HaloEnergyConfig, HomeAssistant } from "../../shared/types";
 
 export type Key = "solar" | "battery" | "grid" | "house";
 

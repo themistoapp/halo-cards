@@ -14,6 +14,9 @@ export interface HomeAssistant {
     subscribeMessage<T>(cb: (msg: T) => void, msg: Record<string, unknown>): Promise<() => void>;
   };
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
+  callWS<T>(msg: Record<string, unknown>): Promise<T>;
+  entities?: Record<string, { device_id?: string }>;
+  devices?: Record<string, { model?: string; name?: string }>;
 }
 
 export interface HaloEnergyConfig {

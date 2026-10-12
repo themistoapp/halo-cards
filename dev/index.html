@@ -1,7 +1,11 @@
 <!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Halo Cards dev</title>
-<style>body{margin:0;padding:16px;background:#f2f2f5;font-family:system-ui}body.dark{background:#111114;--primary-text-color:#f2f2f5;--secondary-text-color:#a0a0aa;--card-background-color:#1c1c20;--divider-color:rgba(255,255,255,.12)}
-ha-card{display:block;border-radius:12px;background:var(--card-background-color,#fff)}#c{width:378px;height:760px}</style>
-<div id="c"></div>
+<style>
+body{margin:0;padding:16px;background:#f2f2f5;font-family:system-ui;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+body.dark{background:#111114;--primary-text-color:#f2f2f5;--secondary-text-color:#a0a0aa;--card-background-color:#1c1c20;--divider-color:rgba(255,255,255,.12)}
+.cell{width:378px}.cap{font:12px ui-monospace,monospace;color:#666;margin-bottom:6px}
+.dk{--primary-text-color:#f2f2f5;--secondary-text-color:#a0a0aa;--card-background-color:#1c1c20;--divider-color:rgba(255,255,255,.12)}
+ha-card{display:block;border-radius:12px;background:var(--card-background-color,#fff)}
+</style>
 <script type="module" src="./harness.ts"></script>

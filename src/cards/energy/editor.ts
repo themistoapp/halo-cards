@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { state } from "lit/decorators.js";
-import type { HaloEnergyConfig, HomeAssistant } from "./types";
+import type { HaloEnergyConfig, HomeAssistant } from "../../shared/types";
 
 const ent = (name: string, domain: string | string[]) => ({ name, selector: { entity: { domain } } });
 

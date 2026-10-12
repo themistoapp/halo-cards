@@ -1,7 +1,7 @@
 import { LitElement, html, nothing, svg } from "lit";
 import { state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { STREAM_IMAGE } from "./assets/stream";
+import { STREAM_IMAGE } from "./stream";
 import { subscribeHistory } from "./history";
 import { ICONS } from "./icons";
 import {
@@ -9,7 +9,7 @@ import {
   type Model, type Sample, type Tile,
 } from "./logic";
 import { styles } from "./styles";
-import type { HaloEnergyConfig, HomeAssistant } from "./types";
+import type { HaloEnergyConfig, HomeAssistant } from "../../shared/types";
 
 // Registered at document level so the bloom sizes can animate (shadow-root @property is ignored).
 for (const p of ["--is", "--ib", "--ig"]) {
