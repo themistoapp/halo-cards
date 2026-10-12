@@ -7,7 +7,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Card | Type | Size (columns × rows) |
 | --- | --- | --- |
 | Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 8 (works from 12 × 5 up) |
-| Media (Sonos) | `custom:halo-media-card` | 12 × 6 default; 12 × 9 and up adds favourites, 12 × 4 and 12 × 2 are compact (layout follows the height) |
+| Media (Sonos) | `custom:halo-media-card` | 12 × 6 and up: picture, transport, now playing and volume, with a star button that opens favourites; 12 × 3 to 12 × 4 is one card; 12 × 2 is a single row (layout follows the height) |
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
@@ -78,6 +78,7 @@ players:                       # optional: one card for the whole house
 - **Background:** two blooms in colours read from the album art, growing with volume (smaller when paused). Idle or off, or artwork with no colour in it (most radio logos), gives a grey bloom. Colours can only be read from artwork Home Assistant serves itself (the usual case); artwork blocked by its host also falls back to grey.
 - **Speaker picture:** chosen from the device model (Beam, Arc, Ray, Era 300, One), or set `speaker: beam-sub-mini | era-300 | one | none`, or give your own `image` URL.
 - **Shows only what the player supports:** shuffle, repeat, previous, next, mute and volume follow the player's features. With `players` set, the title becomes a dropdown to switch player (your choice is remembered per browser) and the other players appear top right as scrollable chips; tap to join or leave the group. `speakers` can limit the chips to a subset. Favourites come from `sensor.sonos_favorites` (enable it under Settings → Devices → Sonos → Entities), narrowed by `favourites_include` or added to with `favourites`.
+- **Favourites:** the star in the transport row slides the favourites open and shrinks and zooms the speaker picture to make room. It is remembered per browser.
 - Streams with no duration show "Live". Grouped speakers follow the member that is playing.
 
 ## Halo Vehicle card (`custom:halo-vehicle-card`)
@@ -91,7 +92,7 @@ fuel_type: ice            # ice or ev
 image_preset: m140i       # none, m140i, e-vivaro (or image: URL)
 colour: "#b3262f"         # the background is built from this
 level: sensor.m140i_fuel
-tank_size: 52             # only if the sensor reports litres, not %
+tank_size: 52             # litres; lets a % sensor show as litres. Petrol is always shown in L when it can be
 range: sensor.m140i_range
 odometer: sensor.m140i_odometer
 lock: lock.m140i
@@ -141,7 +142,7 @@ shadow: true
 
 ## Halo Weather card (`custom:halo-weather-card`)
 
-Weather for any `weather` entity (built against Met.no). Tall, it shows the temperature and condition, a row of details and the next hours (`layout: today`), or a row per day with a low-to-high bar (`layout: week`). Short (under about 230px) it becomes a compact card with the next few hours beside it. The background glows amber for sun, blue for rain, indigo at night, grey for cloud. Tap for the entity's more-info.
+Weather for any `weather` entity (built against Met.no). Tick any of **Current** (temperature, condition, details), **Hourly** (the next hours) and **Weekly** (a row per day with a low-to-high bar); each one makes the card taller, and the weekly list trims days to fit a short card. Short (under about two rows, with Current ticked) it becomes a compact card with the next few hours beside it. The background glows amber for sun, blue for rain, indigo at night, grey for cloud. Tap for the entity's more-info.
 
 The forecast is not in the entity any more, so the card subscribes to Home Assistant's hourly and daily forecasts itself and hides whatever the entity doesn't offer. "Feels like" only shows if the entity has `apparent_temperature` (Met.no doesn't).
 
@@ -149,8 +150,8 @@ The forecast is not in the entity any more, so the card subscribes to Home Assis
 type: custom:halo-weather-card
 entity: weather.home
 name: Swindon           # optional, defaults to the entity's name
-layout: today           # or week
-details: [humidity, wind, pressure]   # up to four of: humidity, wind, pressure, cloud, dew_point, visibility
+sections: [current, hourly]   # any of current, hourly, weekly
+details: [humidity, wind, pressure]   # under Current; up to four of: humidity, wind, pressure, cloud, dew_point, visibility
 shadow: true
 ```
 

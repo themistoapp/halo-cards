@@ -22,6 +22,7 @@ const P = {
   mute: svg`<path d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/>`,
   chev: svg`<path d="m6 9 6 6 6-6"/>`,
   check: svg`<path d="m5 12.5 4.5 4.5L19 7.5"/>`,
+  star: svg`<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/>`,
 };
 const icon = (p: ReturnType<typeof svg>) => html`<svg viewBox="0 0 24 24">${p}</svg>`;
 const hue = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
@@ -43,6 +44,8 @@ export class HaloMediaCard extends LitElement {
   @state() private _thumbs: Record<string, string> = {};
   @state() private _draft?: number;
   @state() private _sel?: string;
+  /** Favourites strip open (remembered per viewer). */
+  @state() private _favs = false;
 
   private _origins = { a: randomOrigin(), b: randomOrigin() };
   private _artKey = "";
@@ -54,12 +57,18 @@ export class HaloMediaCard extends LitElement {
     if (!config?.entity) throw new Error("Choose a media player (entity)");
     this._config = config;
     try { const v = localStorage.getItem(`halo-media:${config.entity}`); this._sel = v && playersOf(config).includes(v) ? v : undefined; } catch { this._sel = undefined; }
+    try { this._favs = localStorage.getItem(`halo-media-favs:${config.entity}`) === "1"; } catch { this._favs = false; }
   }
 
   /** The config with the dropdown's choice as the active player. */
   private get _cfg(): HaloMediaConfig {
     const c = this._config!;
     return this._sel && this._sel !== c.entity && playersOf(c).includes(this._sel) ? { ...c, entity: this._sel } : c;
+  }
+
+  private _toggleFavs() {
+    this._favs = !this._favs;
+    try { localStorage.setItem(`halo-media-favs:${this._config!.entity}`, this._favs ? "1" : "0"); } catch { /* private mode */ }
   }
 
   private _pick(id: string) {
@@ -170,7 +179,7 @@ export class HaloMediaCard extends LitElement {
     return html`<button class="play" aria-label=${m.phase === "playing" ? "Pause" : "Play"} @click=${() => this._svc("media_play_pause")}>${icon(m.phase === "playing" ? P.pause : P.play)}</button>`;
   }
 
-  private _transport(m: MediaModel) {
+  private _transport(m: MediaModel, hasFavs: boolean) {
     const c = m.can;
     return html`<div class="tr">
       ${c.shuffle ? html`<button class="b ${m.shuffle ? "on" : "dim"}" aria-label="Shuffle" @click=${() => this._svc("shuffle_set", { shuffle: !m.shuffle }, m.source.entity_id)}>${icon(P.shuffle)}</button>` : nothing}
@@ -178,6 +187,7 @@ export class HaloMediaCard extends LitElement {
       ${c.play ? this._playButton(m) : nothing}
       ${c.next ? html`<button class="b" aria-label="Next" @click=${() => this._svc("media_next_track", {}, m.source.entity_id)}>${icon(P.next)}</button>` : nothing}
       ${c.repeat ? html`<button class="b ${m.repeat !== "off" ? "on" : "dim"}" aria-label="Repeat" @click=${() => this._svc("repeat_set", { repeat: nextRepeat(m.repeat) }, m.source.entity_id)}>${icon(P.repeat)}</button>` : nothing}
+      ${hasFavs ? html`<button class="b star ${this._favs ? "on" : "dim"}" aria-label="Favourites" aria-pressed=${String(this._favs)} @click=${() => this._toggleFavs()}>${icon(P.star)}</button>` : nothing}
     </div>`;
   }
 
@@ -210,14 +220,17 @@ export class HaloMediaCard extends LitElement {
 
   private _nameOf(id: string) { return String(this._hass!.states[id]?.attributes.friendly_name ?? id.split(".")[1]); }
 
+  private _hasFavs(m: MediaModel) { return m.can.media && favouritesOf(this._hass!, this._cfg).length > 0; }
+
+  /** The strip is always in the layout; it opens and closes by height so the picture above can shrink with it. */
   private _favourites(m: MediaModel) {
+    if (!this._hasFavs(m)) return nothing;
     const favs: Favourite[] = favouritesOf(this._hass!, this._cfg);
-    if (!favs.length || !m.can.media) return nothing;
-    return html`<div class="lab">Favourites</div><div class="fav">${favs.map((f) => {
+    return html`<div class="favwrap ${this._favs ? "on" : ""}" aria-hidden=${String(!this._favs)} ?inert=${!this._favs}><div><div class="fav">${favs.map((f) => {
       const img = f.image ?? this._thumbs[f.media_content_id];
-      return html`<button class="f" @click=${() => this._svc("play_media", { media_content_id: f.media_content_id, media_content_type: f.media_content_type })}>
+      return html`<button class="f" tabindex=${this._favs ? 0 : -1} @click=${() => this._svc("play_media", { media_content_id: f.media_content_id, media_content_type: f.media_content_type })}>
         <div class="im" style=${styleMap({ background: img ? `url("${img}") center / cover` : placeholder(f.name) })}></div><div class="nm">${f.name}</div></button>`;
-    })}</div>`;
+    })}</div></div></div>`;
   }
 
   override render() {
@@ -248,10 +261,15 @@ export class HaloMediaCard extends LitElement {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
         ${this._nowPlaying(m, "compact")}</div></ha-card>`;
     }
+    const hasFavs = this._hasFavs(m), fav = hasFavs && this._favs;
     return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
       ${this._header(m, name)}
-      <div class="hero ${m.phase}"><div class="ring"></div>${img ? html`<img src=${img.src} style=${styleMap({ height: `${img.h}px` })} alt="" />` : nothing}</div>
-      ${this._nowPlaying(m, mode)}${m.can.play || m.can.prev || m.can.next ? this._transport(m) : nothing}${mode === "full" ? this._favourites(m) : nothing}
+      <div class="stage ${fav ? "fav" : ""}">
+        <div class="hero ${m.phase}"><div class="ring"></div>${img ? html`<img src=${img.src} style=${styleMap({ height: `${img.h}px` })} alt="" />` : nothing}</div>
+        ${this._favourites(m)}
+      </div>
+      ${m.can.play || m.can.prev || m.can.next || hasFavs ? this._transport(m, hasFavs) : nothing}
+      ${this._nowPlaying(m, mode)}
     </div></ha-card>`;
   }
 }

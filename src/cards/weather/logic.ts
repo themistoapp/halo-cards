@@ -1,7 +1,10 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { isAvailable } from "../../shared/util";
 
-export type Layout = "today" | "week";
+export type Section = "current" | "hourly" | "weekly";
+export const SECTIONS: Section[] = ["current", "hourly", "weekly"];
+export const SECTION_LABELS: Record<Section, string> = { current: "Current", hourly: "Hourly forecast", weekly: "Weekly forecast" };
+export const DEFAULT_SECTIONS: Section[] = ["current", "hourly"];
 export const DETAIL_IDS = ["humidity", "wind", "pressure", "cloud", "dew_point", "visibility"] as const;
 export type DetailId = (typeof DETAIL_IDS)[number];
 export const DETAIL_LABELS: Record<DetailId, string> = { humidity: "Humidity", wind: "Wind", pressure: "Pressure", cloud: "Cloud", dew_point: "Dew point", visibility: "Visibility" };
@@ -13,9 +16,11 @@ export interface HaloWeatherConfig {
   name?: string;
   /** Drop shadow behind the card (default on). */
   shadow?: boolean;
-  /** "today" (default): now, details and the next hours. "week": now and a row per day. */
-  layout?: Layout;
-  /** Which details to show (up to four). Default: humidity, wind, pressure. */
+  /** Which parts to show: any of current, hourly, weekly. Default: current and hourly. More parts make a taller card. */
+  sections?: Section[];
+  /** Old setting: "week" meant current + weekly. Ignored when `sections` is set. */
+  layout?: "today" | "week";
+  /** Details under the current conditions (up to four). Default: humidity, wind, pressure. */
   details?: DetailId[];
 }
 
@@ -180,4 +185,34 @@ export function forecastTypes(e?: HassEntity): ("daily" | "hourly")[] {
   const f = e?.attributes?.supported_features;
   if (typeof f !== "number") return ["hourly", "daily"];
   return [...(f & 2 ? ["hourly" as const] : []), ...(f & 1 ? ["daily" as const] : [])];
+}
+
+/** The parts to show, always in the order current, hourly, weekly. */
+export function sectionsOf(cfg: HaloWeatherConfig): Section[] {
+  const want = cfg.sections?.length ? cfg.sections : cfg.layout === "week" ? (["current", "weekly"] as Section[]) : DEFAULT_SECTIONS;
+  return SECTIONS.filter((x) => want.includes(x));
+}
+
+/** Pixel heights used to size the card: padding, header, then each part with a 14px gap above it. */
+export const WX = { pad: 32, head: 28, gap: 14, hero: 118, heroTight: 106, details: 56, hours: 78, dayRow: 40, dayBox: 4, days: 7 } as const;
+
+/** Height the chosen parts need, with a full week and without trimming. */
+export function neededHeight(sections: Section[], hasDetails = true, days: number = WX.days): number {
+  const parts: number[] = [];
+  if (sections.includes("current")) { parts.push(WX.hero); if (hasDetails) parts.push(WX.details); }
+  if (sections.includes("hourly")) parts.push(WX.hours);
+  if (sections.includes("weekly")) parts.push(WX.dayBox + WX.dayRow * days);
+  return WX.pad + WX.head + parts.reduce((a, v) => a + v + WX.gap, 0);
+}
+
+/** Grid rows (64px each with its gap) the card needs. */
+export const rowsFor = (px: number) => Math.max(Math.ceil((px + 8) / 64), 2);
+
+/** How many day rows fit in the height left after the other parts (at least 2, at most `days`). */
+export function weeklyRows(height: number, sections: Section[], hasDetails: boolean, tight: boolean, days: number = WX.days): number {
+  const parts: number[] = [];
+  if (sections.includes("current")) { parts.push(tight ? WX.heroTight : WX.hero); if (hasDetails) parts.push(WX.details); }
+  if (sections.includes("hourly")) parts.push(WX.hours);
+  const used = WX.pad + WX.head + parts.reduce((a, v) => a + v + WX.gap, 0) + WX.gap + WX.dayBox;
+  return Math.min(Math.max(Math.floor((height - used) / WX.dayRow), 2), days);
 }

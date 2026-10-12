@@ -38,9 +38,7 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .hr b { font-size: 15px; line-height: 18px; font-weight: 500; }
 
   /* Week */
-  .wk-top { display: flex; align-items: baseline; gap: 12px; }
-  .wk-top .t { font-size: 52px; line-height: 56px; }
-  .days { padding: 2px 14px; flex: 1; min-height: 0; overflow: hidden; }
+  .days { padding: 2px 14px; flex: none; }
   .day { display: flex; align-items: center; gap: 10px; height: 40px; }
   .day + .day { border-top: 1px solid var(--line); }
   .dn { width: 52px; font-size: 14px; line-height: 20px; font-weight: 500; }

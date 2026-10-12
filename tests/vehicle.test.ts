@@ -21,7 +21,7 @@ describe("levelPercent", () => {
 describe("buildVehicle (petrol)", () => {
   it("builds three stats, bar, lock status and place", () => {
     const m = buildVehicle(m140i(), petrol);
-    expect(m.stats.map((s) => [s.label, s.value, s.unit])).toEqual([["Fuel", "62", "%"], ["Range", "312", "mi"], ["Odometer", "24,310", "mi"]]);
+    expect(m.stats.map((s) => [s.label, s.value, s.unit])).toEqual([["Fuel", "32", "L"], ["Range", "312", "mi"], ["Odometer", "24,310", "mi"]]);
     expect(m.pct).toBeCloseTo(61.5, 1);
     expect(m.status).toMatchObject({ kind: "locked", label: "Locked" });
     expect(m.chip).toBe("Home");
@@ -42,6 +42,11 @@ describe("buildVehicle (petrol)", () => {
     expect(m.stats.map((s) => s.label)).toEqual(["Fuel", "Odometer"]);
     expect(m.chip).toBeUndefined();
     expect(buildVehicle(h, { ...petrol, lock: undefined }).status).toBeUndefined();
+  });
+  it("shows petrol in litres, even when the sensor is a percentage", () => {
+    const h = m140i(); h.states["sensor.fuel"] = ent("sensor.fuel", "50", { unit_of_measurement: "%" });
+    expect(buildVehicle(h, petrol).stats[0]).toMatchObject({ value: "26", unit: "L" });
+    expect(buildVehicle(h, { ...petrol, tank_size: undefined }).stats[0]).toMatchObject({ value: "50", unit: "%" });
   });
   it("shows the raw amount and no bar when litres have no tank size", () => {
     const m = buildVehicle(m140i(), { ...petrol, tank_size: undefined });

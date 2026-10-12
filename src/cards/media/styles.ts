@@ -3,7 +3,20 @@ import { bloomStyles, shadowStyles, themeStyles } from "../../shared/bloom";
 
 export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .inner { gap: 10px; padding: 16px; }
-  .hero { position: relative; flex: 1; min-height: 56px; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; }
+  .stage { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+  .hero { position: relative; flex: 1 1 0px; min-height: 56px; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; transition: flex .5s cubic-bezier(.4,0,.2,1), min-height .5s cubic-bezier(.4,0,.2,1); }
+  /* Favourites open: the picture shrinks to a band and zooms in. */
+  .stage.fav { justify-content: center; }
+  .stage.fav .hero { flex: 0 1 76px; min-height: 40px; overflow: hidden; border-radius: 14px; }
+  .regular .stage.fav .hero { flex-basis: 56px; min-height: 24px; }
+  .regular .f, .regular .f .im { width: 58px; } .regular .f .im { height: 58px; }
+  .hero img { transform-origin: 50% 38%; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+  .stage.fav .hero img { transform: scale(1.75); }
+  .favwrap { flex: none; display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .5s cubic-bezier(.4,0,.2,1), opacity .35s ease; }
+  .favwrap.on { grid-template-rows: 1fr; opacity: 1; }
+  .favwrap > div { min-height: 0; overflow: hidden; }
+  .b.star svg { transition: fill .25s ease, transform .35s cubic-bezier(.3,1.6,.5,1); }
+  .b.star.on svg { fill: currentColor; transform: scale(1.08); }
   .ring { position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c0) 40%, transparent), transparent); animation: pulse 3.2s ease-in-out infinite; }
   .hero.paused .ring, .hero.idle .ring { animation: none; opacity: .3; }
   @keyframes pulse { 0%,100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.12); opacity: .9; } }
@@ -12,12 +25,12 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .np { display: flex; gap: 12px; padding: 12px; align-items: center; }
   .npr { display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0; }
   .np.merged { flex-direction: column; align-items: stretch; gap: 8px; }
-  /* Volume: a full-width sunken track inside the box, instead of a divider. */
-  .vol.in { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 4px; border-radius: 99px; background: var(--sunken); }
+  /* Volume sits inside the now-playing box on the box itself, no background of its own. */
+  .vol.in { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 2px 0 0; }
   .vol.in .b { width: 28px; height: 28px; }
   .vol.in .b svg { width: 18px; height: 18px; }
   .vol.in .pc { width: 36px; font-size: 12px; }
-  .vol.in input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--action) var(--p), color-mix(in srgb, var(--ink) 14%, transparent) var(--p)); }
+  .vol.in input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--action) var(--p), color-mix(in srgb, var(--ink) 16%, transparent) var(--p)); }
   .art { flex: none; width: 64px; height: 64px; border-radius: 10px; box-shadow: var(--press); background: var(--sunken) center / cover; }
   .tx { min-width: 0; flex: 1; }
   .ti { font-size: 15px; line-height: 20px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -71,14 +84,11 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .compact .vol { height: 44px; }
   /* Regular (12 x 6 to 12 x 8): no favourites; the picture takes whatever space is left. */
   .regular .inner, .full .inner { gap: 8px; padding: 14px; }
-  .regular .hero, .full .hero { min-height: 0; }
   .regular .np, .full .np { padding: 10px; }
   .regular .art, .full .art { width: 52px; height: 52px; }
   .regular .b, .full .b { width: 36px; height: 36px; }
   .regular .play, .full .play { width: 48px; height: 48px; }
   .regular .vol, .full .vol { height: 44px; }
-  /* Tall cards keep the same top block (so controls fit a 376px wall panel), then favourites follow below. */
-  .full .hero { flex: none; height: 116px; }
   .mini .inner { flex-direction: row; align-items: center; gap: 12px; padding: 12px 16px; }
   .mini .thumb { height: 70px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
   .mini .who { flex: 1; min-width: 0; }

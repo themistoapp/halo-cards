@@ -20,11 +20,15 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .v.warn { color: var(--warn); } .v.bad { color: var(--bad); }
   .br { display: flex; align-items: center; gap: 10px; }
   .bar { flex: 1; height: 24px; border-radius: 12px; background: var(--sunken); position: relative; overflow: hidden; }
-  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 12px; background: var(--action); transition: width .6s ease; }
-  .bar.fuel i { background: linear-gradient(90deg, #f5a3a5, #e5484d 55%, #b3262f); }
-  .bar.ev.warn i { background: var(--warn); } .bar.ev.bad i { background: var(--bad); }
-  .bar.chg i { background: linear-gradient(90deg, #3ee08a, #2fc4b8, #3ee08a); background-size: 200% 100%; animation: flow 2.4s linear infinite; }
-  @keyframes flow { to { background-position: -200% 0; } }
+  /* Meridian stripes: the fill is diagonal stripes in the bar's colour. */
+  ha-card { --stripe: #1f9d63; --stripe-ice: #8a8f9b; }
+  ha-card.dark { --stripe: #4cc9a0; --stripe-ice: #a6abb6; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 12px; --c: var(--stripe); transition: width .6s ease;
+    background: repeating-linear-gradient(135deg, var(--c) 0 1.5px, color-mix(in srgb, var(--c) 20%, transparent) 1.5px 5px); }
+  .bar.fuel i { --c: var(--stripe-ice); }
+  .bar.ev.warn i { --c: var(--warn); } .bar.ev.bad i { --c: var(--bad); }
+  .bar.chg i { --c: var(--stripe); animation: breathe 2s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity: .65; } 50% { opacity: 1; } }
   .pill { display: inline-flex; align-items: center; gap: 5px; height: 24px; box-sizing: border-box; padding: 0 10px; border-radius: 99px; font-size: 12px; line-height: 16px; font-weight: 500; background: var(--sunken); white-space: nowrap; flex: none; border: 0; cursor: pointer; }
   .pill.charging { background: color-mix(in srgb, #3ee08a 24%, var(--surface)); }
   .pill svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

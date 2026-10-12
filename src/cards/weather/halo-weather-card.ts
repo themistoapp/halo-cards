@@ -6,7 +6,7 @@ import { shadesFromHex } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { fireMoreInfo, observeSize } from "../../shared/util";
 import { icon } from "./icons";
-import { buildWeather, forecastTypes, watchedWeather, type Forecasts, type HaloWeatherConfig, type WeatherModel } from "./logic";
+import { buildWeather, forecastTypes, neededHeight, rowsFor, sectionsOf, watchedWeather, weeklyRows, type Forecasts, type HaloWeatherConfig, type WeatherModel } from "./logic";
 import { styles } from "./styles";
 
 registerBloomProps();
@@ -46,7 +46,11 @@ export class HaloWeatherCard extends LitElement {
     if (!old || watchedWeather(this._config).some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();
   }
   getCardSize() { return 6; }
-  getGridOptions() { return { columns: 12, rows: 7, min_columns: 4, min_rows: 2 }; }
+  getGridOptions() {
+    const cfg = this._config;
+    const rows = cfg ? rowsFor(neededHeight(sectionsOf(cfg))) : 6;
+    return { columns: 12, rows, min_columns: 4, min_rows: 2 };
+  }
 
   override connectedCallback() {
     super.connectedCallback();
@@ -92,26 +96,30 @@ export class HaloWeatherCard extends LitElement {
     return html`<div class="hours glass">${m.hours.map((h) => html`<div class="hr"><span class="lab">${h.label}</span>${icon(h.icon, 22)}<b>${deg(h.temp)}</b></div>`)}</div>`;
   }
 
-  private _today(m: WeatherModel, tight: boolean) {
-    const hl = [m.feels !== undefined ? `Feels like ${m.feels}°` : undefined, m.hi !== undefined ? `H ${m.hi}°` : undefined, m.lo !== undefined ? `L ${m.lo}°` : undefined].filter(Boolean).join(" · ");
-    return html`<div class="inner ${tight ? "tight" : ""}"><header><h2>${m.name}</h2></header>
-      <div class="big">${icon(m.icon, tight ? 56 : 64, 1.4)}</div>
-      <div class="hero"><div class="t">${m.temp === undefined ? "–" : html`${m.temp}<sup>°</sup>`}</div><div class="cond">${m.conditionLabel}</div>${hl ? html`<div class="sub">${hl}</div>` : nothing}</div>
-      <div class="grow"></div>${this._details(m)}${this._hoursRow(m)}</div>`;
+  private _daysList(m: WeatherModel, n: number) {
+    const rows = m.days.slice(0, n);
+    if (!rows.length) return nothing;
+    const [lo, hi] = m.scale, pc = (v: number) => ((v - lo) / (hi - lo)) * 100;
+    return html`<div class="days glass">${rows.map((d) => {
+      const a = pc(d.lo ?? d.hi ?? lo), b = pc(d.hi ?? d.lo ?? hi);
+      return html`<div class="day"><span class="dn">${d.label}</span>${icon(d.icon, 20)}<span class="dl">${deg(d.lo)}</span>
+        <div class="rng"><i style="left:${a.toFixed(1)}%;width:${Math.max(b - a, 4).toFixed(1)}%"></i>${d.today && m.temp !== undefined ? html`<u style="left:calc(${pc(m.temp).toFixed(1)}% - 3px)"></u>` : nothing}</div>
+        <span class="dh">${deg(d.hi)}</span></div>`;
+    })}</div>`;
   }
 
-  private _week(m: WeatherModel) {
-    // As many day rows as fit under the heading and the current temperature.
-    const fit = Math.max(Math.floor((this._h - 148) / 40), 3), rows = (this._h > 0 ? m.days.slice(0, fit) : m.days.slice(0, 5));
-    const [lo, hi] = m.scale, pc = (v: number) => ((v - lo) / (hi - lo)) * 100;
-    return html`<div class="inner"><header><h2>${m.name}</h2>${icon(m.icon, 28, 1.6)}</header>
-      <div class="wk-top"><div class="t">${m.temp === undefined ? "–" : html`${m.temp}<sup>°</sup>`}</div><div><div class="cond">${m.conditionLabel}</div>${m.feels !== undefined ? html`<div class="sub">Feels like ${m.feels}°</div>` : nothing}</div></div>
-      ${rows.length ? html`<div class="days glass">${rows.map((d) => {
-        const a = pc(d.lo ?? d.hi ?? lo), b = pc(d.hi ?? d.lo ?? hi);
-        return html`<div class="day"><span class="dn">${d.label}</span>${icon(d.icon, 20)}<span class="dl">${deg(d.lo)}</span>
-          <div class="rng"><i style="left:${a.toFixed(1)}%;width:${Math.max(b - a, 4).toFixed(1)}%"></i>${d.today && m.temp !== undefined ? html`<u style="left:calc(${pc(m.temp).toFixed(1)}% - 3px)"></u>` : nothing}</div>
-          <span class="dh">${deg(d.hi)}</span></div>`;
-      })}</div>` : nothing}</div>`;
+  /** Header, then whichever of current, hourly and weekly are ticked, one under the other. */
+  private _full(m: WeatherModel, tight: boolean) {
+    const cfg = this._config!, sec = sectionsOf(cfg);
+    const cur = sec.includes("current");
+    const hl = [m.feels !== undefined ? `Feels like ${m.feels}°` : undefined, m.hi !== undefined ? `H ${m.hi}°` : undefined, m.lo !== undefined ? `L ${m.lo}°` : undefined].filter(Boolean).join(" · ");
+    const showDetails = true;
+    return html`<div class="inner ${tight ? "tight" : ""}"><header><h2>${m.name}</h2>${cur ? nothing : icon(m.icon, 28, 1.6)}</header>
+      ${cur ? html`<div class="big">${icon(m.icon, tight ? 56 : 64, 1.4)}</div>
+        <div class="hero"><div class="t">${m.temp === undefined ? "–" : html`${m.temp}<sup>°</sup>`}</div><div class="cond">${m.conditionLabel}</div>${hl ? html`<div class="sub">${hl}</div>` : nothing}</div>
+        <div class="grow"></div>${showDetails ? this._details(m) : nothing}` : html`<div class="grow"></div>`}
+      ${sec.includes("hourly") ? this._hoursRow(m) : nothing}
+      ${sec.includes("weekly") ? this._daysList(m, this._h > 0 ? weeklyRows(this._h, sec, cur && showDetails, tight) : 5) : nothing}</div>`;
   }
 
   private _compact(m: WeatherModel) {
@@ -125,7 +133,7 @@ export class HaloWeatherCard extends LitElement {
 
   override render() {
     const cfg = this._config!, hass = this._hass!;
-    const compact = this._h > 0 && this._h < 230, tight = this._h > 0 && this._h < 400;
+    const compact = this._h > 0 && this._h < 230 && sectionsOf(cfg).includes("current"), tight = this._h > 0 && this._h < 400;
     const slots = this._w > 0 && this._w < 340 ? 5 : 6;
     const m = buildWeather(hass, cfg, this._fc, { hours: slots, days: 7 });
     const dark = !!hass.themes?.darkMode;
@@ -133,7 +141,7 @@ export class HaloWeatherCard extends LitElement {
     const vars = { "--x1": "86%", "--y1": "-10%", "--x2": "50%", "--y2": "50%", "--k": String(m.available ? m.k : 0.4), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca };
     return html`<ha-card class="${dark ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)} @click=${() => fireMoreInfo(this, cfg.entity)}>
       <div class="bg"></div><div class="grain"></div>
-      ${compact ? this._compact(m) : cfg.layout === "week" ? this._week(m) : this._today(m, tight)}
+      ${compact ? this._compact(m) : this._full(m, tight)}
     </ha-card>`;
   }
 }

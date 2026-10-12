@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildWeather, compass, forecastTypes, iconFor, roundTemp } from "../src/cards/weather/logic";
+import { buildWeather, compass, forecastTypes, iconFor, neededHeight, roundTemp, rowsFor, sectionsOf, weeklyRows } from "../src/cards/weather/logic";
 import { ent, hassOf } from "./helpers";
 
 const NOW = new Date(2026, 9, 12, 15, 20); // 12 Oct 2026, 15:20 local
@@ -111,5 +111,28 @@ describe("forecast types", () => {
     expect(forecastTypes(wx("sunny", { supported_features: 1 }))).toEqual(["daily"]);
     expect(forecastTypes(wx("sunny", { supported_features: 0 }))).toEqual([]);
     expect(forecastTypes(wx("sunny", { supported_features: undefined }))).toEqual(["hourly", "daily"]);
+  });
+});
+
+describe("sections", () => {
+  it("defaults to current and hourly, in a fixed order", () => {
+    expect(sectionsOf(cfg)).toEqual(["current", "hourly"]);
+    expect(sectionsOf({ ...cfg, sections: ["weekly", "current"] })).toEqual(["current", "weekly"]);
+    expect(sectionsOf({ ...cfg, sections: [] })).toEqual(["current", "hourly"]);
+  });
+  it("still understands the old week layout", () => {
+    expect(sectionsOf({ ...cfg, layout: "week" })).toEqual(["current", "weekly"]);
+    expect(sectionsOf({ ...cfg, layout: "week", sections: ["hourly"] })).toEqual(["hourly"]);
+  });
+  it("makes the card taller for each part", () => {
+    const h = (s: Parameters<typeof neededHeight>[0]) => rowsFor(neededHeight(s));
+    expect([h(["current", "hourly"]), h(["current"]), h(["hourly"]), h(["current", "weekly"]), h(["current", "hourly", "weekly"])]).toEqual([6, 5, 3, 9, 11]);
+  });
+  it("trims the week to the height left, between 2 and 7 days", () => {
+    const s = ["current", "weekly"] as const;
+    expect(weeklyRows(568, [...s], true, false)).toBe(7);
+    expect(weeklyRows(376, [...s], true, true)).toBe(2);
+    expect(weeklyRows(100, [...s], true, false)).toBe(2);
+    expect(weeklyRows(376, ["weekly"], false, false)).toBe(7);
   });
 });

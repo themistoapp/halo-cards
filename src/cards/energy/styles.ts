@@ -14,7 +14,7 @@ export const styles = [shadowStyles, css`
     --press: 0 1px 2px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.14);
     --s0:#f2c14e; --s1:#f7dc93; --sa:#f47fa4;
     --b0:#6fcf9a; --b1:#a9e5c3; --ba:#2fc4b8;
-    --r0:#aeb3bf; --r1:#d3d6dd;
+    --r0:#6f5cff; --r1:#c4bcff;
     display: block; position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
     color: var(--ink); font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif);
   }
@@ -23,7 +23,7 @@ export const styles = [shadowStyles, css`
     --press: 0 1px 2px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
     --s0:#8a6a10; --s1:#5a4710; --sa:#a8325f;
     --b0:#1f7a52; --b1:#1a5239; --ba:#0f6f78;
-    --r0:#5a606e; --r1:#3d424d;
+    --r0:#4a3fd0; --r1:#2a2570;
   }
 
   /* Background: one bloom per source, sized by its share of supply, random start, grows in. */
@@ -72,10 +72,10 @@ export const styles = [shadowStyles, css`
   }
   .dark .tile { background: color-mix(in srgb, var(--surface) 72%, transparent); --g0:#8a6a10; --a0:#a8325f; --ln:#f2c14e; }
   .tile.battery { --g0:#6fcf9a; --a0:#2fc4b8; --ln:#2f6b4a; }
-  .tile.grid { --g0:#f08a4b; --a0:#2f7bff; --ln:#c2570f; }
+  .tile.grid { --g0:#8a6bff; --a0:#2f7bff; --ln:#4b3fd6; }
   .tile.house { --g0:#aeb3bf; --a0:#aeb3bf; --ln:#666670; }
   .dark .tile.battery { --g0:#1f7a52; --a0:#0f6f78; --ln:#6fcf9a; }
-  .dark .tile.grid { --g0:#b5561d; --a0:#2457d6; --ln:#f4a36a; }
+  .dark .tile.grid { --g0:#5a46c8; --a0:#2457d6; --ln:#a99bff; }
   .dark .tile.house { --g0:#5a606e; --a0:#5a606e; --ln:#b0b4bf; }
   .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .tile.tap:focus-visible, .lb:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }

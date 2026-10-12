@@ -80,7 +80,11 @@ export function buildVehicle(hass: HomeAssistant, cfg: HaloVehicleConfig): Vehic
   const charging = isCharging(st(cfg.charging));
   const tone = pct === undefined || charging ? undefined : pct <= crit ? "bad" : pct <= low ? "warn" : undefined;
   const label = kind === "ev" ? "Battery" : "Fuel";
-  if (pct !== undefined) stats.push({ label, value: String(Math.round(pct)), unit: "%", tone });
+  const lu = unitOf(le);
+  // Petrol is shown in litres: the sensor's own amount, or the percentage against the tank size.
+  if (kind === "ice" && raw !== undefined && lu && lu !== "%") stats.push({ label, value: String(Math.round(raw)), unit: lu, tone });
+  else if (kind === "ice" && pct !== undefined && cfg.tank_size && cfg.tank_size > 0) stats.push({ label, value: String(Math.round((pct / 100) * cfg.tank_size)), unit: "L", tone });
+  else if (pct !== undefined) stats.push({ label, value: String(Math.round(pct)), unit: "%", tone });
   else if (raw !== undefined) stats.push({ label, value: fmt(raw), unit: unitOf(le) });
 
   const range = numState(st(cfg.range));
