@@ -35,8 +35,18 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -6px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--press); }
   input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--press); }
 
+  header { min-height: 30px; }
+  .pick { position: relative; flex: none; max-width: 52%; display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .pick h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pick svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pick select { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); opacity: 0; cursor: pointer; font-size: 16px; }
+  header .grp { flex: 1; min-width: 0; padding: 2px 0;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
+  header .grp .p:first-child { margin-left: auto; }
+  header .grp .p { padding: 4px 10px; font-size: 12px; line-height: 16px; }
   .lab { margin: 2px 2px -2px; }
   .grp { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .grp::-webkit-scrollbar { display: none; }
   .p { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; font-size: 13px; line-height: 18px; font-weight: 500; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 72%, transparent); cursor: pointer; white-space: nowrap; }
   .p.on { background: var(--action); color: var(--action-ink); border-color: transparent; }
   .p svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

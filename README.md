@@ -66,12 +66,14 @@ Sonos or any media player. Only `entity` is required.
 ```yaml
 type: custom:halo-media-card
 entity: media_player.living_room
-speakers: [media_player.kitchen, media_player.bedroom]   # optional: group chips
+players:                       # optional: one card for the whole house
+  - media_player.kitchen
+  - media_player.bedroom
 ```
 
 - **Background:** two blooms in colours read from the album art, growing with volume (smaller when paused). Idle or off, or artwork with no colour in it (most radio logos), gives a grey bloom. Colours can only be read from artwork Home Assistant serves itself (the usual case); artwork blocked by its host also falls back to grey.
 - **Speaker picture:** chosen from the device model (Beam, Arc, Ray, Era 300, One), or set `speaker: beam-sub-mini | era-300 | one | none`, or give your own `image` URL.
-- **Shows only what the player supports:** shuffle, repeat, previous, next, mute and volume follow the player's features. Group chips show only if you list `speakers`; tap to join or leave. Favourites come from `sensor.sonos_favorites` (enable it under Settings → Devices → Sonos → Entities), narrowed by `favourites_include` or added to with `favourites`.
+- **Shows only what the player supports:** shuffle, repeat, previous, next, mute and volume follow the player's features. With `players` set, the title becomes a dropdown to switch player (your choice is remembered per browser) and the other players appear top right as scrollable chips; tap to join or leave the group. `speakers` can limit the chips to a subset. Favourites come from `sensor.sonos_favorites` (enable it under Settings → Devices → Sonos → Entities), narrowed by `favourites_include` or added to with `favourites`.
 - Streams with no duration show "Live". Grouped speakers follow the member that is playing.
 
 ## Halo Vehicle card (`custom:halo-vehicle-card`)

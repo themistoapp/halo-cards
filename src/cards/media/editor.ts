@@ -11,13 +11,14 @@ const SCHEMA = [
     { value: "auto", label: "Auto (from the device model)" }, { value: "beam-sub-mini", label: "Beam + Sub Mini" },
     { value: "era-300", label: "Era 300" }, { value: "one", label: "One" }, { value: "none", label: "None" } ] } } },
   { name: "image", selector: { text: {} } },
+  { name: "players", selector: { entity: { domain: "media_player", multiple: true } } },
   { name: "speakers", selector: { entity: { domain: "media_player", multiple: true } } },
   { name: "favourites_entity", selector: { entity: { domain: "sensor" } } },
 ];
 const LABELS: Record<string, string> = {
   shadow: "Drop shadow",
-  entity: "Media player", name: "Title (room)", speaker: "Speaker picture", image: "Your own picture (URL)",
-  speakers: "Speakers to show as group chips", favourites_entity: "Sonos favourites sensor",
+  entity: "Default media player", name: "Title (room)", speaker: "Speaker picture", image: "Your own picture (URL)",
+  players: "All players (title becomes a dropdown, others become group chips)", speakers: "Group chips only (optional, overrides players)", favourites_entity: "Sonos favourites sensor",
 };
 
 export class HaloMediaCardEditor extends LitElement {

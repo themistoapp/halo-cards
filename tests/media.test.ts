@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloomK, buildMedia, favouritesOf, fmtTime, mediaSource, nextRepeat, position, speakerFor } from "../src/cards/media/logic";
+import { bloomK, buildMedia, favouritesOf, fmtTime, mediaSource, nextRepeat, playersOf, position, speakerFor } from "../src/cards/media/logic";
 import { ent, hassOf } from "./helpers";
 
 const feats = 1 | 4 | 8 | 16 | 32 | 512 | 16384 | 32768 | 262144;
@@ -45,6 +45,12 @@ describe("buildMedia", () => {
     const m = buildMedia(h, { type: "x", entity: "media_player.lounge", speakers: ["media_player.kitchen", "media_player.bedroom"] })!;
     expect(m.grouped).toBe(2);
     expect(m.speakers.map((s) => [s.name, s.inGroup])).toEqual([["lounge", true], ["Kitchen", true], ["Bedroom", false]]);
+  });
+  it("uses players as chips and lists them for the dropdown", () => {
+    const h = hassOf([player(), ent("media_player.kitchen", "idle", { friendly_name: "Kitchen" }), ent("media_player.bedroom", "idle", { friendly_name: "Bedroom" })]);
+    const cfg = { type: "x", entity: "media_player.lounge", players: ["media_player.kitchen", "media_player.bedroom"] };
+    expect(buildMedia(h, cfg)!.speakers.map((s) => s.name)).toEqual(["lounge", "Kitchen", "Bedroom"]);
+    expect(playersOf(cfg)).toEqual(["media_player.lounge", "media_player.kitchen", "media_player.bedroom"]);
   });
   it("shows no chips when none are listed", () => {
     expect(buildMedia(hassOf([player()]), { type: "x", entity: "media_player.lounge" })!.speakers).toEqual([]);

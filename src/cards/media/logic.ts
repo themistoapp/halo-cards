@@ -11,7 +11,9 @@ export interface HaloMediaConfig {
   speaker?: "auto" | "none" | "beam-sub-mini" | "era-300" | "one";
   /** Your own picture (URL) instead of the built-in speaker. */
   image?: string;
-  /** Other speakers to show as join/leave chips. */
+  /** Every player in the house: the title becomes a dropdown to switch between them, and the others show as group chips. */
+  players?: string[];
+  /** Only these as group chips (defaults to `players`). */
   speakers?: string[];
   favourites_entity?: string;
   favourites_include?: string[];
@@ -97,7 +99,7 @@ export function buildMedia(hass: HomeAssistant, cfg: HaloMediaConfig, now = Date
   const hasTrack = hasMedia(source);
   const artist = [source.attributes.media_artist, source.attributes.media_album_name].filter(Boolean).join(" · ");
   const name = (id: string) => String(hass.states[id]?.attributes.friendly_name ?? id.split(".")[1]);
-  const ids = cfg.speakers?.filter((id) => hass.states[id] && isAvailable(hass.states[id])) ?? [];
+  const ids = (cfg.speakers ?? cfg.players)?.filter((id) => hass.states[id] && isAvailable(hass.states[id])) ?? [];
   return {
     source, main,
     phase: phaseOf(source.state === "idle" && main.state !== "idle" ? main : source),
@@ -119,10 +121,13 @@ export function buildMedia(hass: HomeAssistant, cfg: HaloMediaConfig, now = Date
   };
 }
 
+/** Players offered in the dropdown: the configured entity first, then `players`. */
+export const playersOf = (cfg: HaloMediaConfig): string[] => [...new Set([cfg.entity, ...(cfg.players ?? [])])];
+
 export const nextRepeat = (r: string) => (r === "off" ? "all" : r === "all" ? "one" : "off");
 
 export function watchedMedia(cfg: HaloMediaConfig, hass?: HomeAssistant): string[] {
-  const ids = new Set<string>([cfg.entity, ...(cfg.speakers ?? [])]);
+  const ids = new Set<string>([cfg.entity, ...(cfg.players ?? []), ...(cfg.speakers ?? [])]);
   const main = hass?.states[cfg.entity];
   for (const m of (Array.isArray(main?.attributes.group_members) ? main!.attributes.group_members : []) as string[]) ids.add(m);
   if (cfg.favourites_entity) ids.add(cfg.favourites_entity);

@@ -5,7 +5,7 @@ import { GREY_DAY, GREY_NIGHT, randomOrigin, registerBloomProps } from "../../sh
 import { artPalette, paletteFromUrl, type ArtColours, type Palette } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { observeHeight } from "../../shared/util";
-import { bloomK, buildMedia, favouritesOf, fmtTime, nextRepeat, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
+import { bloomK, buildMedia, favouritesOf, fmtTime, nextRepeat, playersOf, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
 import { SPEAKER_HEIGHT, SPEAKER_IMAGES } from "./speakers";
 import { styles } from "./styles";
 
@@ -20,6 +20,7 @@ const P = {
   repeat: svg`<path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>`,
   vol: svg`<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>`,
   mute: svg`<path d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/>`,
+  chev: svg`<path d="m6 9 6 6 6-6"/>`,
   check: svg`<path d="m5 12.5 4.5 4.5L19 7.5"/>`,
 };
 const icon = (p: ReturnType<typeof svg>) => html`<svg viewBox="0 0 24 24">${p}</svg>`;
@@ -41,6 +42,7 @@ export class HaloMediaCard extends LitElement {
   @state() private _palette?: ArtColours;
   @state() private _thumbs: Record<string, string> = {};
   @state() private _draft?: number;
+  @state() private _sel?: string;
 
   private _origins = { a: randomOrigin(), b: randomOrigin() };
   private _artKey = "";
@@ -51,6 +53,18 @@ export class HaloMediaCard extends LitElement {
   setConfig(config: HaloMediaConfig) {
     if (!config?.entity) throw new Error("Choose a media player (entity)");
     this._config = config;
+    try { const v = localStorage.getItem(`halo-media:${config.entity}`); this._sel = v && playersOf(config).includes(v) ? v : undefined; } catch { this._sel = undefined; }
+  }
+
+  /** The config with the dropdown's choice as the active player. */
+  private get _cfg(): HaloMediaConfig {
+    const c = this._config!;
+    return this._sel && this._sel !== c.entity && playersOf(c).includes(this._sel) ? { ...c, entity: this._sel } : c;
+  }
+
+  private _pick(id: string) {
+    this._sel = id; this._palette = undefined; this._artKey = "";
+    try { localStorage.setItem(`halo-media:${this._config!.entity}`, id); } catch { /* private mode */ }
   }
 
   set hass(hass: HomeAssistant) {
@@ -85,7 +99,7 @@ export class HaloMediaCard extends LitElement {
       else paletteFromUrl(art).then((p) => { if (this._artKey === art) this._palette = p; });
     }
     // Favourite artwork from the player's own browser.
-    const cfg = this._config!, hass = this._hass!;
+    const cfg = this._cfg, hass = this._hass!;
     const fav = cfg.favourites_entity ?? (hass.states["sensor.sonos_favorites"] ? "sensor.sonos_favorites" : undefined);
     const key = `${cfg.entity}|${fav ? hass.states[fav]?.last_updated : ""}`;
     if (fav && key !== this._thumbKey) {
@@ -101,7 +115,7 @@ export class HaloMediaCard extends LitElement {
     if (!tick && this._timer) { clearInterval(this._timer); this._timer = undefined; }
   }
 
-  private _model(): MediaModel | undefined { return this._hass && this._config ? buildMedia(this._hass, this._config) : undefined; }
+  private _model(): MediaModel | undefined { return this._hass && this._config ? buildMedia(this._hass, this._cfg) : undefined; }
 
   private async _loadThumbs(hass: HomeAssistant, entity: string) {
     type Node = { media_content_id: string; media_content_type: string; thumbnail?: string; children?: Node[] };
@@ -114,12 +128,12 @@ export class HaloMediaCard extends LitElement {
     return out;
   }
 
-  private _svc(service: string, data: Record<string, unknown> = {}, entity = this._config!.entity) {
+  private _svc(service: string, data: Record<string, unknown> = {}, entity = this._cfg.entity) {
     this._hass!.callService("media_player", service, { entity_id: entity, ...data });
   }
 
   private _image(m: MediaModel): { src: string; h: number } | undefined {
-    const cfg = this._config!, hass = this._hass!;
+    const cfg = this._cfg, hass = this._hass!;
     if (cfg.image) return { src: cfg.image, h: 140 };
     const dev = hass.entities?.[cfg.entity]?.device_id;
     const model = dev ? hass.devices?.[dev]?.model : undefined;
@@ -131,11 +145,6 @@ export class HaloMediaCard extends LitElement {
   private _colours(dark: boolean, active: boolean): Palette {
     if (active && this._palette) return artPalette(this._palette, dark);
     return dark ? GREY_NIGHT : GREY_DAY;
-  }
-
-  private _chip(m: MediaModel) {
-    const label = m.phase === "idle" ? "Idle" : m.grouped > 1 ? `Grouped · ${m.grouped}` : m.phase === "playing" ? "Playing" : "Paused";
-    return html`<span class="chip ${m.phase === "idle" ? "off" : ""}"><i></i>${label}</span>`;
   }
 
   private _nowPlaying(m: MediaModel, compact: boolean): TemplateResult {
@@ -179,14 +188,22 @@ export class HaloMediaCard extends LitElement {
     </div>`;
   }
 
-  private _speakers(m: MediaModel) {
-    if (!m.speakers.length) return nothing;
-    return html`<div class="lab">Speakers</div><div class="grp">${m.speakers.map((s) => html`<button class="p ${s.inGroup ? "on" : ""}" ?disabled=${s.main}
-      @click=${() => s.inGroup ? this._svc("unjoin", {}, s.id) : this._svc("join", { group_members: [s.id] })}>${s.inGroup ? icon(P.check) : nothing}${s.name}</button>`)}</div>`;
+  private _header(m: MediaModel, name: string) {
+    const ids = playersOf(this._config!);
+    return html`<header>
+      <div class="pick">
+        <h2>${name}</h2>${ids.length > 1 ? html`${icon(P.chev)}<select aria-label="Player" @change=${(e: Event) => this._pick((e.target as HTMLSelectElement).value)}>
+          ${ids.map((id) => html`<option value=${id} ?selected=${id === this._cfg.entity}>${this._nameOf(id)}</option>`)}</select>` : nothing}
+      </div>
+      ${m.speakers.length > 1 ? html`<div class="grp">${m.speakers.filter((s) => !s.main).map((s) => html`<button class="p ${s.inGroup ? "on" : ""}"
+        @click=${() => s.inGroup ? this._svc("unjoin", {}, s.id) : this._svc("join", { group_members: [s.id] })}>${s.inGroup ? icon(P.check) : nothing}${s.name}</button>`)}</div>` : nothing}
+    </header>`;
   }
 
+  private _nameOf(id: string) { return String(this._hass!.states[id]?.attributes.friendly_name ?? id.split(".")[1]); }
+
   private _favourites(m: MediaModel) {
-    const favs: Favourite[] = favouritesOf(this._hass!, this._config!);
+    const favs: Favourite[] = favouritesOf(this._hass!, this._cfg);
     if (!favs.length || !m.can.media) return nothing;
     return html`<div class="lab">Favourites</div><div class="fav">${favs.map((f) => {
       const img = f.image ?? this._thumbs[f.media_content_id];
@@ -196,10 +213,10 @@ export class HaloMediaCard extends LitElement {
   }
 
   override render() {
-    const hass = this._hass!, cfg = this._config!;
+    const hass = this._hass!, cfg = this._cfg;
     const m = buildMedia(hass, cfg);
     const dark = !!hass.themes?.darkMode;
-    const name = cfg.name ?? String(hass.states[cfg.entity]?.attributes.friendly_name ?? "Speaker");
+    const name = this._sel && this._sel !== this._config!.entity ? this._nameOf(cfg.entity) : (cfg.name ?? this._nameOf(cfg.entity));
     if (!m) return html`<ha-card><div style="padding:16px">${name}: unavailable</div></ha-card>`;
     const active = m.phase !== "idle";
     const c = this._colours(dark, active);
@@ -221,13 +238,13 @@ export class HaloMediaCard extends LitElement {
     }
     if (mode === "compact") {
       return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
-        <header><h2>${name}</h2>${this._chip(m)}</header>
+        ${this._header(m, name)}
         ${this._nowPlaying(m, true)}${this._volume(m)}</div></ha-card>`;
     }
     return html`<ha-card class=${cls} style=${styleMap(vars)}>${bg}<div class="inner">
-      <header><h2>${name}</h2>${this._chip(m)}</header>
+      ${this._header(m, name)}
       <div class="hero ${m.phase}"><div class="ring"></div>${img ? html`<img src=${img.src} style=${styleMap({ height: `${img.h}px` })} alt="" />` : nothing}</div>
-      ${this._nowPlaying(m, false)}${m.can.play || m.can.prev || m.can.next ? this._transport(m) : nothing}${this._volume(m)}${this._speakers(m)}${this._favourites(m)}
+      ${this._nowPlaying(m, false)}${m.can.play || m.can.prev || m.can.next ? this._transport(m) : nothing}${this._volume(m)}${this._favourites(m)}
     </div></ha-card>`;
   }
 }
