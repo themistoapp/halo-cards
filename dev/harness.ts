@@ -59,6 +59,7 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
       e("sun.sun", "above_horizon"),
+      e("event.agile_today", "2026-10-12T00:00:00Z", { rates: agileRates(0, false) }), e("event.agile_tomorrow", "2026-10-13T00:00:00Z", { rates: agileRates(1, true) }),
       e("sensor.pv_total", "870", { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
       e("weather.home", "partlycloudy", { friendly_name: "Swindon", temperature: 14.4, humidity: 72, pressure: 1008.3, pressure_unit: "hPa", wind_speed: 22.4, wind_speed_unit: "km/h", wind_bearing: 225, cloud_coverage: 48, dew_point: 9.1, supported_features: 3 }),
       e("weather.rain", "rainy", { friendly_name: "Swindon", temperature: 11.2, humidity: 91, pressure: 998, pressure_unit: "hPa", wind_speed: 30, wind_speed_unit: "km/h", wind_bearing: 250, supported_features: 3 }),
@@ -84,6 +85,16 @@ const shape: Record<string, (x: number) => number> = {
 
 const solarFc = (day: number, peak: number, dip: number) => (t: number) => t < 7.2 || t > 17.9 ? 0 : peak * Math.sin(Math.PI * (t - 7.2) / 10.7) ** 1.5 * (1 - dip * Math.exp(-(((t - 11) / 0.9) ** 2)));
 const solarAct = (t: number) => solarFc(0, 1, 0)(t) * (0.9 - 0.4 * Math.exp(-(((t - 10.3) / 0.7) ** 2)) + 0.12 * Math.exp(-(((t - 13) / 1.2) ** 2)));
+// Agile: 48 half-hour slots in £/kWh with an overnight dip and a 16:00-19:00 peak; tomorrow dips negative at 03:00.
+function agileRates(plusDays: number, negative: boolean) {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() + plusDays);
+  return Array.from({ length: 48 }, (_, i) => {
+    const t = i / 2, start = new Date(d0.getTime() + i * 1_800_000), end = new Date(start.getTime() + 1_800_000);
+    let p = 17 + 6 * Math.sin((t - 6) / 24 * 2 * Math.PI) - 8 * Math.exp(-(((t - 3.5) / 2) ** 2)) + 22 * Math.exp(-(((t - 17.5) / 1.4) ** 2)) + 4 * Math.exp(-(((t - 8) / 1) ** 2));
+    if (negative) p -= 20 * Math.exp(-(((t - 3) / 1.1) ** 2));
+    return { start: start.toISOString(), end: end.toISOString(), value_inc_vat: Math.round(p * 100) / 10000, is_capped: false };
+  });
+}
 function solarForecast() {
   const out: Record<string, number> = {};
   for (const [day, peak, dip] of [[0, 1, 0], [1, 0.9, 0.3]] as const) {
@@ -196,6 +207,12 @@ const specs: Spec[] = [
   { id: "wx-nsp", title: "Weather today NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 480, h: 376 },
   { id: "wx-nsp-wk", title: "Current + weekly NSP 480x376 (trimmed)", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", sections: ["current", "weekly"] }, w: 480, h: 376 },
   { id: "wx-nofc", title: "No forecast", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.nofc" }, w: 378, h: 440 },
+  { id: "ag", title: "Agile 12x6", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376 },
+  { id: "ag-tom", title: "Agile tomorrow", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
+  { id: "ag-night", title: "Agile night", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, dark: true },
+  { id: "ag-c", title: "Agile compact 12x2", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 120 },
+  { id: "ag-nsp", title: "Agile NSP 480x376", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 480, h: 376 },
+  { id: "ag-sub", title: "Agile 3 figures", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", figures: ["current", "lowest", "highest"] }, w: 378, h: 376 },
   { id: "sol", title: "Solar today 12x6", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376 },
   { id: "sol-tom", title: "Solar tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
   { id: "sol-night", title: "Solar night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, dark: true },

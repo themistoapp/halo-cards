@@ -12,6 +12,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
 | Solar forecast | `custom:halo-solar-card` | 12 × 6 chart, 12 × 2 compact |
+| Agile rates | `custom:halo-agile-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 
 ## Install (HACS)
@@ -169,6 +170,21 @@ actual: sensor.pv_total_power     # optional
 name: Solar forecast              # optional
 forecast_entry: 01J...            # optional
 shadow: true
+```
+
+## Halo Agile card (`custom:halo-agile-card`)
+
+Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current rate, Next rate, Lowest, Average and Highest (for the chosen day); as many as fit are shown, and you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
+
+Point it at the integration's **current day rates** and **next day rates** event entities (`event.octopus_energy_electricity_<serial>_<mpan>_current_day_rates` and `..._next_day_rates`). Rates come from their `rates` attribute; values in pounds are converted to pence automatically.
+
+```yaml
+type: custom:halo-agile-card
+rates_today: event.octopus_energy_electricity_xxx_xxx_current_day_rates
+rates_tomorrow: event.octopus_energy_electricity_xxx_xxx_next_day_rates
+figures: [current, next, lowest, average, highest]   # optional, any subset
+cheap_below: 15        # pence, green at or below (default 15)
+expensive_above: 30    # pence, red above (default 30)
 ```
 
 ## Development
