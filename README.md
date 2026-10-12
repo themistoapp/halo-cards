@@ -11,6 +11,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
+| Solar forecast | `custom:halo-solar-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 
 ## Install (HACS)
@@ -150,6 +151,22 @@ entity: weather.home
 name: Swindon           # optional, defaults to the entity's name
 layout: today           # or week
 details: [humidity, wind, pressure]   # up to four of: humidity, wind, pressure, cloud, dew_point, visibility
+shadow: true
+```
+
+## Halo Solar Forecast card (`custom:halo-solar-card`)
+
+Forecast.Solar for today and tomorrow (chips at the top), with your actual generation drawn over today's forecast. It shows the forecast total, what has been generated so far and how that compares with the forecast up to now, and the peak. Short (under about 230px) it becomes a compact card with a small chart.
+
+The forecast comes from the same data as the Energy dashboard, so **Forecast.Solar must be added to the solar panels in the Energy dashboard** (Settings, Dashboards, Energy, Solar panels, "Add forecast"). With several arrays they are added together unless you name one with `forecast_entry` (its config entry id).
+
+`actual` is your total PV power sensor (W or kW); its history since midnight is drawn as the line, and the kWh generated is worked out from it. Leave it out for a forecast-only card.
+
+```yaml
+type: custom:halo-solar-card
+actual: sensor.pv_total_power     # optional
+name: Solar forecast              # optional
+forecast_entry: 01J...            # optional
 shadow: true
 ```
 

@@ -13,6 +13,16 @@ if (!customElements.get("ha-icon")) customElements.define("ha-icon", class exten
 if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
 const q = new URLSearchParams(location.search);
 const only = q.get("only");
+// ?now=14:05 pins the clock so solar screenshots are repeatable.
+const pin = q.get("now");
+if (pin) {
+  const RealDate = Date, [hh, mm] = pin.split(":").map(Number), t = new RealDate(); t.setHours(hh, mm, 0, 0);
+  const off = t.getTime() - RealDate.now();
+  (globalThis as any).Date = class extends RealDate {
+    constructor(...a: any[]) { if (a.length === 0) super(RealDate.now() + off); else super(...(a as [any])); }
+    static override now() { return RealDate.now() + off; }
+  };
+}
 const now = new Date().toISOString();
 const e = (id: string, state: string, attributes: Record<string, unknown> = {}) => [id, { entity_id: id, state, attributes, last_updated: now, last_changed: now }] as const;
 
@@ -49,6 +59,7 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
       e("sun.sun", "above_horizon"),
+      e("sensor.pv_total", "870", { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
       e("weather.home", "partlycloudy", { friendly_name: "Swindon", temperature: 14.4, humidity: 72, pressure: 1008.3, pressure_unit: "hPa", wind_speed: 22.4, wind_speed_unit: "km/h", wind_bearing: 225, cloud_coverage: 48, dew_point: 9.1, supported_features: 3 }),
       e("weather.rain", "rainy", { friendly_name: "Swindon", temperature: 11.2, humidity: 91, pressure: 998, pressure_unit: "hPa", wind_speed: 30, wind_speed_unit: "km/h", wind_bearing: 250, supported_features: 3 }),
       e("weather.night", "clear-night", { friendly_name: "Swindon", temperature: 8.6, humidity: 80, pressure: 1016, pressure_unit: "hPa", wind_speed: 8, wind_speed_unit: "km/h", wind_bearing: 20, supported_features: 3 }),
@@ -71,6 +82,17 @@ const shape: Record<string, (x: number) => number> = {
 };
 
 
+const solarFc = (day: number, peak: number, dip: number) => (t: number) => t < 7.2 || t > 17.9 ? 0 : peak * Math.sin(Math.PI * (t - 7.2) / 10.7) ** 1.5 * (1 - dip * Math.exp(-(((t - 11) / 0.9) ** 2)));
+const solarAct = (t: number) => solarFc(0, 1, 0)(t) * (0.9 - 0.4 * Math.exp(-(((t - 10.3) / 0.7) ** 2)) + 0.12 * Math.exp(-(((t - 13) / 1.2) ** 2)));
+function solarForecast() {
+  const out: Record<string, number> = {};
+  for (const [day, peak, dip] of [[0, 1, 0], [1, 0.9, 0.3]] as const) {
+    const f = solarFc(day, peak, dip);
+    for (let h = 7; h <= 17; h++) { let wh = 0; for (let i = 0; i < 20; i++) wh += f(h + (i + 0.5) / 20) * 1000 / 20; const d = new Date(); d.setHours(h, 0, 0, 0); d.setDate(d.getDate() + day); out[d.toISOString()] = Math.round(wh); }
+  }
+  return { entry1: { wh_hours: out } };
+}
+
 const CONDS = ["partlycloudy", "partlycloudy", "sunny", "cloudy", "rainy", "rainy", "pouring", "cloudy", "sunny", "sunny"];
 function forecast(kind: string, night = false) {
   const t = new Date(); t.setMinutes(0, 0, 0);
@@ -90,12 +112,12 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
       async subscribeMessage(cb: (m: unknown) => void, msg: { entity_ids: string[]; start_time: string; type?: string; forecast_type?: string }) {
         if (msg.type === "weather/subscribe_forecast") { setTimeout(() => cb({ type: msg.forecast_type, forecast: forecast(msg.forecast_type!, (msg as any).entity_id === "weather.night") }), 30); return () => {}; }
         const t0 = Date.parse(msg.start_time), t1 = Date.now(); const out: Record<string, { s: string; lu: number }[]> = {};
-        for (const id of msg.entity_ids) out[id] = Array.from({ length: 120 }, (_, i) => ({ s: String((shape[id]?.(i / 119)) ?? 0), lu: (t0 + (i / 119) * (t1 - t0)) / 1000 }));
+        for (const id of msg.entity_ids) out[id] = Array.from({ length: 120 }, (_, i) => ({ s: String(id === "sensor.pv_total" ? Math.round(solarAct(new Date(t0 + (i / 119) * (t1 - t0)).getHours() + new Date(t0 + (i / 119) * (t1 - t0)).getMinutes() / 60) * 1000) : (shape[id]?.(i / 119)) ?? 0), lu: (t0 + (i / 119) * (t1 - t0)) / 1000 }));
         setTimeout(() => cb({ states: out }), 50); return () => {};
       },
     },
     async callService(d: string, s: string, data: Record<string, unknown>) { console.log("service", d, s, data); },
-    async callWS() { return { children: [] }; },
+    async callWS(m: { type?: string }) { return m?.type === "energy/solar_forecast" ? solarForecast() : { children: [] }; },
   } as unknown as HomeAssistant;
 }
 
@@ -112,7 +134,7 @@ const scenes = { type: "custom:halo-scenes-card", scenes: [{ entity: "scene.movi
 
 const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
 
-type Spec = { id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
+type Spec = { setup?: (c: any) => void; id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
   { id: "e8", title: "Energy 12x8", tag: "halo-energy-card", cfg: energy, w: 378, h: 464 },
@@ -161,6 +183,14 @@ const specs: Spec[] = [
   { id: "wx-nsp", title: "Weather today NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 480, h: 376 },
   { id: "wx-nsp-wk", title: "Weather week NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", layout: "week" }, w: 480, h: 376 },
   { id: "wx-nofc", title: "No forecast", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.nofc" }, w: 378, h: 440 },
+  { id: "sol", title: "Solar today 12x6", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376 },
+  { id: "sol-tom", title: "Solar tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
+  { id: "sol-night", title: "Solar night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, dark: true },
+  { id: "sol-noact", title: "Solar no PV entity", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card" }, w: 378, h: 376 },
+  { id: "sol-c", title: "Solar compact 12x2", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120 },
+  { id: "sol-c-tom", title: "Solar compact tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, setup: (c) => { c._day = "tomorrow"; } },
+  { id: "sol-c-night", title: "Solar compact night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, dark: true },
+  { id: "sol-nsp", title: "Solar NSP 480x376", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 480, h: 376 },
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
@@ -181,6 +211,6 @@ for (const s of specs) {
   cell.innerHTML = `<div class="cap">${s.title}</div>`;
   const box = document.createElement("div"); box.style.cssText = `width:${s.w}px;height:${s.h}px`;
   const card = document.createElement(s.tag) as any;
-  card.setConfig(s.cfg); card.hass = makeHass(!!s.dark, s.over);
+  card.setConfig(s.cfg); card.hass = makeHass(!!s.dark, s.over); s.setup?.(card);
   box.append(card); cell.append(box); document.body.append(cell);
 }
