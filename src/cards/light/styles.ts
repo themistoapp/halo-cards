@@ -4,12 +4,14 @@ import { fixtureStyles } from "./fixture";
 
 export const styles = [themeStyles, shadowStyles, fixtureStyles, css`
   ha-card { background: var(--surface); border-radius: var(--ha-card-border-radius, 12px); }
-  .inner { gap: 12px; padding: 16px; }
+  .inner { gap: 12px; padding: 16px; container-type: inline-size; }
+  /* Narrow cards never go beyond two columns. */
+  @container (max-width: 300px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   header .r { display: flex; align-items: center; gap: 6px; }
   button.chip { cursor: pointer; font: inherit; font-size: 11px; line-height: 16px; color: inherit; }
   button.chip:disabled { opacity: .45; cursor: default; }
 
-  .grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); grid-auto-rows: minmax(116px, 1fr); gap: 8px; overflow-y: auto; scrollbar-width: none; }
+  .grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); grid-auto-rows: minmax(116px, 1fr); gap: 8px; overflow-y: auto; scrollbar-width: none; }
   .grid::-webkit-scrollbar { display: none; }
 
   /* Tile: the fitting, name and level. On, it takes a soft wash of the light's own colour. */
@@ -21,7 +23,8 @@ export const styles = [themeStyles, shadowStyles, fixtureStyles, css`
   .tile.on { border-color: color-mix(in srgb, var(--glow) 45%, var(--line)); }
   .tile:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
   .tile.na { opacity: .5; cursor: default; }
-  .art { position: relative; flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
+  /* The fitting grows with the tile (48 to 92px tall). */
+  .art { position: relative; flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; container-type: size; --fxh: clamp(48px, 100cqh, 92px); }
   .art .fx.strip { width: 100%; }
   .tx { position: relative; width: 100%; min-width: 0; }
   .nm { font-size: 13px; line-height: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

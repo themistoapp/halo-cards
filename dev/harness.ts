@@ -98,6 +98,8 @@ const specs: Spec[] = [
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },
+  { id: "nsp-l4", title: "Lights NSP 4 lights 480x376", tag: "halo-light-card", cfg: { ...lights, lights: [lights.lights[0], lights.lights[1], lights.lights[2], lights.lights[3]] }, w: 480, h: 376 },
+  { id: "nsp-l6", title: "Lights NSP 6 lights 480x376", tag: "halo-light-card", cfg: lights, w: 480, h: 376 },
   { id: "light-night", title: "Lights night", tag: "halo-light-card", cfg: lights, w: 378, h: 330, dark: true },
   { id: "veh-m140i", title: "M140i 12x4", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248 },
   { id: "veh-van", title: "e-Vivaro 12x4", tag: "halo-vehicle-card", cfg: van, w: 378, h: 248 },

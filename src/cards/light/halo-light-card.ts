@@ -82,7 +82,7 @@ export class HaloLightCard extends LitElement {
     const shown: LightTile = d === undefined ? t : { ...t, on: d > 0, pct: d, intensity: d > 0 ? 0.4 + 0.6 * (d / 100) : 0, status: d > 0 ? `${d}%` : "Off" };
     const art = shown.type === "none"
       ? html`<span class="bulb-i"><svg viewBox="0 0 24 24">${BULB}</svg></span>`
-      : fixture(shown, shown.type === "pole" ? 64 : 60);
+      : fixture(shown);
     return html`<div class="tile ${shown.on ? "on" : ""} ${t.available ? "" : "na"} ${d !== undefined ? "drag" : ""}" role="button" tabindex="0"
       aria-label="${t.name}, ${shown.status}" style=${styleMap({ "--glow": shown.glow, "--i": shown.intensity.toFixed(2) })}
       @pointerdown=${(e: PointerEvent) => this._down(e, t)} @contextmenu=${(e: Event) => e.preventDefault()}
@@ -97,12 +97,14 @@ export class HaloLightCard extends LitElement {
     const cfg = this._config!, hass = this._hass!;
     const m = buildLights(hass, cfg);
     const dark = !!hass.themes?.darkMode;
+    // 2 lights side by side, 3-4 in a 2 x 2, then 3 across (6 lights = 3 x 2), 4 across from 10.
+    const n = m.tiles.length, cols = n <= 2 ? Math.max(n, 1) : n <= 4 ? 2 : n <= 9 ? 3 : 4;
     const allOff = cfg.show_all_off !== false && m.total > 1
       ? html`<button class="chip" ?disabled=${!m.nOn} @click=${() => hass.callService("light", "turn_off", { entity_id: m.tiles.filter((t) => t.on).map((t) => t.entity) })}>All off</button>` : nothing;
     return html`<ha-card class="${dark ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}">
       <div class="inner">
         <header><h2>${m.name}</h2><div class="r"><span class="chip ${m.nOn ? "" : "off"}"><i></i><span>${m.nOn} of ${m.total} on</span></span>${allOff}</div></header>
-        <div class="grid">${m.tiles.map((t) => this._tile(t))}</div>
+        <div class="grid" style="--cols:${cols}">${m.tiles.map((t) => this._tile(t))}</div>
       </div>
     </ha-card>`;
   }

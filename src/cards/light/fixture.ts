@@ -7,11 +7,11 @@ const RATIO = { pendant: FIXTURES.pendant.ratio, downlight: FIXTURES.downlight.r
 
 /**
  * Picture of the fitting with its opening lit in the light's colour, brighter with brightness.
- * `h` is the drawing's height in px; the glow scales with it.
+ * Its height comes from `--fxh` (set by the tile); the glow scales with it.
  */
-export function fixture(t: LightTile, h = 60) {
+export function fixture(t: LightTile) {
   if (t.type === "none") return nothing;
-  const style = `--glow:${t.glow};--i:${t.intensity.toFixed(2)};--fxh:${h}px`;
+  const style = `--glow:${t.glow};--i:${t.intensity.toFixed(2)}`;
   if (t.type === "strip" || t.type === "pole") return html`<div class="fx ${t.type} ${t.on ? "on" : ""}" style=${style}><i></i></div>`;
   const f = FIXTURES[t.type], b = f.bulb;
   return html`<div class="fx ${t.type}" style="${style};--r:${RATIO[t.type].toFixed(3)}"><img src=${f.src} alt="" />
