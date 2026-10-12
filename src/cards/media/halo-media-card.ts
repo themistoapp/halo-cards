@@ -149,7 +149,7 @@ export class HaloMediaCard extends LitElement {
   }
 
   private _nowPlaying(m: MediaModel, mode: string): TemplateResult {
-    const compact = mode === "compact", times = mode === "full";
+    const compact = mode === "compact", times = false;
     const art = m.art ? `url("${m.art}")` : undefined;
     const pct = m.dur ? (m.pos / m.dur) * 100 : 0;
     const title = m.title ?? "Nothing playing";

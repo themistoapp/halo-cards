@@ -70,13 +70,15 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .compact .play { width: 48px; height: 48px; flex: none; }
   .compact .vol { height: 44px; }
   /* Regular (12 x 6 to 12 x 8): no favourites; the picture takes whatever space is left. */
-  .regular .inner { gap: 8px; padding: 14px; }
-  .regular .hero { min-height: 0; }
-  .regular .np { padding: 10px; }
-  .regular .art { width: 52px; height: 52px; }
-  .regular .b { width: 36px; height: 36px; }
-  .regular .play { width: 48px; height: 48px; }
-  .regular .vol { height: 44px; }
+  .regular .inner, .full .inner { gap: 8px; padding: 14px; }
+  .regular .hero, .full .hero { min-height: 0; }
+  .regular .np, .full .np { padding: 10px; }
+  .regular .art, .full .art { width: 52px; height: 52px; }
+  .regular .b, .full .b { width: 36px; height: 36px; }
+  .regular .play, .full .play { width: 48px; height: 48px; }
+  .regular .vol, .full .vol { height: 44px; }
+  /* Tall cards keep the same top block (so controls fit a 376px wall panel), then favourites follow below. */
+  .full .hero { flex: none; height: 116px; }
   .mini .inner { flex-direction: row; align-items: center; gap: 12px; padding: 12px 16px; }
   .mini .thumb { height: 70px; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
   .mini .who { flex: 1; min-width: 0; }
