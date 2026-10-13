@@ -6,6 +6,9 @@ import { HaloLightCard } from "./cards/light/halo-light-card";
 import { HaloLightCardEditor } from "./cards/light/editor";
 import { HaloScenesCard } from "./cards/scenes/halo-scenes-card";
 import { HaloScenesCardEditor } from "./cards/scenes/editor";
+import { HaloEntitiesCard } from "./cards/entities/halo-entities-card";
+import { HaloEntitiesCardEditor } from "./cards/entities/editor";
+import { HaloSvgIcon } from "./cards/entities/svg-icon";
 import { HaloWeatherCard } from "./cards/weather/halo-weather-card";
 import { HaloWeatherCardEditor } from "./cards/weather/editor";
 import { HaloSolarCard } from "./cards/solar/halo-solar-card";
@@ -30,11 +33,14 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-solar-card", HaloSolarCard, "halo-solar-card-editor", HaloSolarCardEditor, "Halo Solar Forecast", "Forecast.Solar forecast for today and tomorrow, with your actual solar generation drawn over it."],
   ["halo-agile-card", HaloAgileCard, "halo-agile-card-editor", HaloAgileCardEditor, "Halo Agile", "Octopus Agile half-hourly rates as coloured bars, with current, next, lowest, average and highest rate. Uses the Octopus Energy integration (BottlecapDave)."],
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
+  ["halo-entities-card", HaloEntitiesCard, "halo-entities-card-editor", HaloEntitiesCardEditor, "Halo Entities", "A compact row of entity readings: a value per tile, from the state or any attribute, with your own icon or SVG."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
 ];
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }
 window.customCards ||= [];
+// Custom SVG icons (Entities card and its editor).
+if (!customElements.get("halo-svg-icon")) customElements.define("halo-svg-icon", HaloSvgIcon);
 // Test card: shows its own pixel size and the window it is on. Has no editor.
 if (!customElements.get("halo-size-card")) customElements.define("halo-size-card", HaloSizeCard);
 window.customCards ||= [];

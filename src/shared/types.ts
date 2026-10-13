@@ -16,7 +16,11 @@ export interface HomeAssistant {
   };
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
   callWS<T>(msg: Record<string, unknown>): Promise<T>;
-  entities?: Record<string, { device_id?: string }>;
+  /** Home Assistant's own formatting (translated states and attribute names); absent in older versions. */
+  formatEntityState?(stateObj: HassEntity, state?: string): string;
+  formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
+  formatEntityAttributeName?(stateObj: HassEntity, attribute: string): string;
+  entities?: Record<string, { device_id?: string; display_precision?: number }>;
   devices?: Record<string, { model?: string; name?: string }>;
 }
 
