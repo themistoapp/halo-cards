@@ -13,8 +13,7 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 | Vehicle | `custom:halo-vehicle-card` | 12 × 4, 12 × 3 |
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
-| Solar forecast | `custom:halo-solar-card` | 12 × 6 chart, 12 × 2 compact |
-| Agile rates | `custom:halo-agile-card` | 12 × 6 chart, 12 × 2 compact |
+| Graph (solar forecast, Agile rates and more) | `custom:halo-graph-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 | Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph) |
 | Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
@@ -262,35 +261,54 @@ details: [humidity, wind, pressure]   # under Current; up to four of: humidity, 
 shadow: true
 ```
 
-## Halo Solar Forecast card (`custom:halo-solar-card`)
+## Halo Graph card (`custom:halo-graph-card`)
 
-Forecast.Solar for today and tomorrow (a Today / Tomorrow pill above the chart), with your actual generation drawn over today's forecast. Across the top are four figures: Generated (with the % of the forecast so far), Remaining, Today and Tomorrow. Under the chart a line reads the current forecast and generation; hover or touch the chart to read any time of day. Short (under about 230px) it becomes a compact card with a small chart.
+Up to four figures across the top, a chart underneath, and a readout along the bottom that appears only while you point at or tap the chart: the time (or the half-hour slot, for bars) and every series' value in its colour. It replaces the Solar Forecast and Agile cards: the editor's **Start from** buttons set it up as either, finding your Agile rate entities and solar power sensor.
 
-The forecast comes from the same data as the Energy dashboard, so **Forecast.Solar must be added to the solar panels in the Energy dashboard** (Settings, Dashboards, Energy, Solar panels, "Add forecast"). With several arrays they are added together unless you name one with `forecast_entry` (its config entry id).
-
-`actual` is your total PV power sensor (W or kW); its history since midnight is drawn as the line, and the kWh generated is worked out from it. Leave it out for a forecast-only card.
+- **Series:** each is drawn as a `line` (history, live sensors), a shaded `area` (forecasts) or `bars` (rates). Where the data comes from is found automatically:
+  - **History** of any numeric sensor, from midnight (or the start of the chart). Charts longer than a day use Home Assistant's hourly statistics for sensors that keep them.
+  - **Lists in an entity's attributes:** Octopus Energy rates (`rates`, in £, shown as pence), Nordpool (`raw_today` and `raw_tomorrow`), Solcast (`detailedForecast`, kW) and Amber (`forecasts`). For anything else set `attribute` and its `start_key`, `end_key` and `value_key`.
+  - **The Energy dashboard's solar forecast** (Forecast.Solar and the like): a series with no entity. Add Forecast.Solar to the solar panels in the Energy dashboard first.
+- Several entities in one series are joined end to end (Agile's today and tomorrow). Power is shown in kW and energy in kWh, so a forecast and a sensor share an axis. A second unit (pence and kW, say) gets a scale on the right.
+- **Colours:** `colour` is one of `grey`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink`, or any CSS colour. Lines without one use the text colour. Bars take `colour_rules` (the first one the value meets wins), so Agile can be green under 15p and red over 30p. History can be drawn as bars too, averaged over `slot_minutes`.
+- **Period:** `day` (midnight to midnight, with a Today / Tomorrow pill once there is data for tomorrow), or `last`, `next` or `around` (either side of now) a number of `hours`, 1 to 168. `fit: true` trims the hours at either end where everything is zero, such as night time for solar. A dashed line marks now.
+- **Figures:** up to four, as many as fit. Each is a `calc` on a series over a `window`: `now` (with "until 17:00" for a slot), `next` slot, `lowest` and `highest` (with "at 03:00"), `average`, `total` (power becomes energy) and `remaining` (now to the end of the window). Windows: `period` (the chart's), `today`, `tomorrow`, or `next` `hours`. `compare` shows a total as a percentage of another series so far (generated against forecast), green from 90%. A figure can instead show an `entity`'s state. Each can have an `icon` or `icon_svg` with an `icon_colour`.
+- **Compact (12 × 2):** the first figure large, the second beneath it, and a small chart.
 
 ```yaml
-type: custom:halo-solar-card
-actual: sensor.pv_total_power     # optional
-name: Solar forecast              # optional
-forecast_entry: 01J...            # optional
-shadow: true
+type: custom:halo-graph-card
+name: Agile rates
+period: day
+series:
+  - name: Rate
+    entities:
+      - event.octopus_energy_electricity_xxx_current_day_rates
+      - event.octopus_energy_electricity_xxx_next_day_rates
+    style: bars
+    colour: yellow
+    colour_rules:
+      - { below: 15, colour: green }
+      - { above: 30, colour: red }
+figures:
+  - { label: Current, calc: now }
+  - { label: Next, calc: next }
+  - { label: Lowest, calc: lowest, window: today, icon: mdi:arrow-down, icon_colour: green }
+  - { label: Highest, calc: highest, window: today, icon: mdi:arrow-up, icon_colour: red }
 ```
 
-## Halo Agile card (`custom:halo-agile-card`)
-
-Octopus Agile half-hourly prices from the BottlecapDave Octopus Energy integration, laid out like the Solar card: figures across the top, a Today / Tomorrow pill (Tomorrow appears once tomorrow's rates are published, about 16:00) and a bar chart. Under the chart a line reads the day's lowest rate; hover or touch the chart to read any slot instead. Bars are green when cheap, amber in between and red when expensive; negative prices hang below the zero line, past slots are dimmed and the current slot is outlined. Figures are Current (with a little octopus), Next rate, Lowest (green down arrow), Average (blue bolt) and Highest (red up arrow), for the chosen day; all five fit at 12 × 6 (the labels shorten); you can untick any in the editor. Short (under about 230px) it becomes a compact card with a mini chart.
-
-Point it at the integration's **current day rates** and **next day rates** event entities (`event.octopus_energy_electricity_<serial>_<mpan>_current_day_rates` and `..._next_day_rates`). Rates come from their `rates` attribute; values in pounds are converted to pence automatically.
-
 ```yaml
-type: custom:halo-agile-card
-rates_today: event.octopus_energy_electricity_xxx_xxx_current_day_rates
-rates_tomorrow: event.octopus_energy_electricity_xxx_xxx_next_day_rates
-figures: [current, next, lowest, average, highest]   # optional, any subset
-cheap_below: 15        # pence, green at or below (default 15)
-expensive_above: 30    # pence, red above (default 30)
+type: custom:halo-graph-card
+name: Solar forecast
+period: day
+fit: true
+series:
+  - { name: Forecast, source: energy_forecast, style: area, colour: yellow }
+  - { name: Actual, entity: sensor.pv_power, style: line }
+figures:
+  - { label: Generated, series: Actual, calc: total, window: today, compare: Forecast }
+  - { label: Remaining, series: Forecast, calc: remaining, window: today }
+  - { label: Today, series: Forecast, calc: total, window: today }
+  - { label: Tomorrow, series: Forecast, calc: total, window: tomorrow }
 ```
 
 ## Development

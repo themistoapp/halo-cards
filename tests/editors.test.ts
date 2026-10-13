@@ -28,6 +28,11 @@ describe("editors: Add shows a new empty row", () => {
     const r = await addRow("halo-light-card-editor", { type: "x", lights: ["light.lamp"] }, "lights");
     expect(r.rows).toBe(2);
   });
+  it("Graph series", async () => {
+    const r = await addRow("halo-graph-card-editor", { type: "x", series: [{ name: "Forecast" }] }, "series");
+    expect(r.rows).toBe(2);
+    expect(r.list).toHaveLength(2);
+  });
   it("Entity colour rules", async () => {
     const r = await addRow("halo-entity-card-editor", { type: "x", entity: "sensor.power", colour_rules: [{ above: 1, colour: "red" }] }, "colour_rules");
     expect(r.rows).toBe(2);

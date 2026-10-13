@@ -39,3 +39,6 @@ export function observeSize(el: HTMLElement, cb: (width: number, height: number)
   ro.observe(el);
   return () => ro.disconnect();
 }
+
+/** Local midnight, `plusDays` from the day of `ms`. */
+export const startOfDay = (ms: number, plusDays = 0) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + plusDays); return d.getTime(); };

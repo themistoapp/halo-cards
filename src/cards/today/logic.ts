@@ -1,6 +1,7 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { isAvailable, numState, unitOf } from "../../shared/util";
-import { parseRates, type Rate } from "../agile/logic";
+import { parseRates, type Rate } from "../graph/sources";
+import { startOfDay } from "../../shared/util";
 import { clock, fmtNum, hourLabel, language } from "../../shared/format";
 import { phaseOf, position } from "../media/logic";
 import { levelPercent, isCharging } from "../vehicle/logic";
@@ -63,7 +64,7 @@ export function minutesOf(s: string | undefined, fallback: string): number {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-export const startOfDay = (ms: number, plus = 0) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + plus); return d.getTime(); };
+export { startOfDay };
 /** Whole calendar days from today to `ms` (0 today, 1 tomorrow). */
 export const dayDiff = (ms: number, now: number) => Math.round((startOfDay(ms) - startOfDay(now)) / 86_400_000);
 const dayLabel = (ms: number, locale: string) => new Date(ms).toLocaleDateString(locale, { weekday: "short", day: "numeric" });

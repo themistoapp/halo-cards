@@ -2,8 +2,8 @@ import { css } from "lit";
 import { shadowStyles, themeStyles } from "../../shared/bloom";
 
 export const styles = [themeStyles, shadowStyles, css`
-  ha-card { --lo: #1f9d63; --mid: #d89a1b; --hi: #d6453d; --blue: #2f7bff; --purple: #8a5cf6; background: var(--surface); }
-  ha-card.dark { --lo: #4cc9a0; --mid: #f2b84a; --hi: #ff7b72; --blue: #6aa3ff; --purple: #b79bff; }
+  ha-card { --good: #1f8a5b; background: var(--surface); }
+  ha-card.dark { --good: #4cc9a0; }
   .inner { padding: 14px 16px; gap: 10px; }
   header { min-height: 24px; }
 
@@ -13,43 +13,44 @@ export const styles = [themeStyles, shadowStyles, css`
   .seg button[aria-pressed="true"] { background: var(--action); color: var(--action-ink); box-shadow: var(--press); }
 
   .stats { display: flex; }
-  .stats .lab { display: flex; align-items: center; gap: 4px; }
-  .fi { flex: none; width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-  .fi.cur { width: 14px; height: 14px; color: var(--purple); margin-left: -1px; }
-  .fi.lo { color: var(--lo); } .fi.hi { color: var(--hi); } .fi.avg { color: var(--blue); }
   .stats > div { flex: 1; min-width: 0; }
-  .big { font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: -.04em; margin-top: 2px; white-space: nowrap; }
+  .stats .lab { display: flex; align-items: center; gap: 4px; }
+  .fi { flex: none; display: inline-flex; width: 12px; height: 12px; --mdc-icon-size: 12px; }
+  .fi halo-svg-icon { width: 12px; height: 12px; }
+  .big { font-size: 26px; line-height: 30px; font-weight: 600; letter-spacing: -.04em; margin-top: 2px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .big small { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); margin-left: 3px; }
   .stats.tight .lab { font-size: 9px; letter-spacing: .02em; gap: 3px; }
-  .stats.tight .fi { width: 10px; height: 10px; } .stats.tight .fi.cur { width: 12px; height: 12px; }
   .stats.tight .big { font-size: 20px; line-height: 24px; }
   .stats.tight .big small { font-size: 11px; margin-left: 1px; }
   .note { font-size: 12px; line-height: 16px; color: var(--ink-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .low { --c: var(--lo); } .mid { --c: var(--mid); } .high { --c: var(--hi); }
+  .note.good { color: var(--good); }
 
-  .chart { flex: 1; min-height: 0; position: relative; }
-  .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  .chart { flex: 1; min-height: 0; position: relative; touch-action: pan-y; cursor: crosshair; }
+  .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; pointer-events: none; }
   .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; padding: 0 12px; color: var(--ink-2); font-size: 13px; line-height: 18px; }
   .grid { stroke: var(--line); stroke-width: 1; }
   .grid.dash { stroke-dasharray: 2 4; }
   .grid.zero { stroke: var(--ink-2); stroke-opacity: .5; stroke-dasharray: none; }
   .ax { fill: var(--ink-2); opacity: .8; font: 500 10px var(--code-font-family, ui-monospace, monospace); }
-  rect.bar { fill: var(--c); }
-  .chart { touch-action: pan-y; cursor: crosshair; }
-  .chart svg { pointer-events: none; }
+  .line { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+  .edge { fill: none; stroke-width: 1.6; stroke-linejoin: round; }
   rect.bar.sel { stroke: var(--ink); stroke-width: 1.5; }
-  .readout { text-align: center; font: 500 12px/16px var(--code-font-family, ui-monospace, monospace); letter-spacing: .02em; color: var(--ink-2); height: 16px; white-space: nowrap; }
-  rect.bar.now { stroke: var(--ink); stroke-width: 1.5; }
   .nowline { stroke: var(--ink); stroke-opacity: .28; stroke-dasharray: 3 3; }
-
+  .hovline { stroke: var(--ink); stroke-opacity: .4; }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  /* Empty at rest; the row stays so the card doesn't jump when it fills. */
+  .readout { display: flex; justify-content: center; gap: 10px; font: 500 12px/16px var(--code-font-family, ui-monospace, monospace); letter-spacing: .02em; color: var(--ink-2); height: 16px; white-space: nowrap; overflow: hidden; }
+  .readout i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
 
   /* Compact */
   .c { flex-direction: row; align-items: center; gap: 14px; padding: 14px 16px; }
   .c .l { flex: 1; min-width: 0; }
+  .c .lab { display: flex; align-items: center; gap: 4px; }
   .c .big { font-size: 40px; line-height: 44px; margin-top: 2px; letter-spacing: -.045em; }
   .c .big small { font-size: 14px; line-height: 20px; margin-left: 4px; }
   .c .note { font-size: 13px; line-height: 18px; }
-  .c .r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; align-self: stretch; justify-content: center; }
+  .c .r { flex: none; width: 46%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; align-self: stretch; justify-content: center; }
   .c .seg { padding: 2px; } .c .seg button { font-size: 11px; line-height: 14px; padding: 3px 9px; }
-  .c .chart { flex: 1; min-height: 0; width: 100%; }
+  .c .chart { flex: 1; min-height: 0; width: 100%; cursor: default; }
+  @media (prefers-reduced-motion: reduce) { .seg button { transition: none; } }
 `];

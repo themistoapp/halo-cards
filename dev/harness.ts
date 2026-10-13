@@ -1,5 +1,6 @@
 import "../src/index";
 import { MDI } from "./mdi-sample";
+import { agilePreset, solarPreset } from "../src/cards/graph/logic";
 import type { HomeAssistant } from "../src/shared/types";
 
 // Browser-only mock of Home Assistant: static states, a synthetic history, and a gallery of every card and size.
@@ -188,6 +189,35 @@ const quiet = { "media_player.lounge": e("media_player.lounge", "paused", { frie
 
 const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
 
+const graph = <T extends object>(cfg: T) => ({ type: "custom:halo-graph-card", ...cfg });
+const SOLAR = graph({ ...solarPreset(), series: [{ name: "Forecast", source: "energy_forecast", style: "area", colour: "yellow" }, { name: "Actual", entity: "sensor.pv_total", style: "line" }],
+  figures: [{ label: "Generated", series: "Actual", calc: "total", window: "today", compare: "Forecast" }, ...solarPreset().figures!] });
+const AGILE = graph({ ...agilePreset(), series: [{ ...agilePreset().series[0], entities: ["event.agile_today", "event.agile_tomorrow"] }] });
+const MIXED = graph({ name: "Rates and sun", series: [{ ...AGILE.series[0] }, { name: "Forecast", source: "energy_forecast", style: "area", colour: "yellow" }],
+  figures: [{ label: "Rate now", series: "Rate", calc: "now" }, { label: "Cheapest", series: "Rate", calc: "lowest", window: "next", hours: 24 }, { label: "Sun left", series: "Forecast", calc: "remaining", window: "today" }, { label: "Tomorrow", series: "Forecast", calc: "total", window: "tomorrow" }] });
+const HOUSE = graph({ name: "House and grid", period: "last", hours: 12, series: [{ name: "House", entity: "sensor.home_power", colour: "purple" }, { name: "Grid", entity: "sensor.grid_power", style: "area", colour: "blue" }],
+  figures: [{ label: "House now", series: "House", calc: "now" }, { label: "Used", series: "House", calc: "total", window: "today" }, { label: "Peak", series: "House", calc: "highest", window: "today" }] });
+const USAGE = graph({ name: "Hourly use", period: "last", hours: 24, series: [{ name: "House", entity: "sensor.home_power", style: "bars", slot_minutes: 60, colour: "purple", colour_rules: [{ above: 1.5, colour: "red" }] }], figures: [{ label: "Today", calc: "total", window: "today" }] });
+function graphSpecs(): Spec[] {
+  return [
+    { id: "g-sol", title: "Graph: Solar preset 12x6", tag: "halo-graph-card", cfg: SOLAR, w: 378, h: 376 },
+    { id: "g-sol-hov", title: "Graph: Solar, reading at 11:30", tag: "halo-graph-card", cfg: SOLAR, w: 378, h: 376, setup: (c) => { c._hov = Date.parse(at(0, 11, 30)); } },
+    { id: "g-sol-tom", title: "Graph: Solar tomorrow", tag: "halo-graph-card", cfg: SOLAR, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
+    { id: "g-sol-night", title: "Graph: Solar night", tag: "halo-graph-card", cfg: SOLAR, w: 378, h: 376, dark: true },
+    { id: "g-sol-c", title: "Graph: Solar compact 12x2", tag: "halo-graph-card", cfg: SOLAR, w: 378, h: 120 },
+    { id: "g-ag", title: "Graph: Agile preset 12x6", tag: "halo-graph-card", cfg: AGILE, w: 378, h: 376 },
+    { id: "g-ag-hov", title: "Graph: Agile, reading", tag: "halo-graph-card", cfg: AGILE, w: 378, h: 376, setup: (c) => { c._hov = Date.parse(at(0, 17, 40)); } },
+    { id: "g-ag-night", title: "Graph: Agile night", tag: "halo-graph-card", cfg: AGILE, w: 378, h: 376, dark: true },
+    { id: "g-ag-c", title: "Graph: Agile compact 12x2", tag: "halo-graph-card", cfg: AGILE, w: 378, h: 120 },
+    { id: "g-ag-nsp", title: "Graph: Agile NSP 480x376", tag: "halo-graph-card", cfg: AGILE, w: 480, h: 376 },
+    { id: "g-mixed", title: "Graph: rates and sun, two axes", tag: "halo-graph-card", cfg: MIXED, w: 378, h: 376, setup: (c) => { c._hov = Date.parse(at(0, 12, 10)); } },
+    { id: "g-house", title: "Graph: last 12 h, two lines", tag: "halo-graph-card", cfg: HOUSE, w: 378, h: 376 },
+    { id: "g-usage", title: "Graph: history as hourly bars", tag: "halo-graph-card", cfg: USAGE, w: 378, h: 376 },
+    { id: "g-week", title: "Graph: last week (statistics)", tag: "halo-graph-card", cfg: { ...HOUSE, name: "House, week", hours: 168, series: [HOUSE.series[0]] }, w: 378, h: 376 },
+    { id: "g-empty", title: "Graph: no series", tag: "halo-graph-card", cfg: graph({ series: [] }), w: 378, h: 376 },
+  ];
+}
+
 type Spec = { setup?: (c: any) => void; id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
   { id: "today", title: "Today, column", tag: "halo-today-card", cfg: today, w: 378, h: 0, over: vanLow },
@@ -273,23 +303,7 @@ const specs: Spec[] = [
   { id: "wx-nsp", title: "Weather today NSP 480x376", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, w: 480, h: 376 },
   { id: "wx-nsp-wk", title: "Current + weekly NSP 480x376 (trimmed)", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home", sections: ["current", "weekly"] }, w: 480, h: 376 },
   { id: "wx-nofc", title: "No forecast", tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.nofc" }, w: 378, h: 440 },
-  { id: "ag", title: "Agile 12x6", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376 },
-  { id: "ag-sel", title: "Agile reading", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, setup: (c) => { c._sel = 35; } },
-  { id: "ag-tom", title: "Agile tomorrow", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
-  { id: "ag-night", title: "Agile night", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 376, dark: true },
-  { id: "ag-c", title: "Agile compact 12x2", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 378, h: 120 },
-  { id: "ag-nsp", title: "Agile NSP 480x376", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow" }, w: 480, h: 376 },
-  { id: "ag-sub", title: "Agile 3 figures", tag: "halo-agile-card", cfg: { type: "custom:halo-agile-card", rates_today: "event.agile_today", figures: ["current", "lowest", "highest"] }, w: 378, h: 376 },
-  { id: "sol", title: "Solar today 12x6", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376 },
-  { id: "sol-hov", title: "Solar reading", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._hov = 11.5; } },
-  { id: "sol-tom", title: "Solar tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, setup: (c) => { c._day = "tomorrow"; } },
-  { id: "sol-night", title: "Solar night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 376, dark: true },
-  { id: "sol-noact", title: "Solar no PV entity", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card" }, w: 378, h: 376 },
-  { id: "sol-c", title: "Solar compact 12x2", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120 },
-  { id: "sol-c-tom", title: "Solar compact tomorrow", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, setup: (c) => { c._day = "tomorrow"; } },
-  { id: "sol-c-night", title: "Solar compact night", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 378, h: 120, dark: true },
-  { id: "sol-wide", title: "Solar wide 640x376", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 640, h: 376 },
-  { id: "sol-nsp", title: "Solar NSP 480x376", tag: "halo-solar-card", cfg: { type: "custom:halo-solar-card", actual: "sensor.pv_total" }, w: 480, h: 376 },
+  ...graphSpecs(),
   { id: "light", title: "Lights day", tag: "halo-light-card", cfg: lights, w: 378, h: 330 },
   { id: "light-3", title: "Lights 3", tag: "halo-light-card", cfg: { ...lights, name: "Kitchen", lights: lights.lights.slice(0, 3) }, w: 378, h: 200 },
   { id: "light-off", title: "Lights off", tag: "halo-light-card", cfg: lights, w: 378, h: 330, over: Object.fromEntries(["pendant","downlight","shelf","tower","lamp"].map((n) => [`light.${n}`, e(`light.${n}`, "off", { friendly_name: n, supported_color_modes: ["rgb"] })[1]])) },

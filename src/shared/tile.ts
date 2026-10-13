@@ -54,6 +54,16 @@ export function iconColour(colour: string | undefined, mode: ColourMode): string
   return custom(colour);
 }
 
+/** Solid chart colours (bars, areas and lines on the Graph card), [day, night]: the Solar and Agile cards' own shades. */
+const SOLID: Record<PaletteName, [string, string]> = {
+  grey: ["#8a8f9c", "#a0a5b1"], red: ["#d6453d", "#ff7b72"], orange: ["#e8742f", "#f4a36a"], yellow: ["#c28a0c", "#f2b84a"],
+  green: ["#1f9d63", "#4cc9a0"], teal: ["#1a9f95", "#5fe0d4"], blue: ["#2f7bff", "#6aa3ff"], purple: ["#6f5cff", "#a99bff"], pink: ["#d6457f", "#f78fb6"],
+};
+export function chartColour(colour: string | undefined, night: boolean): string | undefined {
+  const n = named(colour);
+  return n ? SOLID[n][night ? 1 : 0] : custom(colour);
+}
+
 /** How a unit sits with the big figure: currency before or after as the language writes it, % and degrees at full size, the rest small. */
 export function unitParts(unit: string): { pre: string; inline: string; small: string } {
   if (/^[£$€¥]$/.test(unit)) return currencyAfter() ? { pre: "", inline: "", small: unit } : { pre: unit, inline: "", small: "" };

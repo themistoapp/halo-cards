@@ -11,10 +11,8 @@ import { HaloEntityCardEditor } from "./cards/entity/editor";
 import { HaloSvgIcon } from "./cards/entity/svg-icon";
 import { HaloWeatherCard } from "./cards/weather/halo-weather-card";
 import { HaloWeatherCardEditor } from "./cards/weather/editor";
-import { HaloSolarCard } from "./cards/solar/halo-solar-card";
-import { HaloSolarCardEditor } from "./cards/solar/editor";
-import { HaloAgileCard } from "./cards/agile/halo-agile-card";
-import { HaloAgileCardEditor } from "./cards/agile/editor";
+import { HaloGraphCard } from "./cards/graph/halo-graph-card";
+import { HaloGraphCardEditor } from "./cards/graph/editor";
 import { HaloThermostatCard } from "./cards/thermostat/halo-thermostat-card";
 import { HaloThermostatCardEditor } from "./cards/thermostat/editor";
 import { HaloSizeCard } from "./cards/size/halo-size-card";
@@ -34,8 +32,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-vehicle-card", HaloVehicleCard, "halo-vehicle-card-editor", HaloVehicleCardEditor, "Halo Vehicle", "Compact car card: level bar, range, odometer, lock or charging, and where it is."],
   ["halo-thermostat-card", HaloThermostatCard, "halo-thermostat-card-editor", HaloThermostatCardEditor, "Halo Thermostat", "Nest-style thermostat: a dial that glows orange or blue, target and room temperature, and the modes you choose."],
   ["halo-weather-card", HaloWeatherCard, "halo-weather-card-editor", HaloWeatherCardEditor, "Halo Weather", "Weather: temperature and conditions, with details and the next hours, or a row per day. Needs a weather entity such as Met.no."],
-  ["halo-solar-card", HaloSolarCard, "halo-solar-card-editor", HaloSolarCardEditor, "Halo Solar Forecast", "Forecast.Solar forecast for today and tomorrow, with your actual solar generation drawn over it."],
-  ["halo-agile-card", HaloAgileCard, "halo-agile-card-editor", HaloAgileCardEditor, "Halo Agile", "Octopus Agile half-hourly rates as coloured bars, with current, next, lowest, average and highest rate. Uses the Octopus Energy integration (BottlecapDave)."],
+  ["halo-graph-card", HaloGraphCard, "halo-graph-card-editor", HaloGraphCardEditor, "Halo Graph", "Up to four figures over a chart of history, forecasts and rates: lines, shaded areas and coloured bars, today and tomorrow or any number of hours. Starts as Solar forecast or Agile rates."],
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
   ["halo-entity-card", HaloEntityCard, "halo-entity-card-editor", HaloEntityCardEditor, "Halo Entity", "One reading as a small or large tile: the state or any attribute, your own icon, a line below, colours by value and an optional history graph."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
