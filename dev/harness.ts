@@ -7,8 +7,8 @@ if (!customElements.get("ha-icon")) customElements.define("ha-icon", class exten
   private _i = "";
   set icon(v: string) { this._i = v; this._draw(); }
   get icon() { return this._i; }
-  connectedCallback() { this.style.cssText = "display:inline-flex;width:20px;height:20px"; this._draw(); }
-  private _draw() { const d = MDI[this._i] ?? MDI["mdi:palette"]; (this.shadowRoot ?? this.attachShadow({ mode: "open" })).innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="${d}"/></svg>`; }
+  connectedCallback() { this.style.cssText = "display:inline-flex;width:var(--mdc-icon-size,20px);height:var(--mdc-icon-size,20px)"; this._draw(); }
+  private _draw() { const d = MDI[this._i] ?? MDI["mdi:palette"]; (this.shadowRoot ?? this.attachShadow({ mode: "open" })).innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor"><path d="${d}"/></svg>`; }
 });
 if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
 const q = new URLSearchParams(location.search);
@@ -152,6 +152,15 @@ const entities = { type: "custom:halo-entities-card", entities: [
   { entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon_svg: "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25Z", colour: "#2f86cf" },
 ] };
 
+const themed = { type: "custom:halo-entities-card", columns: 2 as const, entities: [
+  { entity: "sensor.grid_cost", name: "Today", theme: "dusk", show_icon: false, secondary_text: "spent on electricity so far" },
+  { entity: "sensor.soc", name: "Battery", theme: "battery", icon: "mdi:battery", secondary_entity: "sensor.battery_power", secondary_name: "Discharging" },
+  { entity: "sensor.solar_power", name: "Solar", theme: "solar", icon_svg: SUN, secondary_entity: "sensor.solar_today", secondary_name: "Today" },
+  { entity: "sensor.home_power", name: "Now", theme: "light", show_icon: false, secondary_entity: "sensor.grid_power", secondary_name: "Grid" },
+  { entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", theme: "dark", secondary_entity: "climate.hallway", secondary_attribute: "current_humidity", secondary_name: "Humidity" },
+  { entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" },
+] };
+
 const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
 
 type Spec = { setup?: (c: any) => void; id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
@@ -190,6 +199,10 @@ const specs: Spec[] = [
   { id: "ent-night", title: "Entities night", tag: "halo-entities-card", cfg: entities, w: 378, h: 120, dark: true },
   { id: "ent-plain", title: "Entities plain ids", tag: "halo-entities-card", cfg: { ...entities, entities: ["sensor.soc", "sensor.grid_power", "select.mode", "sensor.missing"] }, w: 378, h: 120 },
   { id: "ent-titled", title: "Entities titled, 6 tiles 12x5", tag: "halo-entities-card", cfg: { ...entities, name: "Home", entities: [...entities.entities, "sensor.soc", "sensor.grid_cost"] }, w: 378, h: 312 },
+  { id: "ent-themed", title: "Entities themed, two per row 12x9", tag: "halo-entities-card", cfg: themed, w: 378, h: 568 },
+  { id: "ent-themed-night", title: "Entities themed night", tag: "halo-entities-card", cfg: themed, w: 378, h: 568, dark: true },
+  { id: "ent-themed-4", title: "Entities themed, four per row 12x2", tag: "halo-entities-card", cfg: { ...themed, columns: undefined, entities: themed.entities.slice(1, 5) }, w: 378, h: 120 },
+  { id: "ent-themed-nsp", title: "Entities themed NSP 480x376", tag: "halo-entities-card", cfg: { ...themed, entities: themed.entities.slice(0, 4) }, w: 480, h: 376 },
   { id: "th-heat", title: "Thermostat heating 12x7", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440 },
   { id: "th-376", title: "Thermostat 12x6", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 376 },
   { id: "th-cool", title: "Cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 440 },

@@ -12,6 +12,15 @@ export interface EntityRow {
   unit?: string;
   decimals?: number;
   colour?: string;
+  /** Tile look: plain (default), light (black on white), dark (white on black) or a gradient preset. */
+  theme?: Theme;
+  /** Show the icon (default on). */
+  show_icon?: boolean;
+  /** Line below the value: your own text, or a second entity (wins if both are set). */
+  secondary_text?: string;
+  secondary_entity?: string;
+  secondary_attribute?: string;
+  secondary_name?: string;
 }
 export interface HaloEntitiesConfig {
   type: string;
@@ -19,8 +28,19 @@ export interface HaloEntitiesConfig {
   name?: string;
   /** Drop shadow behind the card (default on). */
   shadow?: boolean;
+  /** Tiles per row: 4 (default) or 2. */
+  columns?: 2 | 4;
   entities: (string | EntityRow)[];
 }
+
+export const GRADIENTS = ["dusk", "slate", "ember", "solar", "battery", "grid", "ocean", "glacier", "aurora", "forest", "rose", "plum", "sunset", "sand", "graphite"] as const;
+export type Theme = "plain" | "light" | "dark" | (typeof GRADIENTS)[number];
+export const THEME_LABELS: Record<Theme, string> = {
+  plain: "Plain", light: "Black on white", dark: "White on black",
+  dusk: "Dusk", slate: "Slate", ember: "Ember", solar: "Solar", battery: "Battery", grid: "Grid", ocean: "Ocean", glacier: "Glacier",
+  aurora: "Aurora", forest: "Forest", rose: "Rose", plum: "Plum", sunset: "Sunset", sand: "Sand", graphite: "Graphite",
+};
+const isTheme = (t: unknown): t is Theme => typeof t === "string" && t in THEME_LABELS;
 
 export interface EntityTile {
   entity: string; name: string; value: string; unit: string; colour?: string; available: boolean;
@@ -29,6 +49,10 @@ export interface EntityTile {
   svg?: string;
   /** No icon was chosen: Home Assistant's own state icon may be used where it exists. */
   stateIcon: boolean;
+  theme: Theme;
+  showIcon: boolean;
+  /** The line below: a second entity's name and value, or plain text. */
+  secondary?: { name?: string; value: string; unit: string } | { text: string };
 }
 
 /** Attributes that are plumbing, not readings: never offered as a value. */
@@ -115,8 +139,36 @@ export function buildTiles(hass: HomeAssistant, cfg: HaloEntitiesConfig): Entity
     const name = r.name || (r.attribute
       ? (s && hass.formatEntityAttributeName?.(s, r.attribute)) || pretty(r.attribute)
       : (s?.attributes.friendly_name as string | undefined) || pretty(r.entity.split(".")[1] ?? r.entity));
-    return { entity: r.entity, name, value, unit, colour: r.colour, available, svg: r.icon_svg?.trim() || undefined, ...iconFor(s, r) };
+    return {
+      entity: r.entity, name, value, unit, colour: r.colour, available, svg: r.icon_svg?.trim() || undefined, ...iconFor(s, r),
+      theme: isTheme(r.theme) ? r.theme : "plain", showIcon: r.show_icon !== false, secondary: secondaryOf(hass, r),
+    };
   });
+}
+
+function secondaryOf(hass: HomeAssistant, r: EntityRow): EntityTile["secondary"] {
+  if (r.secondary_entity) {
+    const s = hass.states[r.secondary_entity];
+    const row = { entity: r.secondary_entity, attribute: r.secondary_attribute };
+    const { value, unit } = readValue(hass, s, row);
+    const name = r.secondary_name ?? (r.secondary_attribute
+      ? (s && hass.formatEntityAttributeName?.(s, r.secondary_attribute)) || pretty(r.secondary_attribute)
+      : (s?.attributes.friendly_name as string | undefined) || pretty(r.secondary_entity.split(".")[1] ?? r.secondary_entity));
+    return { name: name || undefined, value, unit };
+  }
+  const text = r.secondary_text?.trim();
+  return text ? { text } : undefined;
+}
+
+/** Any themed tile turns the card into floating tiles, each its own surface. */
+export const isFloating = (cfg: HaloEntitiesConfig) => rowsOf(cfg).some((r) => isTheme(r.theme) && r.theme !== "plain");
+
+/** How a unit sits with the big figure: currency in front, % and degrees at full size, the rest as a small suffix. */
+export function unitParts(unit: string): { pre: string; inline: string; small: string } {
+  if (/^[£$€¥]$/.test(unit)) return { pre: unit, inline: "", small: "" };
+  if (unit === "%") return { pre: "", inline: "%", small: "" };
+  if (/^°[CF]?$/.test(unit)) return { pre: "", inline: "°", small: "" };
+  return { pre: "", inline: "", small: unit };
 }
 
 /** The values an entity offers: its state, then every attribute that reads as a single value. "" is the state. */
@@ -132,8 +184,11 @@ export function valueOptions(hass: HomeAssistant, entityId: string, current?: st
   ];
 }
 
-/** Columns: one row of up to four tiles; more than four wrap onto further rows. */
-export const columnsFor = (n: number) => Math.min(Math.max(n, 1), 4);
+/** Columns: one row of up to four tiles (or two, if chosen); more wrap onto further rows. */
+export const columnsFor = (n: number, per: 2 | 4 = 4) => Math.min(Math.max(n, 1), per === 2 ? 2 : 4);
 
-/** Sections-view rows: two per line of tiles, one more for a title. */
-export const rowsFor = (n: number, titled: boolean) => 2 * Math.ceil(Math.max(n, 1) / 4) + (titled ? 1 : 0);
+/** Sections-view rows: two per line of four tiles, three per line of two (bigger tiles), one more for a title. */
+export const rowsFor = (n: number, titled: boolean, per: 2 | 4 = 4) => {
+  const cols = per === 2 ? 2 : 4;
+  return (cols === 2 ? 3 : 2) * Math.ceil(Math.max(n, 1) / cols) + (titled ? 1 : 0);
+};

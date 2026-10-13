@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attributeUnit, buildTiles, columnsFor, fmtValue, readValue, rowsFor, valueOptions } from "../src/cards/entities/logic";
+import { attributeUnit, buildTiles, columnsFor, fmtValue, isFloating, readValue, rowsFor, unitParts, valueOptions } from "../src/cards/entities/logic";
 import { cleanCss, sanitizeSvg, svgKind, themeColour } from "../src/cards/entities/svg-icon";
 import { ent, hassOf } from "./helpers";
 
@@ -81,8 +81,12 @@ describe("valueOptions", () => {
 
 describe("layout", () => {
   it("is one row of up to four, and grows two grid rows per line of tiles", () => {
-    expect([1, 3, 4, 7].map(columnsFor)).toEqual([1, 3, 4, 4]);
+    expect([1, 3, 4, 7].map((n) => columnsFor(n))).toEqual([1, 3, 4, 4]);
     expect([rowsFor(4, false), rowsFor(5, false), rowsFor(4, true)]).toEqual([2, 4, 3]);
+  });
+  it("can be two per row, with bigger tiles: three grid rows per pair", () => {
+    expect([1, 2, 5].map((n) => columnsFor(n, 2))).toEqual([1, 2, 2]);
+    expect([rowsFor(2, false, 2), rowsFor(6, false, 2), rowsFor(6, true, 2)]).toEqual([3, 9, 10]);
   });
   it("formats with a fixed number of decimals", () => expect(fmtValue(3, 1)).toBe("3.0"));
   it("finds weather units on the entity", () => expect(attributeUnit(hass(), hass().states["weather.home"], "wind_speed")).toBe("km/h"));
@@ -120,5 +124,34 @@ describe("custom SVG", () => {
   it("keeps the artwork inside <switch> wrappers and returns nothing without an <svg>", () => {
     expect(sanitizeSvg(`<svg><switch><g><circle r="2"/></g></switch></svg>`)!.outerHTML).toContain("<circle");
     expect(sanitizeSvg("<div>no</div>")).toBeUndefined();
+  });
+});
+
+describe("themes and the line below", () => {
+  const tiles = buildTiles(hass(), { type: "x", entities: [
+    { entity: "sensor.power", theme: "dusk", secondary_entity: "climate.hall", secondary_attribute: "current_humidity" },
+    { entity: "sensor.temp", theme: "light", show_icon: false, secondary_text: "  Hallway  " },
+    { entity: "sensor.power", theme: "nonsense" as any, secondary_entity: "sensor.temp", secondary_name: "Inside", secondary_text: "ignored" },
+    "sensor.power",
+  ] });
+  it("keeps a known theme and falls back to plain", () => {
+    expect(tiles.map((t) => t.theme)).toEqual(["dusk", "light", "plain", "plain"]);
+    expect(tiles.map((t) => t.showIcon)).toEqual([true, false, true, true]);
+  });
+  it("shows a second entity as its name and value, or your text", () => {
+    expect(tiles[0].secondary).toEqual({ name: "Current humidity", value: "48", unit: "%" });
+    expect(tiles[1].secondary).toEqual({ text: "Hallway" });
+    expect(tiles[2].secondary).toEqual({ name: "Inside", value: "19.46", unit: "°C" });
+    expect(tiles[3].secondary).toBeUndefined();
+  });
+  it("floats the tiles once any tile has a theme", () => {
+    expect(isFloating({ type: "x", entities: ["sensor.power", { entity: "sensor.temp", theme: "ocean" }] })).toBe(true);
+    expect(isFloating({ type: "x", entities: ["sensor.power", { entity: "sensor.temp", theme: "plain" }] })).toBe(false);
+  });
+  it("puts currency first, % and degrees at full size, other units small", () => {
+    expect(unitParts("£")).toEqual({ pre: "£", inline: "", small: "" });
+    expect(unitParts("%")).toEqual({ pre: "", inline: "%", small: "" });
+    expect(unitParts("°C")).toEqual({ pre: "", inline: "°", small: "" });
+    expect(unitParts("kWh")).toEqual({ pre: "", inline: "", small: "kWh" });
   });
 });
