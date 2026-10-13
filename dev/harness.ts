@@ -71,6 +71,8 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("light.tower", "on", { friendly_name: "Corner bar", supported_color_modes: ["rgb"], color_mode: "rgb", rgb_color: [70, 140, 255], brightness: 255 }),
       e("light.hall", "off", { friendly_name: "Hall", supported_color_modes: ["color_temp"] }),
       e("light.lamp", "on", { friendly_name: "Lamp", supported_color_modes: ["onoff"] }),
+      e("calendar.family", "off", { friendly_name: "Family" }), e("calendar.work", "off", { friendly_name: "Work" }), e("calendar.school", "off", { friendly_name: "School" }),
+      e("sensor.recycling_next", dayIso(1), { friendly_name: "Recycling" }), e("sensor.waste_next", "in 8 days", { friendly_name: "Waste", daysTo: 8 }),
     ]),
     ...over,
   };
@@ -107,10 +109,21 @@ function solarForecast() {
 const CONDS = ["partlycloudy", "partlycloudy", "sunny", "cloudy", "rainy", "rainy", "pouring", "cloudy", "sunny", "sunny"];
 function forecast(kind: string, night = false) {
   const t = new Date(); t.setMinutes(0, 0, 0);
-  if (kind === "hourly") return Array.from({ length: 24 }, (_, i) => { const d = new Date(t.getTime() + i * 3600e3); return { datetime: d.toISOString(), condition: night && CONDS[i % CONDS.length] === "sunny" ? "clear-night" : CONDS[i % CONDS.length], temperature: 14 + Math.round(Math.sin(i / 3) * 3), is_daytime: !night }; });
+  if (kind === "hourly") return Array.from({ length: 24 }, (_, i) => { const d = new Date(t.getTime() + i * 3600e3); const c = CONDS[i % CONDS.length]; return { datetime: d.toISOString(), condition: night && c === "sunny" ? "clear-night" : c, temperature: 14 + Math.round(Math.sin(i / 3) * 3), is_daytime: !night, precipitation_probability: c === "pouring" ? 90 : c === "rainy" ? 70 : c === "cloudy" ? 20 : 5 }; });
   const d0 = new Date(); d0.setHours(12, 0, 0, 0);
   const days: [string, number, number][] = [["partlycloudy", 16, 9], ["rainy", 13, 8], ["pouring", 12, 7], ["sunny", 14, 6], ["cloudy", 15, 8], ["rainy", 13, 9], ["sunny", 17, 7]];
   return days.map(([condition, temperature, templow], i) => ({ datetime: new Date(d0.getTime() + i * 86400e3).toISOString(), condition, temperature, templow }));
+}
+
+// Today card: calendars relative to today, and a bin date.
+const at = (plus: number, h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); d.setDate(d.getDate() + plus); return d.toISOString(); };
+function dayIso(plus: number) { const d = new Date(); d.setDate(d.getDate() + plus); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function calendarEvents(id: string) {
+  const ev = (summary: string, p: number, h: number, m: number, h2: number, m2: number, location?: string) => ({ summary, location, start: { dateTime: at(p, h, m) }, end: { dateTime: at(p, h2, m2) } });
+  if (id === "calendar.family") return [ev("Dentist, Sarah", 0, 13, 0, 14, 0, "Hart Dental, Bath Road"), ev("Swimming lesson", 0, 17, 30, 18, 30, "Leisure centre"), ev("Boiler service", 1, 10, 0, 12, 0, "Engineer arrives between 10 and 12"), { summary: "Mum's birthday", start: { date: dayIso(0) }, end: { date: dayIso(1) } }];
+  if (id === "calendar.school") return [ev("School drop-off", 0, 8, 15, 8, 45, "St Mary's Primary"), ev("School pick-up", 0, 15, 15, 15, 45, "St Mary's Primary"), ev("School drop-off", 1, 8, 15, 8, 45, "St Mary's Primary")];
+  if (id === "calendar.work") return [ev("Stand-up and planning", 0, 9, 30, 10, 15, "Teams"), ev("Lunch with Tom", 1, 12, 30, 13, 30, "Côte, Milsom Street")];
+  return [];
 }
 
 function makeHass(dark: boolean, over = {}): HomeAssistant {
@@ -128,6 +141,7 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
       },
     },
     async callService(d: string, s: string, data: Record<string, unknown>) { console.log("service", d, s, data); },
+    async callApi(_m: string, path: string) { return calendarEvents(path.split("?")[0].replace("calendars/", "")); },
     async callWS(m: { type?: string }) { return m?.type === "energy/solar_forecast" ? solarForecast() : { children: [] }; },
   } as unknown as HomeAssistant;
 }
@@ -161,10 +175,26 @@ const themed = { type: "custom:halo-entities-card", columns: 2 as const, entitie
   { entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" },
 ] };
 
+const today = { type: "custom:halo-today-card", name: "Sam", greeting: "cheeky",
+  calendars: [{ entity: "calendar.family", colour: "#e0568a" }, { entity: "calendar.work", colour: "#2f7bff" }, { entity: "calendar.school", colour: "#1f9d63" }],
+  weather: "weather.home", bins: [{ name: "Recycling", colour: "blue", entity: "sensor.recycling_next" }, { name: "Waste", colour: "black", entity: "sensor.waste_next" }],
+  vehicles: [{ name: "M140i", kind: "ice", image_preset: "m140i", level: "sensor.fuel", tank_size: 52, range: "sensor.petrol_range" }, { name: "e-Vivaro", kind: "ev", image_preset: "e-vivaro", level: "sensor.van_soc", range: "sensor.van_range", charging: "binary_sensor.van_charging" }],
+  rates_today: "event.agile_today", rates_tomorrow: "event.agile_tomorrow", media: ["media_player.lounge", "media_player.study"] };
+const vanLow = { "sensor.van_soc": e("sensor.van_soc", "22", { unit_of_measurement: "%" })[1], "binary_sensor.van_charging": e("binary_sensor.van_charging", "off")[1] };
+const quiet = { "media_player.lounge": e("media_player.lounge", "paused", { friendly_name: "Living room" })[1] };
+
 const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
 
 type Spec = { setup?: (c: any) => void; id: string; title: string; tag: string; cfg: object; w: number; h: number; dark?: boolean; over?: Record<string, unknown> };
 const specs: Spec[] = [
+  { id: "today", title: "Today, column", tag: "halo-today-card", cfg: today, w: 378, h: 0, over: vanLow },
+  { id: "today-quiet", title: "Today, nothing playing, van charging", tag: "halo-today-card", cfg: today, w: 378, h: 0, over: quiet },
+  { id: "today-night", title: "Today night", tag: "halo-today-card", cfg: today, w: 378, h: 0, dark: true, over: vanLow },
+  { id: "today-wide", title: "Today wall panel", tag: "halo-today-card", cfg: today, w: 860, h: 0, over: vanLow },
+  { id: "today-date", title: "Today, big date, rude", tag: "halo-today-card", cfg: { ...today, header: "date", greeting: "rude" }, w: 378, h: 0, over: quiet },
+  { id: "title-greet", title: "Title greeting", tag: "halo-title-card", cfg: { type: "custom:halo-title-card", name: "Sam", weather: "weather.home" }, w: 378, h: 0 },
+  { id: "title-date", title: "Title big date", tag: "halo-title-card", cfg: { type: "custom:halo-title-card", style: "date", name: "Sam", weather: "weather.rain" }, w: 378, h: 0, dark: true },
+  { id: "title-head", title: "Title heading", tag: "halo-title-card", cfg: { type: "custom:halo-title-card", style: "heading", title: "Downstairs", subtitle: "3 lights on · heating to 21°", chips: ["lock.m140i", { entity: "sensor.soc", name: "Battery" }] }, w: 378, h: 0 },
   { id: "energy", title: "Energy 12x12", tag: "halo-energy-card", cfg: energy, w: 378, h: 760 },
   { id: "e8", title: "Energy 12x8", tag: "halo-energy-card", cfg: energy, w: 378, h: 464 },
   { id: "e7", title: "Energy 12x7", tag: "halo-energy-card", cfg: energy, w: 378, h: 408 },
@@ -270,7 +300,7 @@ for (const s of specs) {
   if (only && !only.split(",").includes(s.id)) continue;
   const cell = document.createElement("div"); cell.className = "cell" + (s.dark ? " dk" : "");
   cell.innerHTML = `<div class="cap">${s.title}</div>`;
-  const box = document.createElement("div"); box.style.cssText = `width:${s.w}px;height:${s.h}px`;
+  const box = document.createElement("div"); box.style.cssText = `width:${s.w}px;${s.h ? `height:${s.h}px` : ""}`;
   const card = document.createElement(s.tag) as any;
   card.setConfig(s.cfg); card.hass = makeHass(!!s.dark, s.over); s.setup?.(card);
   box.append(card); cell.append(box); document.body.append(cell);

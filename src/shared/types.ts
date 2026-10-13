@@ -16,6 +16,9 @@ export interface HomeAssistant {
   };
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
   callWS<T>(msg: Record<string, unknown>): Promise<T>;
+  /** REST call to Home Assistant's API (calendar events). */
+  callApi?<T>(method: "GET" | "POST", path: string, data?: Record<string, unknown>): Promise<T>;
+  user?: { name?: string };
   /** Home Assistant's own formatting (translated states and attribute names); absent in older versions. */
   formatEntityState?(stateObj: HassEntity, state?: string): string;
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;

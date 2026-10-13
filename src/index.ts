@@ -20,6 +20,10 @@ import { HaloThermostatCardEditor } from "./cards/thermostat/editor";
 import { HaloSizeCard } from "./cards/size/halo-size-card";
 import { HaloVehicleCard } from "./cards/vehicle/halo-vehicle-card";
 import { HaloVehicleCardEditor } from "./cards/vehicle/editor";
+import { HaloTodayCard } from "./cards/today/halo-today-card";
+import { HaloTodayCardEditor } from "./cards/today/editor";
+import { HaloTitleCard } from "./cards/title/halo-title-card";
+import { HaloTitleCardEditor } from "./cards/title/editor";
 
 export const VERSION = "0.16.0";
 
@@ -35,6 +39,8 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
   ["halo-entities-card", HaloEntitiesCard, "halo-entities-card-editor", HaloEntitiesCardEditor, "Halo Entities", "A compact row of entity readings: a value per tile, from the state or any attribute, with your own icon or SVG."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
+  ["halo-today-card", HaloTodayCard, "halo-today-card-editor", HaloTodayCardEditor, "Halo Today", "Today at a glance: your next events, the weather, bins, low vehicles, cheap Agile slots and what's playing, ordered by what matters now, under a greeting that can be polite, cheeky or rude."],
+  ["halo-title-card", HaloTitleCard, "halo-title-card-editor", HaloTitleCardEditor, "Halo Title", "A greeting with the date and weather, the day as a big number, or a section heading with a subtitle and entity chips."],
 ];
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }

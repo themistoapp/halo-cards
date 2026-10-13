@@ -15,6 +15,8 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Agile rates | `custom:halo-agile-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 | Entities | `custom:halo-entities-card` | 12 × 2 for up to four tiles; two more rows per extra four. Two per row: 12 × 3 per pair |
+| Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
+| Title | `custom:halo-title-card` | 12 × 2 greeting or date, 12 × 1 heading |
 
 ## Install (HACS)
 
@@ -171,6 +173,67 @@ entities:
     unit: W                    # optional
     decimals: 0                # optional
 shadow: true
+```
+
+## Halo Today card (`custom:halo-today-card`)
+
+Today at a glance: a greeting, then boxes for whatever matters right now. Boxes sort themselves: anything **happening now** first (music playing, an event in progress, a cheap Agile slot you're in), then anything that **needs doing** (bins going out tonight, a vehicle running low), then what's **soon** (an event within the hour, bins within 48 hours, rain or a cheap slot within two hours), then the rest in the order you choose. Half-width boxes pair up; one left on its own goes full width. Boxes slide to their new place when the order changes.
+
+| Box | Shows | When |
+| --- | --- | --- |
+| Calendar | Your next two events, with time left on one that's on now or a countdown to the next, and the rest of the day underneath | Whenever there's something in the next week. Looks ahead to tomorrow once today is done |
+| Weather | Now, high and low, and the next 8 hours with the chance of rain | Always, when set |
+| Bins | Each bin with days to go. "Out tonight" from 17:00 the day before | Only within 48 hours of a collection |
+| Vehicles | Picture, level and range, with Fill up or Plug in | Only below 30%, and not while charging |
+| Cheapest Agile slots | The three cheapest half-hours still to come (tonight's in the evening, once tomorrow's rates are out), marked Now, Next or Plunge | Whenever rates are set |
+| Now playing | Artwork, track, room and pause | Only while one of your speakers is playing; the one that started last if several are |
+
+Calendars: any calendar in Home Assistant works. Google Calendar and CalDAV (iCloud, Fastmail, Nextcloud) have built-in integrations; for Outlook or any calendar you can share as a link, add the built-in **Remote Calendar** integration and paste its `.ics` address; **Local Calendar** keeps a household calendar in Home Assistant itself.
+
+Bins: a sensor whose state or attributes give the next date works, including [UK Bin Collection Data](https://github.com/robbrad/UKBinCollectionData) (`next_collection`, `days`) and [Waste Collection Schedule](https://github.com/mampfes/hacs_waste_collection_schedule) (`daysTo`), a date helper, or a bin calendar (each bin matches events by `match`, or by its name).
+
+The greeting: 282 lines across 30 situations (bin night, rain on the way, a busy or empty day, a birthday, cheap or negative Agile prices, a low battery, the same song on repeat, Monday mornings, late nights…) in three tones: `polite`, `cheeky` or `rude`. The card collects everything that's true right now, keeps one line for the hour, and shows another when tapped. `watershed: true` keeps Rude for after 21:00 (Cheeky before). Add your own lines per situation in the editor; they can use `{name}`, `{bin}`, `{time}`, `{temp}`, `{event}`, `{mins}`, `{who}`, `{car}`, `{pct}`, `{cheap}`, `{artist}`, `{track}` and `{n}`.
+
+Everything is set in the visual editor: title style, tone, watershed, which boxes and their order, calendars and colours, bins, vehicles, Agile, speakers and your own greetings.
+
+```yaml
+type: custom:halo-today-card
+header: greeting               # greeting | date | none
+greeting: cheeky               # polite | cheeky | rude
+watershed: true                # rude only after watershed_from (21:00)
+name: Sam                      # optional; defaults to whoever is signed in
+boxes: [calendar, weather, bins, vehicles, agile, media]   # which, and their order within a tier
+calendars:
+  - { entity: calendar.family, colour: "#e0568a" }
+  - { entity: calendar.work, colour: "#2f7bff" }
+weather: weather.home
+bins:
+  - { name: Recycling, colour: blue, entity: sensor.recycling_next }
+  - { name: Waste, colour: black, entity: sensor.waste_next }
+bins_within: 48                # hours before a collection the box appears
+bins_out_from: "17:00"
+vehicles:
+  - { name: M140i, kind: ice, image_preset: m140i, level: sensor.m140i_fuel, range: sensor.m140i_range }
+  - { name: e-Vivaro, kind: ev, image_preset: e-vivaro, level: sensor.van_battery, range: sensor.van_range, charging: binary_sensor.van_charging }
+low_below: 30
+rates_today: event.octopus_energy_electricity_xxx_current_day_rates
+rates_tomorrow: event.octopus_energy_electricity_xxx_next_day_rates
+agile_slots: 3
+media: [media_player.kitchen, media_player.living_room]
+greetings:
+  - { trigger: binsTonight, tone: any, text: "The bins won't walk themselves, {name}." }
+```
+
+## Halo Title card (`custom:halo-title-card`)
+
+The Today card's title on its own. **Greeting**: the date and a greeting that follows the time of day and, with a weather entity, rain, cold, heat and wind, in the same three tones. **Big date**: the day as a big number with the weekday and month. **Section heading**: no card behind it, for labelling a part of the dashboard: a title, a subtitle (plain text or a template) and chips for a few entities.
+
+```yaml
+type: custom:halo-title-card
+style: heading                 # greeting | date | heading
+title: Downstairs
+subtitle: "{{ states.light | selectattr('state','eq','on') | list | count }} lights on"
+chips: [lock.front_door, { entity: sensor.living_room_temperature, name: Living room }]
 ```
 
 ## Halo Thermostat card (`custom:halo-thermostat-card`)
