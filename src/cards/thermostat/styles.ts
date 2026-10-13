@@ -7,6 +7,14 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   ha-card.heat.dark { --tone: #ff9a5c; }
   ha-card.cool { --tone: #2f86cf; }
   ha-card.cool.dark { --tone: #6cc3ec; }
+  /* Thermostat bloom: an ellipse from below the bottom edge, its width and height set apart (BLOOM_SHAPE),
+     so it lies wide and low at target and rises up the card while heating or cooling. */
+  @keyframes rise-in { from { --bw: 0; --bh: 0; } }
+  .bg {
+    transition: --bw 1.8s cubic-bezier(.22,.7,.2,1), --bh 1.8s cubic-bezier(.22,.7,.2,1), --c0 .9s ease, --c1 .9s ease;
+    animation: rise-in 2.4s cubic-bezier(.22,.7,.2,1) backwards;
+    background: radial-gradient(ellipse calc(var(--bw) * 1%) calc(var(--bh) * 1%) at 50% var(--by), var(--c0) 0%, var(--c1) 38%, transparent 75%), var(--surface);
+  }
   .inner { gap: 6px; padding: 14px 16px 16px; }
   h2 { padding-top: 1px; }
 
@@ -47,6 +55,14 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .c button.rb2 { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; padding: 0; cursor: pointer; }
   .c button.rb2:disabled { opacity: .4; cursor: default; }
   .c button.rb2 svg { width: 14px; height: 14px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; }
+  /* Heat/off toggle, top right of the compact bar. On is pressed in: a darker well and an inner shadow, no colour. */
+  .c button.pw { position: absolute; z-index: 2; top: 8px; right: 10px; width: 30px; height: 30px; border-radius: 50%; padding: 0; cursor: pointer; display: grid; place-items: center;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-2); -webkit-tap-highlight-color: transparent; transition: color .3s, box-shadow .3s, background .3s, transform .12s; }
+  .c button.pw svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .c button.pw:active { transform: scale(.94); }
+  .c button.pw:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+  .c button.pw[aria-pressed="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, var(--surface)); box-shadow: inset 0 1.5px 3px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.6); }
+  .dark .c button.pw[aria-pressed="true"] { box-shadow: inset 0 1.5px 3px rgba(0,0,0,.7), inset 0 -1px 0 rgba(255,255,255,.06); }
   .bar { position: relative; height: 28px; margin-top: 4px; }
   .bar i { position: absolute; bottom: 0; width: 2px; height: 18px; border-radius: 1px; background: var(--ink); opacity: .2; }
   .bar i.lit { background: var(--tone); opacity: 1; }

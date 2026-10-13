@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AT_TARGET_K, bloomOf, buildThermostat, fmtTemp, round05, stepTarget, toneOf } from "../src/cards/thermostat/logic";
+import { bloomOf, buildThermostat, fmtTemp, round05, stepTarget, toneOf, turnOnMode } from "../src/cards/thermostat/logic";
 import { ent, hassOf } from "./helpers";
 
 const climate = (state: string, a: Record<string, unknown> = {}) => ent("climate.hall", state, {
@@ -61,15 +61,25 @@ describe("range mode and limits", () => {
 });
 
 describe("bloom", () => {
-  it("is full while heating, small in heat mode at target, none when off", () => {
-    expect(buildThermostat(hassOf([climate("heat", { hvac_action: "heating" })]), cfg)).toMatchObject({ glow: "heat", k: 1 });
-    expect(buildThermostat(hassOf([climate("heat", { hvac_action: "idle" })]), cfg)).toMatchObject({ glow: "heat", k: AT_TARGET_K });
+  it("rises while heating, lies wide and low in heat mode at target, none when off", () => {
+    expect(buildThermostat(hassOf([climate("heat", { hvac_action: "heating" })]), cfg)).toMatchObject({ glow: "heat", bloom: "active" });
+    expect(buildThermostat(hassOf([climate("heat", { hvac_action: "idle" })]), cfg)).toMatchObject({ glow: "heat", bloom: "rest" });
     const off = buildThermostat(hassOf([climate("off", { hvac_action: "off" })]), cfg);
-    expect([off.glow, off.k]).toEqual([undefined, 0]);
+    expect([off.glow, off.bloom]).toEqual([undefined, "none"]);
   });
-  it("waits in blue for cool, and shows nothing at target in auto", () => {
-    expect(bloomOf("idle", "cool")).toEqual({ glow: "cool", k: AT_TARGET_K });
-    expect(bloomOf("idle", "heat_cool")).toEqual({ k: 0 });
-    expect(bloomOf("cool", "heat_cool")).toEqual({ glow: "cool", k: 1 });
+  it("does the same in blue for cool, and nothing at target in auto", () => {
+    expect(bloomOf("idle", "cool")).toEqual({ glow: "cool", bloom: "rest" });
+    expect(bloomOf("idle", "heat_cool")).toEqual({ bloom: "none" });
+    expect(bloomOf("cool", "heat_cool")).toEqual({ glow: "cool", bloom: "active" });
+  });
+});
+
+describe("turnOnMode", () => {
+  it("returns to the last mode, else heat, else the first offered", () => {
+    expect(turnOnMode(["heat", "cool", "off"], "cool")).toBe("cool");
+    expect(turnOnMode(["heat", "cool", "off"], "dry")).toBe("heat");
+    expect(turnOnMode(["heat", "cool", "off"])).toBe("heat");
+    expect(turnOnMode(["cool", "off"])).toBe("cool");
+    expect(turnOnMode(["off"])).toBeUndefined();
   });
 });

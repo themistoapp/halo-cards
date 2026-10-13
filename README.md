@@ -157,7 +157,7 @@ shadow: true
 
 ## Halo Thermostat card (`custom:halo-thermostat-card`)
 
-Nest-style thermostat for any `climate` entity. Tall, it is a dial of fine ticks with the target in the middle and − / + below; short (under about 230px), it becomes a compact bar with the target in the middle, − / + either side, "Now" and humidity under it, and the tick bar along the bottom. The background glows orange while heating and blue while cooling, and keeps a small glow in that colour when the thermostat is on but already at its target, so there is no status text. Temperatures are shown to the nearest 0.5 degrees and the target moves in 0.5 steps (or the thermostat's own step if larger). Presses are sent once you stop tapping. In heat/cool range mode, − / + move both ends of the range together.
+Nest-style thermostat for any `climate` entity. Tall, it is a dial of fine ticks with the target in the middle and − / + below; short (under about 230px), it becomes a compact bar with the target in the middle, − / + either side, "Now" and humidity under it, and the tick bar along the bottom. The background glows orange while heating and blue while cooling, rising up the card while it works; when the thermostat is on but already at its target the glow lies wide and low along the bottom, so there is no status text. The compact bar has an on/off button in the top right that turns the thermostat off, and back on to the last mode it was in. Temperatures are shown to the nearest 0.5 degrees and the target moves in 0.5 steps (or the thermostat's own step if larger). Presses are sent once you stop tapping. In heat/cool range mode, − / + move both ends of the range together.
 
 ```yaml
 type: custom:halo-thermostat-card

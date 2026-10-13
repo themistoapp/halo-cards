@@ -40,8 +40,8 @@ export interface ThermoModel {
   modes: { id: string; label: string }[];
   /** Bloom colour: what it is doing, or (on but at target) the mode it is waiting in. None when off. */
   glow?: "heat" | "cool";
-  /** Background bloom size: full while heating or cooling, small when on but at target. */
-  k: number;
+  /** Background bloom: rising while heating or cooling, wide and low when on but at target. */
+  bloom: Bloom;
   unit: string;
 }
 
@@ -62,18 +62,32 @@ export function toneOf(s: HassEntity, cur?: number, tgt?: number, low?: number, 
   return "idle";
 }
 
-/** Full bloom while heating or cooling; a small one in the mode's colour when on but at target; none otherwise. */
-export function bloomOf(tone: Tone, mode: string): { glow?: "heat" | "cool"; k: number } {
-  if (tone === "heat" || tone === "cool") return { glow: tone, k: 1 };
-  if (tone === "idle" && (mode === "heat" || mode === "cool")) return { glow: mode, k: AT_TARGET_K };
-  return { k: 0 };
+export type Bloom = "none" | "rest" | "active";
+
+/** Rising bloom while heating or cooling; a wide, low one in the mode's colour when on but at target; none otherwise. */
+export function bloomOf(tone: Tone, mode: string): { glow?: "heat" | "cool"; bloom: Bloom } {
+  if (tone === "heat" || tone === "cool") return { glow: tone, bloom: "active" };
+  if (tone === "idle" && (mode === "heat" || mode === "cool")) return { glow: mode, bloom: "rest" };
+  return { bloom: "none" };
 }
-export const AT_TARGET_K = 0.45;
+
+/** Bloom ellipse as [width %, height %] of the card: wide and low at rest, taller than wide while active. */
+export const BLOOM_SHAPE: Record<"dial" | "compact", Record<Bloom, [number, number]>> = {
+  dial: { none: [0, 0], rest: [170, 42], active: [125, 112] },
+  compact: { none: [0, 0], rest: [150, 70], active: [115, 150] },
+};
+
+/** The mode the heat/off toggle turns back on to: the last one used, else Heat, else the first the thermostat offers. */
+export function turnOnMode(modes: string[], last?: string): string | undefined {
+  const on = modes.filter((m) => m !== "off");
+  if (last && on.includes(last)) return last;
+  return on.includes("heat") ? "heat" : on[0];
+}
 
 export function buildThermostat(hass: HomeAssistant, cfg: HaloThermostatConfig): ThermoModel {
   const s = hass.states[cfg.entity];
   const unit = hass.config?.unit_system?.temperature ?? "°C";
-  const empty: ThermoModel = { name: cfg.name ?? "Thermostat", available: false, mode: "off", tone: "off", range: false, min: 7, max: 35, step: 0.5, modes: [], k: 0, unit };
+  const empty: ThermoModel = { name: cfg.name ?? "Thermostat", available: false, mode: "off", tone: "off", range: false, min: 7, max: 35, step: 0.5, modes: [], bloom: "none", unit };
   if (!s) return empty;
   const a = s.attributes;
   const available = isAvailable(s);

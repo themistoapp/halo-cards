@@ -5,7 +5,7 @@ import { GREY_DAY, GREY_NIGHT, registerBloomProps } from "../../shared/bloom";
 import { shadesFromHex } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { observeSize } from "../../shared/util";
-import { buildThermostat, dialAngle, fmtTemp, round05, stepTarget, watchedThermostat, type HaloThermostatConfig, type ThermoModel } from "./logic";
+import { BLOOM_SHAPE, buildThermostat, dialAngle, fmtTemp, round05, stepTarget, turnOnMode, watchedThermostat, type HaloThermostatConfig, type ThermoModel } from "./logic";
 import { styles } from "./styles";
 
 registerBloomProps();
@@ -81,6 +81,17 @@ export class HaloThermostatCard extends LitElement {
       this._hass!.callService("climate", "set_temperature", { entity_id: this._config!.entity, ...data });
     }, 700);
     this._clear = window.setTimeout(() => { this._pending = undefined; }, 4500);
+  }
+
+  /** The last mode the thermostat was on in, kept per entity so the toggle can turn it back on to that mode. */
+  private get _lastKey() { return `halo-thermostat-last-mode:${this._config!.entity}`; }
+  private _lastMode(): string | undefined { try { return localStorage.getItem(this._lastKey) ?? undefined; } catch { return undefined; } }
+  private _remember(mode: string) { try { if (localStorage.getItem(this._lastKey) !== mode) localStorage.setItem(this._lastKey, mode); } catch { /* storage blocked */ } }
+
+  private _toggle(m: ThermoModel) {
+    if (m.mode !== "off") { this._remember(m.mode); this._setMode("off"); return; }
+    const on = turnOnMode(m.modes.map((x) => x.id), this._lastMode());
+    if (on) this._setMode(on);
   }
 
   private _setMode(mode: string) {
@@ -176,7 +187,12 @@ export class HaloThermostatCard extends LitElement {
   private _compact(m: ThermoModel) {
     const off = !m.available || m.mode === "off";
     const hero = this._heroText(m);
+    const ids = m.modes.map((x) => x.id);
+    const canToggle = m.available && ids.includes("off") && !!turnOnMode(ids) && (this._w === 0 || this._w >= 260);
+    const on = m.mode !== "off";
     return html`<div class="inner c"><div class="nm">${m.name}</div>
+      ${canToggle ? html`<button class="pw" aria-pressed=${String(on)} aria-label=${on ? "Turn off" : "Turn on"} @click=${() => this._toggle(m)}>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8v5.4"/><path d="M4.5 4.1a5.2 5.2 0 1 0 7 0"/></svg></button>` : nothing}
       <div class="hr">
         <button class="rb2" ?disabled=${off} aria-label="Lower target" @click=${() => this._press(m, -1)}><svg viewBox="0 0 16 16"><path d="M3 8h10"/></svg></button>
         <div class="hv ${!m.available ? "off" : ""}"><span class="dg">${hero}${this._hasDeg(m) ? html`<sup>°</sup>` : nothing}</span></div>
@@ -193,7 +209,9 @@ export class HaloThermostatCard extends LitElement {
     const compact = this._h > 0 && this._h < 230;
     const hex = m.glow === "heat" ? (dark ? HEAT.night : HEAT.day) : m.glow === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
     const c = shadesFromHex(hex, dark) ?? (dark ? GREY_NIGHT : GREY_DAY);
-    const vars = { "--x1": "50%", "--y1": compact ? "125%" : "112%", "--x2": "50%", "--y2": "50%", "--k": String(hex ? m.k : 0), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca };
+    if (m.available && m.mode !== "off") this._remember(m.mode);
+    const [bw, bh] = BLOOM_SHAPE[compact ? "compact" : "dial"][hex ? m.bloom : "none"];
+    const vars = { "--bw": String(bw), "--bh": String(bh), "--by": compact ? "114%" : "105%", "--c0": c.c0, "--c1": c.c1 };
     return html`<ha-card class="${dark ? "dark" : ""} ${m.tone} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       ${compact ? this._compact(m) : html`<div class="inner"><header><h2>${m.name}</h2></header>${this._dial(m)}${this._modes(m)}</div>`}

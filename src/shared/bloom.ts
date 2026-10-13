@@ -7,6 +7,7 @@ export function registerBloomProps() {
   done = true;
   const reg = (name: string, syntax: string, initialValue: string) => { try { CSS.registerProperty({ name, syntax, inherits: true, initialValue }); } catch { /* already registered */ } };
   reg("--k", "<number>", "0"); reg("--k2", "<number>", "0");
+  reg("--bw", "<number>", "0"); reg("--bh", "<number>", "0");
   reg("--c0", "<color>", "#aeb3bf"); reg("--c1", "<color>", "#d3d6dd"); reg("--ca", "<color>", "#aeb3bf");
 }
 
