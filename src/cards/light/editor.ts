@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../shared/types";
-import { rowsOf, type HaloLightConfig, type LightRow } from "./logic";
+import { allRowsOf, type HaloLightConfig, type LightRow } from "./logic";
 
 const TOP = [
   { name: "name", selector: { text: {} } },
@@ -38,7 +38,7 @@ export class HaloLightCardEditor extends LitElement {
     this._config = config;
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
   }
-  private _rows(): LightRow[] { return rowsOf(this._config!); }
+  private _rows(): LightRow[] { return allRowsOf(this._config!); }
   private _setRows(rows: LightRow[]) { this._emit({ ...this._config!, lights: rows }); }
 
   override render() {

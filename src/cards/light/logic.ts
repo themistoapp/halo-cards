@@ -69,8 +69,11 @@ function statusOf(s: HassEntity | undefined, on: boolean, dimmable: boolean, pct
   return dimmable ? `${pct}%` : "On";
 }
 
-export const rowsOf = (cfg: HaloLightConfig): LightRow[] =>
-  (cfg.lights ?? []).map((r) => (typeof r === "string" ? { entity: r } : r)).filter((r) => r?.entity);
+/** Every row, including one just added in the editor that has no entity yet. */
+export const allRowsOf = (cfg: HaloLightConfig): LightRow[] =>
+  (cfg.lights ?? []).map((r) => (typeof r === "string" ? { entity: r } : r)).filter((r) => r && typeof r === "object");
+
+export const rowsOf = (cfg: HaloLightConfig): LightRow[] => allRowsOf(cfg).filter((r) => r.entity);
 
 export const watchedLights = (cfg: HaloLightConfig) => rowsOf(cfg).map((r) => r.entity);
 

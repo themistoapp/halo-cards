@@ -1,7 +1,7 @@
 import { LitElement, css, html } from "lit";
 import { state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../shared/types";
-import { rowsOf, type HaloScenesConfig, type SceneRow } from "./logic";
+import { allRowsOf, type HaloScenesConfig, type SceneRow } from "./logic";
 
 const TOP = [
   { name: "name", selector: { text: {} } },
@@ -37,7 +37,7 @@ export class HaloScenesCardEditor extends LitElement {
 
   override render() {
     if (!this.hass || !this._config) return html``;
-    const rows = rowsOf(this._config);
+    const rows = allRowsOf(this._config);
     const label = (s: { name: string }) => LABELS[s.name] ?? s.name;
     return html`
       <ha-form .hass=${this.hass} .data=${{ shadow: true, ...this._config }} .schema=${TOP} .computeLabel=${label}

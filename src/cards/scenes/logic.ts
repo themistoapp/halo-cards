@@ -14,8 +14,11 @@ export interface SceneButton { entity: string; name: string; icon: string; colou
 
 const DEFAULT_ICON: Record<string, string> = { scene: "mdi:palette", script: "mdi:script-text-play", button: "mdi:gesture-tap-button", input_button: "mdi:gesture-tap-button" };
 
-export const rowsOf = (cfg: HaloScenesConfig): SceneRow[] =>
-  (cfg.scenes ?? []).map((r) => (typeof r === "string" ? { entity: r } : r)).filter((r) => r?.entity);
+/** Every row, including one just added in the editor that has no entity yet. */
+export const allRowsOf = (cfg: HaloScenesConfig): SceneRow[] =>
+  (cfg.scenes ?? []).map((r) => (typeof r === "string" ? { entity: r } : r)).filter((r) => r && typeof r === "object");
+
+export const rowsOf = (cfg: HaloScenesConfig): SceneRow[] => allRowsOf(cfg).filter((r) => r.entity);
 
 export const watchedScenes = (cfg: HaloScenesConfig) => rowsOf(cfg).map((r) => r.entity);
 
