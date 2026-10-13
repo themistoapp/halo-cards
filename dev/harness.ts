@@ -11,7 +11,10 @@ if (!customElements.get("ha-icon")) customElements.define("ha-icon", class exten
   connectedCallback() { this.style.cssText = "display:inline-flex;width:var(--mdc-icon-size,20px);height:var(--mdc-icon-size,20px)"; this._draw(); }
   private _draw() { const d = MDI[this._i] ?? MDI["mdi:palette"]; (this.shadowRoot ?? this.attachShadow({ mode: "open" })).innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor"><path d="${d}"/></svg>`; }
 });
-if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
+// Home Assistant's own ha-card gives every card its rounded corners; the cards' own styles win over these.
+if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {
+  constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:block;border-radius:var(--ha-card-border-radius,12px)}</style><slot></slot>`; }
+});
 const q = new URLSearchParams(location.search);
 const only = q.get("only");
 // ?now=14:05 pins the clock so solar screenshots are repeatable.
@@ -61,7 +64,7 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
       e("sun.sun", "above_horizon"),
       e("event.agile_today", "2026-10-12T00:00:00Z", { rates: agileRates(0, false) }), e("event.agile_tomorrow", "2026-10-13T00:00:00Z", { rates: agileRates(1, true) }),
-      e("sensor.pv_total", "870", { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
+      e("sensor.pv_total", String(Math.round(solarAct(new Date().getHours() + new Date().getMinutes() / 60) * 1000)), { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
       e("weather.home", "partlycloudy", { friendly_name: "Swindon", temperature: 14.4, humidity: 72, pressure: 1008.3, pressure_unit: "hPa", wind_speed: 22.4, wind_speed_unit: "km/h", wind_bearing: 225, cloud_coverage: 48, dew_point: 9.1, supported_features: 3 }),
       e("weather.rain", "rainy", { friendly_name: "Swindon", temperature: 11.2, humidity: 91, pressure: 998, pressure_unit: "hPa", wind_speed: 30, wind_speed_unit: "km/h", wind_bearing: 250, supported_features: 3 }),
       e("weather.night", "clear-night", { friendly_name: "Swindon", temperature: 8.6, humidity: 80, pressure: 1016, pressure_unit: "hPa", wind_speed: 8, wind_speed_unit: "km/h", wind_bearing: 20, supported_features: 3 }),
@@ -318,7 +321,86 @@ const specs: Spec[] = [
   { id: "veh-low", title: "e-Vivaro low, not charging", tag: "halo-vehicle-card", cfg: van, w: 378, h: 248, over: { "sensor.van_soc": e("sensor.van_soc", "14", { unit_of_measurement: "%" })[1], "binary_sensor.van_charging": e("binary_sensor.van_charging", "off")[1] } },
 ];
 
-for (const s of specs) {
+// ---- Screenshot scenes ----------------------------------------------------
+// ?scene=name renders one card, or a section of tiles on the real 12-column grid (56px rows, 8px gaps), on a transparent page.
+type Placed = { tag: string; cfg: object; col?: number; row?: number; c?: number; r: number };
+type Scene = { w: number; tiles: Placed[]; dark?: boolean; over?: Record<string, unknown> };
+
+/** Blue, underwater-looking artwork so the media card blooms blue. */
+function blueArt() {
+  const c = document.createElement("canvas"); c.width = c.height = 240;
+  const g = c.getContext("2d")!;
+  const sea = g.createLinearGradient(0, 0, 0, 240); sea.addColorStop(0, "#1d7fc4"); sea.addColorStop(.55, "#0b4f93"); sea.addColorStop(1, "#04234f");
+  g.fillStyle = sea; g.fillRect(0, 0, 240, 240);
+  const glow = g.createRadialGradient(120, -20, 10, 120, -20, 200); glow.addColorStop(0, "rgba(160,225,255,.75)"); glow.addColorStop(1, "rgba(160,225,255,0)");
+  g.fillStyle = glow; g.fillRect(0, 0, 240, 240);
+  g.strokeStyle = "rgba(190,235,255,.18)"; g.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(-20, 30 + i * 9); g.bezierCurveTo(60, 20 + i * 11, 160, 45 + i * 8, 260, 25 + i * 10); g.stroke(); }
+  return c.toDataURL();
+}
+const nirvana = () => ({ "media_player.lounge": e("media_player.lounge", "playing", { friendly_name: "Living room", supported_features: FEATS, media_title: "Come As You Are", media_artist: "Nirvana",
+  media_album_name: "Nevermind", media_duration: 219, media_position: 74, media_position_updated_at: now, volume_level: 0.42, entity_picture: blueArt(), group_members: ["media_player.lounge", "media_player.kitchen"] })[1] });
+const balanced = { "sensor.solar_power": e("sensor.solar_power", "1250", { unit_of_measurement: "W" })[1], "sensor.battery_power": e("sensor.battery_power", "1180", { unit_of_measurement: "W" })[1],
+  "sensor.grid_power": e("sensor.grid_power", "4", { unit_of_measurement: "W" })[1], "sensor.home_power": e("sensor.home_power", "2430", { unit_of_measurement: "W", device_class: "power", state_class: "measurement" })[1],
+  "sensor.soc": e("sensor.soc", "64", { unit_of_measurement: "%" })[1], "sensor.solar_today": e("sensor.solar_today", "6.8", { unit_of_measurement: "kWh" })[1] };
+
+const one = (tag: string, cfg: object, r: number, extra: Partial<Scene> = {}): Scene => ({ w: 378, tiles: [{ tag, cfg, r }], ...extra });
+const T = (cfg: object) => tile(cfg);
+const mixTiles: Placed[] = [
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.home_power", name: "House", size: "large", icon_colour: "purple", graph: true, graph_colour: "purple", secondary_entity: "sensor.grid_power", secondary_name: "Grid" }), col: 1, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.solar_power", name: "Solar", theme: "solar", icon_svg: SUN, size: "large", graph: true, secondary_entity: "sensor.solar_today", secondary_name: "Today" }), col: 7, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "climate.hallway", attribute: "current_temperature", name: "Hall", decimals: 1, icon: "mdi:thermometer", icon_colour: "orange", secondary_text: "Heating" }), col: 1, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon: "mdi:water-percent", icon_colour: "blue" }), col: 4, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.soc", name: "Battery", theme: "light", icon: "mdi:battery", icon_colour: "green", secondary_text: "Charging" }), col: 7, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Today", theme: "dusk", secondary_text: "on power" }), col: 10, row: 4, c: 3, r: 2 },
+];
+const themeTiles: Placed[] = [
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.soc", name: "Battery", theme: "light", size: "large", icon: "mdi:battery", icon_colour: "green", graph: true, graph_colour: "green", secondary_text: "Discharging" }), col: 1, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_power", name: "Grid", theme: "dark", size: "large", icon: "mdi:flash", icon_colour: "blue", graph: true, graph_colour: "blue", secondary_entity: "sensor.grid_cost", secondary_name: "Today" }), col: 7, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.home_power", name: "House", theme: "ocean", icon: "mdi:flash" }), col: 1, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.solar_power", name: "Solar", theme: "sunset", icon_svg: SUN }), col: 4, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "climate.hallway", attribute: "current_temperature", name: "Hall", decimals: 1, theme: "aurora", icon: "mdi:thermometer" }), col: 7, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Spent", theme: "graphite", show_icon: false, secondary_text: "today" }), col: 10, row: 4, c: 3, r: 2 },
+];
+const graphTiles: Placed[] = [
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.home_power", name: "House", size: "large", graph: true, colour_rules: [{ above: 1500, colour: "red" }, { above: 1000, colour: "orange" }], secondary_text: "Red above 1.5 kW" }), col: 1, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", decimals: 1, size: "large", icon: "mdi:thermometer", icon_colour: "orange", secondary_entity: "climate.hallway", secondary_attribute: "current_humidity", secondary_name: "Humidity" }), col: 7, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.solar_power", name: "Solar", icon_svg: SUN, icon_colour: "yellow", secondary_entity: "sensor.solar_today", secondary_name: "Today" }), col: 1, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.soc", name: "Battery", icon: "mdi:battery", icon_colour: "green" }), col: 4, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" }), col: 7, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Today", theme: "ember", show_icon: false, secondary_text: "on power" }), col: 10, row: 4, c: 3, r: 2 },
+];
+const SCENES: Record<string, Scene> = {
+  "vehicle-m140i": one("halo-vehicle-card", m140i, 4),
+  "media-nirvana": one("halo-media-card", media, 9, { over: nirvana() }),
+  "media-nirvana-compact": one("halo-media-card", media, 2, { over: nirvana() }),
+  "energy-balanced": one("halo-energy-card", energy, 10, { over: balanced }),
+  "entities-mix": { w: 440, tiles: mixTiles },
+  "entities-themes": { w: 440, tiles: themeTiles },
+  "entities-graphs": { w: 440, tiles: graphTiles },
+  "graph-solar": one("halo-graph-card", SOLAR, 6),
+  "graph-agile-compact": one("halo-graph-card", AGILE, 2),
+  "thermostat-large": one("halo-thermostat-card", th("climate.hallway"), 7),
+  "thermostat-compact": one("halo-thermostat-card", th("climate.hallway"), 2),
+};
+
+const sceneName = q.get("scene");
+if (sceneName && SCENES[sceneName]) {
+  const sc = SCENES[sceneName], dark = q.has("dark") || !!sc.dark;
+  document.body.style.cssText = "margin:0;padding:32px;background:transparent;display:block";
+  const grid = document.createElement("div");
+  grid.className = dark ? "dk" : "";
+  grid.style.cssText = `width:${sc.w}px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:56px;gap:8px;grid-auto-flow:row dense`;
+  for (const t of sc.tiles) {
+    const box = document.createElement("div");
+    box.style.cssText = `grid-column:${t.col ? `${t.col} / ` : ""}span ${t.c ?? 12};grid-row:${t.row ? `${t.row} / ` : ""}span ${t.r};min-width:0`;
+    const card = document.createElement(t.tag) as any;
+    card.layout = "grid";
+    card.setConfig(t.cfg); card.hass = makeHass(dark, sc.over);
+    box.append(card); grid.append(box);
+  }
+  document.body.append(grid);
+} else for (const s of specs) {
   if (only && !only.split(",").includes(s.id)) continue;
   const cell = document.createElement("div"); cell.className = "cell" + (s.dark ? " dk" : "");
   cell.innerHTML = `<div class="cap">${s.title}</div>`;

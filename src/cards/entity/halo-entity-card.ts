@@ -3,7 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { actionFor, gestures, hasAction, runAction, type Gesture } from "../../shared/actions";
 import { shadowStyles, themeStyles } from "../../shared/bloom";
-import { setLocale } from "../../shared/format";
+import { currencyAfter, setLocale } from "../../shared/format";
 import { bucket, fetchStatistics, graphRange, subscribeHistory, type Sample } from "../../shared/history";
 import { figure, graphColours, iconColour, tileGraph, tileStyles, type ColourMode } from "../../shared/tile";
 import type { HomeAssistant } from "../../shared/types";
@@ -16,6 +16,10 @@ const BUCKETS = 48;
 const SMALL_BELOW = 136;
 const GRAPH_FROM = 150;
 let uid = 0;
+
+/** A value with its unit for the line below: currency before or after as the language writes it, % and degrees joined on, anything else after a space. */
+const withUnit = (v: string, unit: string) =>
+  !unit ? v : /^[£$€¥]$/.test(unit) && !currencyAfter() ? `${unit}${v}` : unit === "%" || unit.startsWith("°") ? `${v}${unit}` : `${v} ${unit}`;
 
 /** One entity as a tile: small (3 × 2) or large (6 × 3), arranged like any other card in a sections view. */
 export class HaloEntityCard extends LitElement {
@@ -201,7 +205,7 @@ export class HaloEntityCard extends LitElement {
           ${t.showIcon ? html`<span class="ico" style=${styleMap(ic ? { color: ic } : {})}>${this._icon(t)}</span>` : nothing}<span class="label">${t.name}</span>
         </span></div>
         <div class="val">${figure(t.value, t.unit)}</div>
-        ${sec ? html`<div class="det">${"text" in sec ? sec.text : html`${sec.name ? html`<b>${sec.name}</b> ` : nothing}${sec.value}${sec.unit ? ` ${sec.unit}` : ""}`}</div>` : nothing}
+        ${sec ? html`<div class="det">${"text" in sec ? sec.text : html`${sec.name ? html`<b>${sec.name}</b> ` : nothing}${withUnit(sec.value, sec.unit)}`}</div>` : nothing}
         ${showGraph ? this._graph(t, mode) : nothing}
       </div>
     </ha-card>`;
