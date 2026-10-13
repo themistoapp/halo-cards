@@ -1,5 +1,6 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { clamp, isAvailable } from "../../shared/util";
+import { fmtNum } from "../../shared/format";
 
 export type Tone = "heat" | "cool" | "idle" | "off";
 export interface HaloThermostatConfig {
@@ -20,7 +21,7 @@ export const MODE_ORDER = ["heat", "cool", "heat_cool", "auto", "dry", "fan_only
 /** Nearest half degree. */
 export const round05 = (v: number) => Math.round(v * 2) / 2;
 /** 22 -> "22", 19.5 -> "19.5". */
-export const fmtTemp = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+export const fmtTemp = (v: number) => fmtNum(v, Number.isInteger(v) ? 0 : 1);
 
 export interface ThermoModel {
   name: string;

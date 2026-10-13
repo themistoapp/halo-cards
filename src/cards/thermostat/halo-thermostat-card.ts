@@ -7,6 +7,7 @@ import type { HomeAssistant } from "../../shared/types";
 import { observeSize } from "../../shared/util";
 import { BLOOM_SHAPE, buildThermostat, dialAngle, fmtTemp, round05, stepTarget, turnOnMode, watchedThermostat, type HaloThermostatConfig, type ThermoModel } from "./logic";
 import { styles } from "./styles";
+import { setLocale } from "../../shared/format";
 
 registerBloomProps();
 
@@ -48,6 +49,7 @@ export class HaloThermostatCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     if (!old || watchedThermostat(this._config).some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();
   }

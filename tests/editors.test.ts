@@ -13,7 +13,7 @@ async function addRow(tag: string, config: Record<string, unknown>, key: string)
   ed.addEventListener("config-changed", (e: CustomEvent) => { emitted = e.detail.config; });
   (ed.shadowRoot.querySelector("button.add") as HTMLButtonElement).click();
   await ed.updateComplete;
-  const rows = ed.shadowRoot.querySelectorAll(".row").length;
+  const rows = ed.shadowRoot.querySelectorAll(".row, .rule").length;
   ed.remove();
   return { rows, list: emitted[key] };
 }
@@ -28,8 +28,9 @@ describe("editors: Add shows a new empty row", () => {
     const r = await addRow("halo-light-card-editor", { type: "x", lights: ["light.lamp"] }, "lights");
     expect(r.rows).toBe(2);
   });
-  it("Entities", async () => {
-    const r = await addRow("halo-entities-card-editor", { type: "x", entities: ["sensor.power"] }, "entities");
+  it("Entity colour rules", async () => {
+    const r = await addRow("halo-entity-card-editor", { type: "x", entity: "sensor.power", colour_rules: [{ above: 1, colour: "red" }] }, "colour_rules");
     expect(r.rows).toBe(2);
+    expect(r.list).toHaveLength(2);
   });
 });

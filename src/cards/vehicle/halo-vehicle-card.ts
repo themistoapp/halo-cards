@@ -8,6 +8,7 @@ import { fireMoreInfo, observeHeight } from "../../shared/util";
 import { VEHICLE_IMAGES } from "./images";
 import { buildVehicle, watchedVehicle, type HaloVehicleConfig, type Stat } from "./logic";
 import { styles } from "./styles";
+import { setLocale } from "../../shared/format";
 
 registerBloomProps();
 
@@ -40,6 +41,7 @@ export class HaloVehicleCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     const ids = [...watchedVehicle(this._config), ...(this._config.location ? [`zone.${old?.states[this._config.location]?.state}`] : [])];
     if (!old || ids.some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();

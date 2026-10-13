@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { attributeUnit, buildTiles, columnsFor, fmtValue, isFloating, readValue, rowsFor, unitParts, valueOptions } from "../src/cards/entities/logic";
-import { cleanCss, sanitizeSvg, svgKind, themeColour } from "../src/cards/entities/svg-icon";
+import { attributeUnit, buildTile, defaultScale, graphHours, matchRule, readValue, valueOptions, type HaloEntityConfig } from "../src/cards/entity/logic";
+import { cleanConfig } from "../src/cards/entity/editor";
+import { cleanCss, sanitizeSvg, svgKind, themeColour } from "../src/cards/entity/svg-icon";
 import { ent, hassOf } from "./helpers";
 
 const hass = () => hassOf([
-  ent("sensor.power", "1800", { friendly_name: "House", unit_of_measurement: "W", device_class: "power" }),
+  ent("sensor.power", "1800", { friendly_name: "House", unit_of_measurement: "W", device_class: "power", state_class: "measurement" }),
   ent("sensor.temp", "19.4567", { unit_of_measurement: "°C", device_class: "temperature" }),
   ent("climate.hall", "heat", { friendly_name: "Hallway", current_temperature: 19.4, current_humidity: 48, temperature: 22, hvac_modes: ["heat", "off"], hvac_action: "heating", min_temp: 7 }),
   ent("weather.home", "rainy", { temperature: 12, temperature_unit: "°C", wind_speed: 14.4, wind_speed_unit: "km/h", forecast: [] }),
@@ -15,7 +16,7 @@ const hass = () => hassOf([
 describe("readValue", () => {
   const h = hass();
   it("reads a numeric state with its unit, without thousands separators", () => {
-    expect(readValue(h, h.states["sensor.power"], { entity: "sensor.power" })).toEqual({ value: "1800", unit: "W", available: true });
+    expect(readValue(h, h.states["sensor.power"], { entity: "sensor.power" })).toEqual({ value: "1800", unit: "W", available: true, num: 1800 });
   });
   it("uses decimals from config, else the entity's display precision, else up to two", () => {
     expect(readValue(h, h.states["sensor.temp"], { entity: "sensor.temp" }).value).toBe("19.46");
@@ -47,22 +48,72 @@ describe("readValue", () => {
   });
 });
 
-describe("buildTiles", () => {
-  const tiles = buildTiles(hass(), { type: "x", entities: [
-    "sensor.power",
-    { entity: "climate.hall", attribute: "current_humidity" },
-    { entity: "climate.hall", attribute: "current_temperature", name: "Hall", icon: "mdi:home-thermometer", colour: "#e8742f" },
-    { entity: "sensor.temp", icon_svg: "  <svg></svg> " },
-    { entity: "" },
-  ] });
-  it("skips rows with no entity", () => expect(tiles).toHaveLength(4));
-  it("names from the row, the attribute, or the friendly name", () => {
-    expect(tiles.map((t) => t.name)).toEqual(["House", "Current humidity", "Hall", "Temp"]);
+const tile = (cfg: Partial<HaloEntityConfig>) => buildTile(hass(), { type: "x", entity: "sensor.power", ...cfg });
+
+describe("buildTile", () => {
+  it("names from the config, the attribute, or the friendly name", () => {
+    expect([tile({}), tile({ entity: "climate.hall", attribute: "current_humidity" }), tile({ name: "Hall" }), tile({ entity: "sensor.temp" })].map((t) => t.name))
+      .toEqual(["House", "Current humidity", "Hall", "Temp"]);
   });
   it("picks icons: chosen, then by attribute, then the state icon", () => {
-    expect(tiles.map((t) => [t.icon, t.stateIcon])).toEqual([["mdi:flash", true], ["mdi:water-percent", false], ["mdi:home-thermometer", false], ["mdi:thermometer", true]]);
-    expect(tiles[3].svg).toBe("<svg></svg>");
-    expect(tiles[2].colour).toBe("#e8742f");
+    expect([tile({}), tile({ entity: "climate.hall", attribute: "current_humidity" }), tile({ icon: "mdi:home-thermometer" })].map((t) => [t.icon, t.stateIcon]))
+      .toEqual([["mdi:flash", true], ["mdi:water-percent", false], ["mdi:home-thermometer", false]]);
+    expect(tile({ icon_svg: "  <svg></svg> " }).svg).toBe("<svg></svg>");
+  });
+  it("keeps icon and graph colours apart", () => {
+    const t = tile({ icon_colour: "orange", graph_colour: "#123456" });
+    expect([t.iconColour, t.graphColour]).toEqual(["orange", "#123456"]);
+  });
+  it("lets a colour rule recolour both", () => {
+    const rules = [{ above: 2000, colour: "red" }, { above: 1000, colour: "orange" }];
+    const t = tile({ icon_colour: "teal", graph_colour: "teal", colour_rules: rules });
+    expect([t.iconColour, t.graphColour]).toEqual(["orange", "orange"]);
+    expect(tile({ entity: "sensor.temp", icon_colour: "teal", colour_rules: rules }).iconColour).toBe("teal");
+  });
+});
+
+describe("colour rules", () => {
+  it("takes the first rule met: above, below, or a band", () => {
+    const rules = [{ below: 0, colour: "blue" }, { above: 10, below: 20, colour: "green" }, { above: 20, colour: "red" }];
+    expect([-5, 0, 15, 25].map((v) => matchRule(rules, v))).toEqual(["blue", undefined, "green", "red"]);
+  });
+  it("ignores rules with no bound or no colour", () => {
+    expect(matchRule([{ colour: "red" }, { above: 1, colour: "" }], 5)).toBeUndefined();
+    expect(matchRule(undefined, 5)).toBeUndefined();
+  });
+});
+
+describe("graph", () => {
+  it("is only for a numeric state, not an attribute or text", () => {
+    expect(tile({ graph: true }).graph).toBeDefined();
+    expect(tile({ graph: true, entity: "climate.hall", attribute: "current_humidity" }).graph).toBeUndefined();
+    expect(tile({ graph: true, entity: "binary_sensor.door" }).graph).toBeUndefined();
+    expect(tile({ graph: true, entity: "sensor.dead" }).graph).toBeUndefined();
+    expect(tile({}).graph).toBeUndefined();
+  });
+  it("defaults to 24 hours, kept between 1 and 168", () => {
+    expect([undefined, 0, 6, 500, 2.4].map((h) => graphHours(h))).toEqual([24, 24, 6, 168, 2]);
+  });
+  it("uses hourly statistics over a day, when the sensor has them", () => {
+    expect(tile({ graph: true, graph_hours: 72 }).graph?.statistics).toBe(true);
+    expect(tile({ graph: true }).graph?.statistics).toBe(false);
+    expect(tile({ graph: true, graph_hours: 72, entity: "sensor.temp" }).graph?.statistics).toBe(false);
+  });
+  it("starts power at zero, runs percentages 0 to 100 and fits the rest, unless told", () => {
+    const h = hass();
+    expect(defaultScale(h.states["sensor.power"], "W")).toBe("zero");
+    expect(defaultScale(h.states["sensor.temp"], "°C")).toBe("range");
+    expect(defaultScale(h.states["sensor.temp"], "%")).toBe("percent");
+    expect([defaultScale(h.states["sensor.temp"], "kWh"), defaultScale(h.states["sensor.temp"], "£")]).toEqual(["zero", "zero"]);
+    expect(tile({ graph: true, graph_scale: "range", graph_min: 0 }).graph).toMatchObject({ scale: "range", min: 0 });
+  });
+});
+
+describe("editor", () => {
+  it("drops defaults and stand-ins from the YAML", () => {
+    expect(cleanConfig({ type: "x", entity: "sensor.power", attribute: "$state", theme: "plain", show_icon: true, shadow: true, graph: false,
+      graph_scale: "$auto", icon_colour: "$text", graph_colour: "grey", graph_hours: 24, name: "", colour_rules: [], size: "large" }))
+      .toEqual({ type: "x", entity: "sensor.power", size: "large" });
   });
 });
 
@@ -79,16 +130,7 @@ describe("valueOptions", () => {
   });
 });
 
-describe("layout", () => {
-  it("is one row of up to four, and grows two grid rows per line of tiles", () => {
-    expect([1, 3, 4, 7].map((n) => columnsFor(n))).toEqual([1, 3, 4, 4]);
-    expect([rowsFor(4, false), rowsFor(5, false), rowsFor(4, true)]).toEqual([2, 4, 3]);
-  });
-  it("can be two per row, with bigger tiles: three grid rows per pair", () => {
-    expect([1, 2, 5].map((n) => columnsFor(n, 2))).toEqual([1, 2, 2]);
-    expect([rowsFor(2, false, 2), rowsFor(6, false, 2), rowsFor(6, true, 2)]).toEqual([3, 9, 10]);
-  });
-  it("formats with a fixed number of decimals", () => expect(fmtValue(3, 1)).toBe("3.0"));
+describe("units", () => {
   it("finds weather units on the entity", () => expect(attributeUnit(hass(), hass().states["weather.home"], "wind_speed")).toBe("km/h"));
 });
 
@@ -128,30 +170,14 @@ describe("custom SVG", () => {
 });
 
 describe("themes and the line below", () => {
-  const tiles = buildTiles(hass(), { type: "x", entities: [
-    { entity: "sensor.power", theme: "dusk", secondary_entity: "climate.hall", secondary_attribute: "current_humidity" },
-    { entity: "sensor.temp", theme: "light", show_icon: false, secondary_text: "  Hallway  " },
-    { entity: "sensor.power", theme: "nonsense" as any, secondary_entity: "sensor.temp", secondary_name: "Inside", secondary_text: "ignored" },
-    "sensor.power",
-  ] });
   it("keeps a known theme and falls back to plain", () => {
-    expect(tiles.map((t) => t.theme)).toEqual(["dusk", "light", "plain", "plain"]);
-    expect(tiles.map((t) => t.showIcon)).toEqual([true, false, true, true]);
+    expect([tile({ theme: "dusk" }), tile({ theme: "light", show_icon: false }), tile({ theme: "nonsense" as any }), tile({})].map((t) => [t.theme, t.showIcon]))
+      .toEqual([["dusk", true], ["light", false], ["plain", true], ["plain", true]]);
   });
   it("shows a second entity as its name and value, or your text", () => {
-    expect(tiles[0].secondary).toEqual({ name: "Current humidity", value: "48", unit: "%" });
-    expect(tiles[1].secondary).toEqual({ text: "Hallway" });
-    expect(tiles[2].secondary).toEqual({ name: "Inside", value: "19.46", unit: "°C" });
-    expect(tiles[3].secondary).toBeUndefined();
-  });
-  it("floats the tiles once any tile has a theme", () => {
-    expect(isFloating({ type: "x", entities: ["sensor.power", { entity: "sensor.temp", theme: "ocean" }] })).toBe(true);
-    expect(isFloating({ type: "x", entities: ["sensor.power", { entity: "sensor.temp", theme: "plain" }] })).toBe(false);
-  });
-  it("puts currency first, % and degrees at full size, other units small", () => {
-    expect(unitParts("£")).toEqual({ pre: "£", inline: "", small: "" });
-    expect(unitParts("%")).toEqual({ pre: "", inline: "%", small: "" });
-    expect(unitParts("°C")).toEqual({ pre: "", inline: "°", small: "" });
-    expect(unitParts("kWh")).toEqual({ pre: "", inline: "", small: "kWh" });
+    expect(tile({ secondary_entity: "climate.hall", secondary_attribute: "current_humidity" }).secondary).toEqual({ name: "Current humidity", value: "48", unit: "%" });
+    expect(tile({ secondary_text: "  Hallway  " }).secondary).toEqual({ text: "Hallway" });
+    expect(tile({ secondary_entity: "sensor.temp", secondary_name: "Inside", secondary_text: "ignored" }).secondary).toEqual({ name: "Inside", value: "19.46", unit: "°C" });
+    expect(tile({}).secondary).toBeUndefined();
   });
 });

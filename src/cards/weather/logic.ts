@@ -1,5 +1,6 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { isAvailable } from "../../shared/util";
+import { clock, language } from "../../shared/format";
 
 export type Section = "current" | "hourly" | "weekly";
 export const SECTIONS: Section[] = ["current", "hourly", "weekly"];
@@ -130,7 +131,7 @@ function detailsOf(a: HassEntity["attributes"], ids: DetailId[]): Detail[] {
 }
 
 export function buildWeather(hass: HomeAssistant, cfg: HaloWeatherConfig, fc: Forecasts = {}, opts: { hours?: number; days?: number; now?: Date; locale?: string } = {}): WeatherModel {
-  const now = opts.now ?? new Date(), locale = opts.locale ?? hass.locale?.language ?? "en-GB";
+  const now = opts.now ?? new Date(), locale = opts.locale ?? language();
   const ent = hass.states[cfg.entity];
   const name = cfg.name ?? ent?.attributes?.friendly_name ?? "Weather";
   const available = isAvailable(ent);
@@ -157,7 +158,7 @@ export function buildWeather(hass: HomeAssistant, cfg: HaloWeatherConfig, fc: Fo
     const next = (fc.hourly ?? []).filter((h) => new Date(h.datetime).getTime() > now.getTime());
     for (const h of next.slice(0, Math.max((opts.hours ?? 6) - 1, 0))) {
       const d = new Date(h.datetime), t = numAttr(h.temperature);
-      hours.push({ label: d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: false }), icon: iconFor(h.condition, isNight(hass, d, h)), temp: t === undefined ? undefined : roundTemp(t) });
+      hours.push({ label: clock(d.getTime()), icon: iconFor(h.condition, isNight(hass, d, h)), temp: t === undefined ? undefined : roundTemp(t) });
     }
   }
 

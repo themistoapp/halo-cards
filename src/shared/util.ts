@@ -20,10 +20,6 @@ export function prettyPlace(state: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function fmtNumber(v: number, decimals = 0): string {
-  return v.toLocaleString("en-GB", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
 export function fireMoreInfo(el: HTMLElement, entityId: string) {
   el.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
 }

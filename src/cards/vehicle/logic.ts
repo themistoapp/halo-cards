@@ -1,5 +1,6 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { clamp, isAvailable, numState, prettyPlace, unitOf } from "../../shared/util";
+import { fmtNum } from "../../shared/format";
 
 export interface HaloVehicleConfig {
   type: string;
@@ -66,7 +67,7 @@ export function placeName(hass: HomeAssistant, e?: HassEntity): string | undefin
   return prettyPlace(e.state);
 }
 
-const fmt = (v: number) => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-GB") : String(+v.toFixed(Math.abs(v) < 100 ? 1 : 0)));
+const fmt = (v: number) => (Math.abs(v) >= 1000 ? fmtNum(Math.round(v), 0, { group: true }) : fmtNum(v, undefined, { max: Math.abs(v) < 100 ? 1 : 0 }));
 
 export function buildVehicle(hass: HomeAssistant, cfg: HaloVehicleConfig): VehicleModel {
   const st = (id?: string) => (id ? hass.states[id] : undefined);

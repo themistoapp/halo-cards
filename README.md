@@ -4,6 +4,8 @@ Home Assistant dashboard cards. Built for the Sections view on a phone.
 
 Each card is standalone: its own element, options and editor. Use any of them without the others. They all load from the one `halo-cards.js` resource.
 
+Numbers, times and dates follow your Home Assistant profile: language, number format (decimal comma or point) and 12- or 24-hour clock.
+
 | Card | Type | Size (columns × rows) |
 | --- | --- | --- |
 | Energy (EcoFlow Stream) | `custom:halo-energy-card` | 12 × 8 (works from 12 × 5 up) |
@@ -14,7 +16,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Solar forecast | `custom:halo-solar-card` | 12 × 6 chart, 12 × 2 compact |
 | Agile rates | `custom:halo-agile-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
-| Entities | `custom:halo-entities-card` | 12 × 2 for up to four tiles; two more rows per extra four. Two per row: 12 × 3 per pair |
+| Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph) |
 | Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
 | Title | `custom:halo-title-card` | 12 × 2 greeting or date, 12 × 1 heading |
 
@@ -132,47 +134,43 @@ colour: "#ffe3bd"        # glow for lights that report no colour (default warm w
 shadow: true
 ```
 
-## Halo Entities card (`custom:halo-entities-card`)
+## Halo Entity card (`custom:halo-entity-card`)
 
-A row of up to four tiles, each showing one reading: an icon, the value with its unit, and a name. More than four wrap onto further rows. Tap a tile for the entity's more-info.
+One reading as a tile, laid out like the tiles on the Energy card: a chip with the icon and name, the figure, a line below, and on large tiles an optional history graph. Each tile is its own card, so you place, reorder and resize tiles in the Sections view like any other card, and Home Assistant's visibility conditions work per tile.
 
-Any entity works. If it has more than one value (a thermostat's temperature and humidity, a weather entity's wind speed), the editor shows a **Value** list with each one's current reading. Pick one, or add the same entity again to show another. Attributes get a unit where one can be told (weather's own units, the temperature unit, % for humidity and battery); set `unit` to override.
-
-Icons: the entity's own icon by default, any `mdi:` icon, or your own SVG in `icon_svg`. That can be pasted `<svg>` markup, a 24 × 24 path (as on materialdesignicons.com), or a URL such as `/local/icons/boiler.svg`. Black in the SVG follows the text colour and white follows the card, so it works at night. Scripts, event handlers and outside links are removed.
-
-Themes: give a tile a `theme` and the card switches to floating tiles, each its own surface on the dashboard: the title top left (with or without its icon), a big figure low in the tile, and a line below. Themes are `light` (black on white) and `dark` (white on black), which stay as they are at night, and fifteen grainy gradients that go a little deeper at night: `dusk`, `slate`, `ember`, `solar`, `battery`, `grid`, `ocean`, `glacier`, `aurora`, `forest`, `rose`, `plum`, `sunset`, `sand`, `graphite`. The line below is your own text (`secondary_text`) or another entity (`secondary_entity`, shown as its name then its value). `columns: 2` gives two bigger tiles per row.
+- **Size:** `small` (3 × 2, a quarter of a section) or `large` (6 × 3, half). The card reads the space it is given, so dragging a small tile to six columns wide makes it large. Small tiles never show a graph.
+- **Value:** any entity's state, or one of its attributes (a thermostat's humidity, a weather entity's wind speed): the editor lists each with its current reading. Attributes get a unit where one can be told; `unit` and `decimals` override.
+- **Icon:** the entity's own, any `mdi:` icon, or your own SVG in `icon_svg` (pasted `<svg>` markup, a 24 × 24 path, or a URL such as `/local/icons/boiler.svg`; black follows the text colour and white follows the card; scripts, event handlers and outside links are removed). `icon_colour` tints it.
+- **Look (`theme`):** `plain` (the card background), `light` (black on white) and `dark` (white on black), which stay as they are at night, and fifteen grainy gradients that go a little deeper at night: `dusk`, `slate`, `ember`, `solar`, `battery`, `grid`, `ocean`, `glacier`, `aurora`, `forest`, `rose`, `plum`, `sunset`, `sand`, `graphite`.
+- **Line below:** your own text (`secondary_text`) or another entity (`secondary_entity`, shown as its name then its value).
+- **Graph (large tiles):** `graph: true` draws the state's history along the bottom, over `graph_hours` (1 to 168, default 24). Up to a day it uses full history; longer periods use Home Assistant's hourly statistics, for sensors that have them. Power, energy and money start from zero, percentages run 0 to 100, and anything else fits its own range; `graph_scale` (`zero` or `range`), `graph_min` and `graph_max` override that. Only numeric states, not attributes.
+- **Colours:** `icon_colour` and `graph_colour` are separate. Pick `grey`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple` or `pink` (each has a day and a night shade), or give any CSS colour. On gradients the graph is white.
+- **Colour by value:** `colour_rules` recolour the icon and the graph. The first rule the value meets wins; give `above`, `below`, or both for a band.
+- **Actions:** `tap_action` (default: more-info), `hold_action` and `double_tap_action` (default: nothing), in Home Assistant's usual format: `more-info`, `toggle`, `navigate`, `url`, `perform-action` or `none`, with optional `confirmation`.
 
 ```yaml
-type: custom:halo-entities-card
-columns: 2                     # tiles per row: 4 (default) or 2
-entities:
-  - entity: sensor.battery_soc
-    name: Battery
-    theme: battery
-    secondary_entity: sensor.battery_power
-    secondary_name: Discharging      # optional, defaults to the entity's name
-  - entity: sensor.house_power
-    name: Now
-    theme: light
-    show_icon: false
-    secondary_text: House load
+type: custom:halo-entity-card
+entity: sensor.office_co2
+name: Office
+size: large
+graph: true
+graph_hours: 24
+graph_colour: teal
+icon_colour: teal
+colour_rules:
+  - { above: 1000, colour: red }
+  - { above: 800, colour: orange }
+secondary_text: Window closed
+hold_action: { action: navigate, navigation_path: /dashboard-home/office }
 ```
 
 ```yaml
-type: custom:halo-entities-card
-name: Home                     # optional heading
-entities:
-  - sensor.house_power         # plain entity id: its state
-  - entity: climate.hallway
-    attribute: current_humidity   # show an attribute instead of the state
-    name: Humidity
-    icon: mdi:water-percent
-  - entity: sensor.solar_power
-    icon_svg: /local/icons/sun.svg
-    colour: "#d89a1b"          # optional tint and glow, like Scenes
-    unit: W                    # optional
-    decimals: 0                # optional
-shadow: true
+type: custom:halo-entity-card
+entity: climate.hallway
+attribute: current_humidity   # an attribute instead of the state
+name: Humidity
+theme: ocean
+icon: mdi:water-percent
 ```
 
 ## Halo Today card (`custom:halo-today-card`)

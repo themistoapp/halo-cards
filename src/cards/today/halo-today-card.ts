@@ -15,6 +15,7 @@ import {
   type AgileModel, type BinsModel, type BoxId, type CalEvent, type CalendarModel, type HaloTodayConfig, type MediaModel, type Ranked, type VehicleModel, type WeatherModel,
 } from "./logic";
 import { styles } from "./styles";
+import { language, setLocale } from "../../shared/format";
 
 type Model = { k: "calendar"; m: CalendarModel } | { k: "weather"; m: WeatherModel } | { k: "bins"; m: BinsModel } | { k: "vehicle"; m: VehicleModel }
   | { k: "agile"; m: AgileModel } | { k: "media"; m: MediaModel };
@@ -71,6 +72,7 @@ export class HaloTodayCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     this._subscribe();
     this._trackPlays(hass);
@@ -247,7 +249,7 @@ export class HaloTodayCard extends LitElement {
 
   override render() {
     const cfg = this._config!, hass = this._hass!;
-    const now = new Date(), ms = now.getTime(), dark = !!hass.themes?.darkMode, locale = hass.locale?.language ?? "en-GB";
+    const now = new Date(), ms = now.getTime(), dark = !!hass.themes?.darkMode, locale = language();
     const order = boxesOf(cfg), on = (b: BoxId) => order.includes(b), at = (b: BoxId) => order.indexOf(b);
     const cals = calendarsOf(cfg);
 

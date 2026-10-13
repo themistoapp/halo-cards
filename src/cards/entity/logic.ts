@@ -1,7 +1,14 @@
+import type { ActionSet } from "../../shared/actions";
+import { fmtNum } from "../../shared/format";
+import type { GraphScale } from "../../shared/history";
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { isAvailable, unitOf } from "../../shared/util";
 
-export interface EntityRow {
+/** A colour by value: the first rule that matches recolours the icon and the graph. */
+export interface ColourRule { above?: number; below?: number; colour: string }
+
+export interface HaloEntityConfig extends ActionSet {
+  type: string;
   entity: string;
   /** Show this attribute instead of the state (climate humidity, weather wind speed…). */
   attribute?: string;
@@ -9,29 +16,37 @@ export interface EntityRow {
   icon?: string;
   /** Custom icon: <svg> markup, a 24×24 path, or a URL to an .svg file. Wins over `icon`. */
   icon_svg?: string;
-  unit?: string;
-  decimals?: number;
-  colour?: string;
-  /** Tile look: plain (default), light (black on white), dark (white on black) or a gradient preset. */
-  theme?: Theme;
   /** Show the icon (default on). */
   show_icon?: boolean;
+  /** Palette name (grey, red, orange, yellow, green, teal, blue, purple, pink) or any CSS colour. */
+  icon_colour?: string;
+  unit?: string;
+  decimals?: number;
+  /** Tile look: plain (the card surface, default), light (black on white), dark (white on black) or a gradient preset. */
+  theme?: Theme;
+  /** Starting size in a sections view: small is 3 × 2, large 6 × 3. Resizing the card works too. */
+  size?: "small" | "large";
+  /** History graph along the bottom (large tiles only). */
+  graph?: boolean;
+  graph_colour?: string;
+  /** 1 to 168 hours (default 24). Over 24 hours uses hourly statistics. */
+  graph_hours?: number;
+  /** zero or range; chosen from the sensor if not set. */
+  graph_scale?: "zero" | "range";
+  graph_min?: number;
+  graph_max?: number;
+  colour_rules?: ColourRule[];
   /** Line below the value: your own text, or a second entity (wins if both are set). */
   secondary_text?: string;
   secondary_entity?: string;
   secondary_attribute?: string;
   secondary_name?: string;
-}
-export interface HaloEntitiesConfig {
-  type: string;
-  /** Optional heading above the tiles. */
-  name?: string;
   /** Drop shadow behind the card (default on). */
   shadow?: boolean;
-  /** Tiles per row: 4 (default) or 2. */
-  columns?: 2 | 4;
-  entities: (string | EntityRow)[];
 }
+
+/** Where a value is read from: an entity's state, or one of its attributes. */
+interface ValueSource { entity: string; attribute?: string; unit?: string; decimals?: number }
 
 export const GRADIENTS = ["dusk", "slate", "ember", "solar", "battery", "grid", "ocean", "glacier", "aurora", "forest", "rose", "plum", "sunset", "sand", "graphite"] as const;
 export type Theme = "plain" | "light" | "dark" | (typeof GRADIENTS)[number];
@@ -41,9 +56,12 @@ export const THEME_LABELS: Record<Theme, string> = {
   aurora: "Aurora", forest: "Forest", rose: "Rose", plum: "Plum", sunset: "Sunset", sand: "Sand", graphite: "Graphite",
 };
 const isTheme = (t: unknown): t is Theme => typeof t === "string" && t in THEME_LABELS;
+export const isGradient = (t: Theme) => t !== "plain" && t !== "light" && t !== "dark";
 
 export interface EntityTile {
-  entity: string; name: string; value: string; unit: string; colour?: string; available: boolean;
+  entity: string; name: string; value: string; unit: string; available: boolean;
+  /** The reading as a number, when it is one (for colour rules and the graph). */
+  num?: number;
   icon: string;
   /** Custom SVG source, drawn by <halo-svg-icon>. */
   svg?: string;
@@ -51,8 +69,12 @@ export interface EntityTile {
   stateIcon: boolean;
   theme: Theme;
   showIcon: boolean;
+  iconColour?: string;
+  graphColour?: string;
   /** The line below: a second entity's name and value, or plain text. */
   secondary?: { name?: string; value: string; unit: string } | { text: string };
+  /** Set when a graph is wanted and possible: the state (not an attribute) and a number. */
+  graph?: { hours: number; scale: GraphScale; min?: number; max?: number; statistics: boolean };
 }
 
 /** Attributes that are plumbing, not readings: never offered as a value. */
@@ -71,11 +93,6 @@ const ATTR_ICON: [RegExp, string][] = [
 ];
 const DOMAIN_ICON: Record<string, string> = { climate: "mdi:thermostat", weather: "mdi:weather-partly-cloudy", light: "mdi:lightbulb", switch: "mdi:toggle-switch", binary_sensor: "mdi:checkbox-blank-circle-outline" };
 
-export const rowsOf = (cfg: HaloEntitiesConfig): EntityRow[] =>
-  (cfg.entities ?? []).map((r) => (typeof r === "string" ? { entity: r } : r)).filter((r) => r?.entity);
-
-export const watchedEntities = (cfg: HaloEntitiesConfig) => rowsOf(cfg).map((r) => r.entity);
-
 /** "current_temperature" -> "Current temperature". */
 export function pretty(s: string): string {
   const t = s.replace(/_/g, " ");
@@ -91,12 +108,6 @@ function toNumber(v: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Numbers without thousands separators (1800 W, not 1,800 W); up to two decimals unless told otherwise. */
-export function fmtValue(v: number, decimals: number | undefined, lang = "en-GB"): string {
-  const d = decimals === undefined ? { maximumFractionDigits: 2 } : { minimumFractionDigits: decimals, maximumFractionDigits: decimals };
-  return v.toLocaleString(lang, { ...d, useGrouping: false });
-}
-
 /** Units for attributes, which carry none of their own: weather's *_unit attributes, then the obvious ones. */
 export function attributeUnit(hass: HomeAssistant, s: HassEntity, attr: string): string {
   const own = s.attributes[`${attr}_unit`];
@@ -107,14 +118,15 @@ export function attributeUnit(hass: HomeAssistant, s: HassEntity, attr: string):
 }
 
 /** The value and unit a tile shows. */
-export function readValue(hass: HomeAssistant, s: HassEntity | undefined, row: EntityRow): { value: string; unit: string; available: boolean } {
+export function readValue(hass: HomeAssistant, s: HassEntity | undefined, row: ValueSource): { value: string; unit: string; available: boolean; num?: number } {
   const attr = row.attribute;
   const raw = !s ? undefined : attr ? s.attributes[attr] : isAvailable(s) ? s.state : undefined;
   if (!s || raw === undefined || raw === null || !isShown(raw)) return { value: "–", unit: "", available: !!s && isAvailable(s) };
   const n = toNumber(raw);
   if (n !== undefined) {
     const decimals = row.decimals ?? (attr ? undefined : hass.entities?.[s.entity_id]?.display_precision);
-    return { value: fmtValue(n, decimals, hass.locale?.language), unit: row.unit ?? (attr ? attributeUnit(hass, s, attr) : unitOf(s)), available: true };
+    // Numbers without thousands separators (1800 W, not 1,800 W); up to two decimals unless told otherwise.
+    return { value: fmtNum(n, decimals), unit: row.unit ?? (attr ? attributeUnit(hass, s, attr) : unitOf(s)), available: true, num: n };
   }
   const text = typeof raw === "boolean" ? (raw ? "Yes" : "No")
     : attr ? hass.formatEntityAttributeValue?.(s, attr) ?? pretty(String(raw))
@@ -122,7 +134,7 @@ export function readValue(hass: HomeAssistant, s: HassEntity | undefined, row: E
   return { value: text, unit: row.unit ?? "", available: true };
 }
 
-function iconFor(s: HassEntity | undefined, row: EntityRow): { icon: string; stateIcon: boolean } {
+function iconFor(s: HassEntity | undefined, row: HaloEntityConfig): { icon: string; stateIcon: boolean } {
   if (row.icon) return { icon: row.icon, stateIcon: false };
   const domain = row.entity.split(".")[0];
   const byAttr = row.attribute ? ATTR_ICON.find(([re]) => re.test(row.attribute!))?.[1] : undefined;
@@ -132,50 +144,64 @@ function iconFor(s: HassEntity | undefined, row: EntityRow): { icon: string; sta
   return { icon: DEVICE_ICON[s?.attributes.device_class as string] ?? DOMAIN_ICON[domain] ?? "mdi:eye", stateIcon: true };
 }
 
-export function buildTiles(hass: HomeAssistant, cfg: HaloEntitiesConfig): EntityTile[] {
-  return rowsOf(cfg).map((r) => {
-    const s = hass.states[r.entity];
-    const { value, unit, available } = readValue(hass, s, r);
-    const name = r.name || (r.attribute
-      ? (s && hass.formatEntityAttributeName?.(s, r.attribute)) || pretty(r.attribute)
-      : (s?.attributes.friendly_name as string | undefined) || pretty(r.entity.split(".")[1] ?? r.entity));
-    return {
-      entity: r.entity, name, value, unit, colour: r.colour, available, svg: r.icon_svg?.trim() || undefined, ...iconFor(s, r),
-      theme: isTheme(r.theme) ? r.theme : "plain", showIcon: r.show_icon !== false, secondary: secondaryOf(hass, r),
-    };
-  });
+export function buildTile(hass: HomeAssistant, cfg: HaloEntityConfig): EntityTile {
+  const s = hass.states[cfg.entity];
+  const { value, unit, available, num } = readValue(hass, s, cfg);
+  const name = cfg.name || (cfg.attribute
+    ? (s && hass.formatEntityAttributeName?.(s, cfg.attribute)) || pretty(cfg.attribute)
+    : (s?.attributes.friendly_name as string | undefined) || pretty(cfg.entity.split(".")[1] ?? cfg.entity));
+  const rule = num === undefined ? undefined : matchRule(cfg.colour_rules, num);
+  const hours = graphHours(cfg.graph_hours);
+  return {
+    entity: cfg.entity, name, value, unit, available, num, svg: cfg.icon_svg?.trim() || undefined, ...iconFor(s, cfg),
+    theme: isTheme(cfg.theme) ? cfg.theme : "plain", showIcon: cfg.show_icon !== false, secondary: secondaryOf(hass, cfg),
+    iconColour: rule ?? cfg.icon_colour, graphColour: rule ?? cfg.graph_colour,
+    graph: cfg.graph && !cfg.attribute && s && num !== undefined
+      ? { hours, scale: cfg.graph_scale ?? defaultScale(s, unit), min: cfg.graph_min, max: cfg.graph_max, statistics: hours > 24 && !!s.attributes.state_class }
+      : undefined,
+  };
 }
 
-function secondaryOf(hass: HomeAssistant, r: EntityRow): EntityTile["secondary"] {
-  if (r.secondary_entity) {
-    const s = hass.states[r.secondary_entity];
-    const row = { entity: r.secondary_entity, attribute: r.secondary_attribute };
-    const { value, unit } = readValue(hass, s, row);
-    const name = r.secondary_name ?? (r.secondary_attribute
-      ? (s && hass.formatEntityAttributeName?.(s, r.secondary_attribute)) || pretty(r.secondary_attribute)
-      : (s?.attributes.friendly_name as string | undefined) || pretty(r.secondary_entity.split(".")[1] ?? r.secondary_entity));
+function secondaryOf(hass: HomeAssistant, cfg: HaloEntityConfig): EntityTile["secondary"] {
+  if (cfg.secondary_entity) {
+    const s = hass.states[cfg.secondary_entity];
+    const { value, unit } = readValue(hass, s, { entity: cfg.secondary_entity, attribute: cfg.secondary_attribute });
+    const name = cfg.secondary_name ?? (cfg.secondary_attribute
+      ? (s && hass.formatEntityAttributeName?.(s, cfg.secondary_attribute)) || pretty(cfg.secondary_attribute)
+      : (s?.attributes.friendly_name as string | undefined) || pretty(cfg.secondary_entity.split(".")[1] ?? cfg.secondary_entity));
     return { name: name || undefined, value, unit };
   }
-  const text = r.secondary_text?.trim();
+  const text = cfg.secondary_text?.trim();
   return text ? { text } : undefined;
 }
 
-/** Any themed tile turns the card into floating tiles, each its own surface. */
-export const isFloating = (cfg: HaloEntitiesConfig) => rowsOf(cfg).some((r) => isTheme(r.theme) && r.theme !== "plain");
-
-/** How a unit sits with the big figure: currency in front, % and degrees at full size, the rest as a small suffix. */
-export function unitParts(unit: string): { pre: string; inline: string; small: string } {
-  if (/^[£$€¥]$/.test(unit)) return { pre: unit, inline: "", small: "" };
-  if (unit === "%") return { pre: "", inline: "%", small: "" };
-  if (/^°[CF]?$/.test(unit)) return { pre: "", inline: "°", small: "" };
-  return { pre: "", inline: "", small: unit };
+/** The first rule the value meets: above, below, or between when both are set. */
+export function matchRule(rules: ColourRule[] | undefined, v: number): string | undefined {
+  for (const r of rules ?? []) {
+    if (!r?.colour || (r.above === undefined && r.below === undefined)) continue;
+    if ((r.above === undefined || v > r.above) && (r.below === undefined || v < r.below)) return r.colour;
+  }
+  return undefined;
 }
+
+export const graphHours = (h?: number) => Math.min(Math.max(Math.round(Number(h) || 24), 1), 168);
+
+/** Things measured from zero (power, energy, money) start at zero; percentages run 0 to 100; anything else fits its own range. */
+const ZERO = new Set(["power", "energy", "monetary", "gas", "water", "current", "apparent_power", "reactive_power", "precipitation", "precipitation_intensity", "irradiance", "energy_storage", "volume", "volume_storage", "data_rate", "data_size"]);
+const ZERO_UNIT = /^([kMG]?(W|Wh|VA|A)|[£$€¥]|L|m³|gal)$/;
+export function defaultScale(s: HassEntity, unit: string): GraphScale {
+  if (unit === "%") return "percent";
+  return ZERO.has(s.attributes.device_class as string) || ZERO_UNIT.test(unit) ? "zero" : "range";
+}
+
+/** Entities the card reads, so it only re-renders when one of them changes. */
+export const watchedEntities = (cfg: HaloEntityConfig) => [cfg.entity, cfg.secondary_entity].filter((x): x is string => !!x);
 
 /** The values an entity offers: its state, then every attribute that reads as a single value. "" is the state. */
 export function valueOptions(hass: HomeAssistant, entityId: string, current?: string): { value: string; label: string }[] {
   const s = hass.states[entityId];
   if (!s) return current ? [{ value: current, label: pretty(current) }] : [];
-  const show = (row: EntityRow) => { const v = readValue(hass, s, row); return v.value + (v.unit ? ` ${v.unit}` : ""); };
+  const show = (row: ValueSource) => { const v = readValue(hass, s, row); return v.value + (v.unit ? ` ${v.unit}` : ""); };
   const keys = Object.keys(s.attributes).filter((k) => !HIDDEN.has(k) && !k.endsWith("_unit") && isShown(s.attributes[k]));
   if (current && !keys.includes(current)) keys.push(current);
   return [
@@ -183,12 +209,3 @@ export function valueOptions(hass: HomeAssistant, entityId: string, current?: st
     ...keys.map((k) => ({ value: k, label: `${hass.formatEntityAttributeName?.(s, k) ?? pretty(k)} · ${show({ entity: entityId, attribute: k })}` })),
   ];
 }
-
-/** Columns: one row of up to four tiles (or two, if chosen); more wrap onto further rows. */
-export const columnsFor = (n: number, per: 2 | 4 = 4) => Math.min(Math.max(n, 1), per === 2 ? 2 : 4);
-
-/** Sections-view rows: two per line of four tiles, three per line of two (bigger tiles), one more for a title. */
-export const rowsFor = (n: number, titled: boolean, per: 2 | 4 = 4) => {
-  const cols = per === 2 ? 2 : 4;
-  return (cols === 2 ? 3 : 2) * Math.ceil(Math.max(n, 1) / cols) + (titled ? 1 : 0);
-};

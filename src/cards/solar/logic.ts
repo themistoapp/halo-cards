@@ -1,5 +1,6 @@
 import type { HassEntity } from "../../shared/types";
-import { bucket, type Sample } from "../energy/logic";
+import { bucket, type Sample } from "../../shared/history";
+import { clockAt, fmtNum } from "../../shared/format";
 
 export interface HaloSolarConfig {
   type: string;
@@ -128,5 +129,5 @@ export function smoothPath(pts: [number, number][], floor: number): string {
   return d;
 }
 
-export const fmtKwh = (v: number) => (v >= 100 ? v.toFixed(0) : v.toFixed(1));
-export const fmtClock = (x: number) => { const m = Math.round(x * 60); return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
+export const fmtKwh = (v: number) => fmtNum(v, v >= 100 ? 0 : 1);
+export const fmtClock = clockAt;

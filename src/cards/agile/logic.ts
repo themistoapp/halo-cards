@@ -1,5 +1,6 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { startOfDay } from "../solar/logic";
+import { clock, fmtNum } from "../../shared/format";
 
 export type FigureId = "current" | "next" | "lowest" | "average" | "highest";
 export const FIGURES: FigureId[] = ["current", "next", "lowest", "average", "highest"];
@@ -48,8 +49,9 @@ export function parseRates(e: HassEntity | undefined): Rate[] {
 export const bandOf = (p: number, cheap: number, expensive: number): Band => (p <= cheap ? "low" : p > expensive ? "high" : "mid");
 
 /** 24.567 -> "24.6", 105 -> "105", -1.25 -> "-1.3". */
-export const fmtP = (p: number) => (Math.abs(p) >= 100 ? String(Math.round(p)) : p.toFixed(1)).replace("-0.0", "0.0");
-export const clock = (ms: number) => new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+export const fmtP = (p: number) => fmtNum(Math.abs(p) >= 100 ? Math.round(p) : Math.abs(p) < 0.05 ? 0 : p, Math.abs(p) >= 100 ? 0 : 1);
+/** Slot times in the user's clock (24-hour unless they chose 12). */
+export { clock };
 
 export interface Bar { x: number; w: number; p: number; band: Band; past: boolean; current: boolean }
 export interface Figure { id: FigureId; label: string; value: string; note?: string; band?: Band }

@@ -6,9 +6,9 @@ import { HaloLightCard } from "./cards/light/halo-light-card";
 import { HaloLightCardEditor } from "./cards/light/editor";
 import { HaloScenesCard } from "./cards/scenes/halo-scenes-card";
 import { HaloScenesCardEditor } from "./cards/scenes/editor";
-import { HaloEntitiesCard } from "./cards/entities/halo-entities-card";
-import { HaloEntitiesCardEditor } from "./cards/entities/editor";
-import { HaloSvgIcon } from "./cards/entities/svg-icon";
+import { HaloEntityCard } from "./cards/entity/halo-entity-card";
+import { HaloEntityCardEditor } from "./cards/entity/editor";
+import { HaloSvgIcon } from "./cards/entity/svg-icon";
 import { HaloWeatherCard } from "./cards/weather/halo-weather-card";
 import { HaloWeatherCardEditor } from "./cards/weather/editor";
 import { HaloSolarCard } from "./cards/solar/halo-solar-card";
@@ -37,7 +37,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-solar-card", HaloSolarCard, "halo-solar-card-editor", HaloSolarCardEditor, "Halo Solar Forecast", "Forecast.Solar forecast for today and tomorrow, with your actual solar generation drawn over it."],
   ["halo-agile-card", HaloAgileCard, "halo-agile-card-editor", HaloAgileCardEditor, "Halo Agile", "Octopus Agile half-hourly rates as coloured bars, with current, next, lowest, average and highest rate. Uses the Octopus Energy integration (BottlecapDave)."],
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
-  ["halo-entities-card", HaloEntitiesCard, "halo-entities-card-editor", HaloEntitiesCardEditor, "Halo Entities", "A compact row of entity readings: a value per tile, from the state or any attribute, with your own icon or SVG."],
+  ["halo-entity-card", HaloEntityCard, "halo-entity-card-editor", HaloEntityCardEditor, "Halo Entity", "One reading as a small or large tile: the state or any attribute, your own icon, a line below, colours by value and an optional history graph."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
   ["halo-today-card", HaloTodayCard, "halo-today-card-editor", HaloTodayCardEditor, "Halo Today", "Today at a glance: your next events, the weather, bins, low vehicles, cheap Agile slots and what's playing, ordered by what matters now, under a greeting that can be polite, cheeky or rude."],
   ["halo-title-card", HaloTitleCard, "halo-title-card-editor", HaloTitleCardEditor, "Halo Title", "A greeting with the date and weather, the day as a big number, or a section heading with a subtitle and entity chips."],
@@ -45,7 +45,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }
 window.customCards ||= [];
-// Custom SVG icons (Entities card and its editor).
+// Custom SVG icons (Entity card and its editor).
 if (!customElements.get("halo-svg-icon")) customElements.define("halo-svg-icon", HaloSvgIcon);
 // Test card: shows its own pixel size and the window it is on. Has no editor.
 if (!customElements.get("halo-size-card")) customElements.define("halo-size-card", HaloSizeCard);

@@ -2,12 +2,11 @@ import { LitElement, html, nothing } from "lit";
 import { state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { STREAM_IMAGE } from "./stream";
-import { subscribeHistory } from "./history";
+import { bucket, graphMax, historyWindow, subscribeHistory, type Sample } from "../../shared/history";
+import { clock, setLocale } from "../../shared/format";
+import { figure, tileGraph } from "../../shared/tile";
 import { ICONS } from "./icons";
-import {
-  bucket, buildModel, graphMax, graphPath, historyWindow, layoutFor, randomOrigin, watchedEntities,
-  type Model, type Sample, type Tile,
-} from "./logic";
+import { buildModel, layoutFor, randomOrigin, watchedEntities, type Model, type Tile } from "./logic";
 import { styles } from "./styles";
 import { fireMoreInfo, observeHeight } from "../../shared/util";
 import type { HaloEnergyConfig, HomeAssistant } from "../../shared/types";
@@ -49,6 +48,7 @@ export class HaloEnergyCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     const ids = watchedEntities(this._config);
     if (!old || ids.some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();
@@ -95,22 +95,15 @@ export class HaloEnergyCard extends LitElement {
     const div = t.history.scale === "kw" && unit === "w" ? 1000 : 1;
     const values = bucket(samples, start, end, BUCKETS).map((v) => (v === null ? null : v / div));
     const abs = t.history.scale === "kw" ? values.map((v) => (v === null ? null : Math.abs(v))) : values;
-    const p = graphPath(abs, graphMax(t.history.scale, abs));
-    if (!p) return nothing;
-    const gid = `g${this._id}-${t.key}`;
-    return html`<div class="gw"><svg class="graph" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
-      <defs><linearGradient id=${gid} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" style="stop-color:var(--g0)" stop-opacity=".85"/><stop offset="1" style="stop-color:var(--a0)" stop-opacity=".45"/>
-      </linearGradient></defs>
-      <path d=${p.area} fill="url(#${gid})"/><path class="ln" d=${p.line}/></svg></div>`;
+    return tileGraph(abs, 0, graphMax(t.history.scale, abs), `g${this._id}-${t.key}`);
   }
 
-  private _tile(t: Tile, hass: HomeAssistant, span: boolean) {
+  private _tile(t: Tile, hass: HomeAssistant, span: boolean, tight: boolean) {
     const open = () => t.entity && fireMoreInfo(this, t.entity);
-    return html`<div class="tile ${t.key} ${span ? "span" : ""} ${t.entity ? "tap" : ""}" role=${t.entity ? "button" : nothing} tabindex=${t.entity ? 0 : nothing}
+    return html`<div class="tile ${t.key} ${span ? "span" : ""} ${tight ? "tight" : ""} ${t.entity ? "tap" : ""}" role=${t.entity ? "button" : nothing} tabindex=${t.entity ? 0 : nothing}
       @click=${open} @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
-      <div class="top"><span class="ico"><svg viewBox="0 0 24 24">${ICONS[t.key]}</svg></span><span class="label">${LABELS[t.key]}</span></div>
-      <div><span class="fig">${t.figure}<span class="unit">${t.unit}</span></span></div>
+      <div class="top"><span class="tchip"><span class="ico"><svg viewBox="0 0 24 24">${ICONS[t.key]}</svg></span><span class="label">${LABELS[t.key]}</span></span></div>
+      <div>${figure(t.figure, t.unit)}</div>
       ${t.detail ? html`<div class="det">${t.detail}</div>` : nothing}
       ${this._graph(t, hass)}
     </div>`;
@@ -163,7 +156,7 @@ export class HaloEnergyCard extends LitElement {
     };
     const lay = layoutFor(m.tiles.length);
     const grid = { gridTemplateColumns: `repeat(${lay.cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${lay.rows}, minmax(0, 1fr))` };
-    const time = m.updated?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const time = m.updated ? clock(m.updated.getTime()) : undefined;
     // Short slots lose the picture first, then everything tightens.
     const mode = !this._height || this._height >= 620 ? "full" : this._height >= 400 ? "regular" : "tight";
     return html`<ha-card class="${hass.themes?.darkMode ? "dark" : ""} ${mode} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
@@ -178,7 +171,7 @@ export class HaloEnergyCard extends LitElement {
         </div>`}
         ${m.tiles.length
           ? html`<div class="tiles ${m.tiles.length === 1 ? "one" : ""}" style=${styleMap(grid)}>
-              ${m.tiles.map((t, i) => this._tile(t, hass, lay.spanLast && i === m.tiles.length - 1))}</div>`
+              ${m.tiles.map((t, i) => this._tile(t, hass, lay.spanLast && i === m.tiles.length - 1, mode !== "full"))}</div>`
           : !m.reserve && !m.mode ? html`<div class="empty">Choose your entities in the card editor.</div>` : html`<div style="flex:1"></div>`}
         ${this._controls(m)}
       </div>

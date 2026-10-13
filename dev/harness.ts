@@ -40,7 +40,7 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("sensor.solar_power", "820", { unit_of_measurement: "W" }), e("sensor.solar_today", "5.4", { unit_of_measurement: "kWh" }),
       e("sensor.solar_forecast", "9.1", { unit_of_measurement: "kWh" }), e("sensor.soc", "62", { unit_of_measurement: "%" }),
       e("sensor.battery_power", "350", { unit_of_measurement: "W" }), e("sensor.grid_power", "630", { unit_of_measurement: "W" }),
-      e("sensor.grid_cost", "1.59", { unit_of_measurement: "£" }), e("sensor.home_power", "1800", { unit_of_measurement: "W" }),
+      e("sensor.grid_cost", "1.59", { unit_of_measurement: "£" }), e("sensor.home_power", "1800", { unit_of_measurement: "W", device_class: "power", state_class: "measurement" }),
       e("number.reserve", "65", { min: 0, max: 100, step: 5 }), e("select.mode", "Self-powered", { options: ["Self-powered", "AI"] }),
       e("media_player.lounge", "playing", { friendly_name: "Living room", supported_features: FEATS, media_title: "Sample track title", media_artist: "Sample artist", media_album_name: "Sample album", media_duration: 238, media_position: 102, media_position_updated_at: now, volume_level: 0.34, entity_picture: q.has("red") ? art("#d4202a", "#7a0f16") : art("#f2a03d", "#e0407a"), group_members: ["media_player.lounge", "media_player.kitchen"], repeat: "all" }),
       e("media_player.kitchen", "playing", { friendly_name: "Kitchen", supported_features: FEATS }),
@@ -142,7 +142,14 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
     },
     async callService(d: string, s: string, data: Record<string, unknown>) { console.log("service", d, s, data); },
     async callApi(_m: string, path: string) { return calendarEvents(path.split("?")[0].replace("calendars/", "")); },
-    async callWS(m: { type?: string }) { return m?.type === "energy/solar_forecast" ? solarForecast() : { children: [] }; },
+    async callWS(m: { type?: string; statistic_ids?: string[]; start_time?: string }) {
+      if (m?.type === "energy/solar_forecast") return solarForecast();
+      if (m?.type === "recorder/statistics_during_period") {
+        const t0 = Date.parse(m.start_time!), n = Math.floor((Date.now() - t0) / 3600e3);
+        return Object.fromEntries((m.statistic_ids ?? []).map((id) => [id, Array.from({ length: n }, (_, i) => ({ start: t0 + i * 3600e3, mean: shape[id]?.(((i % 24) / 24)) ?? 0 }))]));
+      }
+      return { children: [] };
+    },
   } as unknown as HomeAssistant;
 }
 
@@ -159,21 +166,17 @@ const scenes = { type: "custom:halo-scenes-card", scenes: [{ entity: "scene.movi
 
 // Custom icons: pasted markup (a sun with a black outline and white face, to show the ink/surface swap) and a bare MDI path.
 const SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="11" fill="#F9C74F" stroke="#000" stroke-width="3"/><circle cx="32" cy="32" r="5" fill="#fff"/><g stroke="#F9C74F" stroke-width="4" stroke-linecap="round"><path d="M32 7V14M32 50V57M7 32H14M50 32H57"/><path d="M14.3 14.3L19 19M45 45L49.7 49.7M49.7 14.3L45 19M19 45L14.3 49.7"/></g></svg>`;
-const entities = { type: "custom:halo-entities-card", entities: [
-  { entity: "sensor.home_power", name: "House", colour: "#8a5cf6" },
-  { entity: "sensor.solar_power", name: "Solar", icon_svg: SUN, colour: "#d89a1b" },
-  { entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", decimals: 1 },
-  { entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon_svg: "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25Z", colour: "#2f86cf" },
-] };
-
-const themed = { type: "custom:halo-entities-card", columns: 2 as const, entities: [
-  { entity: "sensor.grid_cost", name: "Today", theme: "dusk", show_icon: false, secondary_text: "spent on electricity so far" },
-  { entity: "sensor.soc", name: "Battery", theme: "battery", icon: "mdi:battery", secondary_entity: "sensor.battery_power", secondary_name: "Discharging" },
-  { entity: "sensor.solar_power", name: "Solar", theme: "solar", icon_svg: SUN, secondary_entity: "sensor.solar_today", secondary_name: "Today" },
-  { entity: "sensor.home_power", name: "Now", theme: "light", show_icon: false, secondary_entity: "sensor.grid_power", secondary_name: "Grid" },
-  { entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", theme: "dark", secondary_entity: "climate.hallway", secondary_attribute: "current_humidity", secondary_name: "Humidity" },
-  { entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" },
-] };
+const tile = (cfg: object) => ({ type: "custom:halo-entity-card", ...cfg });
+const grid = (c: any) => { c.layout = "grid"; };
+// Sections widths at a 378px column: small (3 columns) is 88px wide, large (6 columns) 185px. At 480 (NSPanel): 114 and 236.
+const tSmall = [
+  tile({ entity: "sensor.home_power", name: "House", icon_colour: "purple" }),
+  tile({ entity: "sensor.solar_power", name: "Solar", icon_svg: SUN, secondary_entity: "sensor.solar_today", secondary_name: "Today" }),
+  tile({ entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", decimals: 1, icon_colour: "orange", secondary_text: "Heating" }),
+  tile({ entity: "sensor.grid_cost", name: "Today", theme: "dusk", secondary_text: "on electricity" }),
+];
+const tLarge = tile({ entity: "sensor.home_power", name: "House", size: "large", icon_colour: "purple", graph: true, graph_colour: "purple", secondary_entity: "sensor.grid_power", secondary_name: "Grid" });
+const tRule = tile({ entity: "sensor.home_power", name: "House", size: "large", graph: true, colour_rules: [{ above: 1500, colour: "red" }, { above: 1000, colour: "orange" }], secondary_text: "Red above 1.5 kW" });
 
 const today = { type: "custom:halo-today-card", name: "Sam", greeting: "cheeky",
   calendars: [{ entity: "calendar.family", colour: "#e0568a" }, { entity: "calendar.work", colour: "#2f7bff" }, { entity: "calendar.school", colour: "#1f9d63" }],
@@ -224,15 +227,20 @@ const specs: Spec[] = [
   { id: "scenes-plain", title: "Scenes no colours", tag: "halo-scenes-card", cfg: { ...scenes, scenes: ["scene.movie", "scene.relax", "scene.bright", "scene.night"] }, w: 378, h: 120 },
   { id: "scenes-night", title: "Scenes night", tag: "halo-scenes-card", cfg: scenes, w: 378, h: 120, dark: true },
   { id: "scenes-titled", title: "Scenes titled 12x3", tag: "halo-scenes-card", cfg: { ...scenes, name: "Scenes" }, w: 378, h: 176 },
-  { id: "ent", title: "Entities 12x2", tag: "halo-entities-card", cfg: entities, w: 378, h: 120 },
-  { id: "ent-nsp", title: "Entities 12x2 NSP", tag: "halo-entities-card", cfg: entities, w: 480, h: 120 },
-  { id: "ent-night", title: "Entities night", tag: "halo-entities-card", cfg: entities, w: 378, h: 120, dark: true },
-  { id: "ent-plain", title: "Entities plain ids", tag: "halo-entities-card", cfg: { ...entities, entities: ["sensor.soc", "sensor.grid_power", "select.mode", "sensor.missing"] }, w: 378, h: 120 },
-  { id: "ent-titled", title: "Entities titled, 6 tiles 12x5", tag: "halo-entities-card", cfg: { ...entities, name: "Home", entities: [...entities.entities, "sensor.soc", "sensor.grid_cost"] }, w: 378, h: 312 },
-  { id: "ent-themed", title: "Entities themed, two per row 12x9", tag: "halo-entities-card", cfg: themed, w: 378, h: 568 },
-  { id: "ent-themed-night", title: "Entities themed night", tag: "halo-entities-card", cfg: themed, w: 378, h: 568, dark: true },
-  { id: "ent-themed-4", title: "Entities themed, four per row 12x2", tag: "halo-entities-card", cfg: { ...themed, columns: undefined, entities: themed.entities.slice(1, 5) }, w: 378, h: 120 },
-  { id: "ent-themed-nsp", title: "Entities themed NSP 480x376", tag: "halo-entities-card", cfg: { ...themed, entities: themed.entities.slice(0, 4) }, w: 480, h: 376 },
+  ...tSmall.map((cfg, i) => ({ id: `ent-s${i}`, title: "Entity small 3x2", tag: "halo-entity-card", cfg, w: 88, h: 120, setup: grid })),
+  ...tSmall.map((cfg, i) => ({ id: `ent-sn${i}`, title: "Entity small night", tag: "halo-entity-card", cfg, w: 88, h: 120, dark: true, setup: grid })),
+  { id: "ent-l", title: "Entity large 6x3", tag: "halo-entity-card", cfg: tLarge, w: 185, h: 184, setup: grid },
+  { id: "ent-l-night", title: "Entity large night", tag: "halo-entity-card", cfg: tLarge, w: 185, h: 184, dark: true, setup: grid },
+  { id: "ent-l-soc", title: "Entity large, % (0 to 100), black on white", tag: "halo-entity-card", cfg: tile({ entity: "sensor.soc", name: "Battery", theme: "light", size: "large", graph: true, graph_colour: "green", icon_colour: "green", secondary_text: "Discharging" }), w: 185, h: 184, setup: grid },
+  { id: "ent-l-dark", title: "Entity large, white on black", tag: "halo-entity-card", cfg: tile({ entity: "sensor.grid_power", name: "Grid", theme: "dark", size: "large", graph: true, graph_colour: "blue", graph_scale: "range" }), w: 185, h: 184, setup: grid },
+  { id: "ent-l-grad", title: "Entity large, Solar gradient", tag: "halo-entity-card", cfg: tile({ entity: "sensor.solar_power", name: "Solar", theme: "solar", icon_svg: SUN, size: "large", graph: true, secondary_entity: "sensor.solar_today", secondary_name: "Today" }), w: 185, h: 184, setup: grid },
+  { id: "ent-l-grad-night", title: "Entity large, Ocean night", tag: "halo-entity-card", cfg: tile({ entity: "sensor.home_power", name: "House", theme: "ocean", size: "large", graph: true }), w: 185, h: 184, dark: true, setup: grid },
+  { id: "ent-l-rule", title: "Entity large, colour rule (red above 1.5 kW)", tag: "halo-entity-card", cfg: tRule, w: 185, h: 184, setup: grid },
+  { id: "ent-l-week", title: "Entity large, one week (statistics)", tag: "halo-entity-card", cfg: { ...tLarge, graph_hours: 168 }, w: 185, h: 184, setup: grid },
+  { id: "ent-l-nog", title: "Entity large, no graph", tag: "halo-entity-card", cfg: { ...tLarge, graph: false }, w: 185, h: 184, setup: grid },
+  { id: "ent-l-nsp", title: "Entity large NSP 236x184", tag: "halo-entity-card", cfg: tLarge, w: 236, h: 184, setup: grid },
+  { id: "ent-s-nsp", title: "Entity small NSP 114x120", tag: "halo-entity-card", cfg: tSmall[0], w: 114, h: 120, setup: grid },
+  { id: "ent-masonry", title: "Entity large, masonry (no height given)", tag: "halo-entity-card", cfg: tLarge, w: 378, h: 0 },
   { id: "th-heat", title: "Thermostat heating 12x7", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440 },
   { id: "th-376", title: "Thermostat 12x6", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 376 },
   { id: "th-cool", title: "Cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 440 },

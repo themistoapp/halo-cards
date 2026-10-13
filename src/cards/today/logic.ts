@@ -1,6 +1,7 @@
 import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { isAvailable, numState, unitOf } from "../../shared/util";
-import { clock, parseRates, type Rate } from "../agile/logic";
+import { parseRates, type Rate } from "../agile/logic";
+import { clock, fmtNum, hourLabel, language } from "../../shared/format";
 import { phaseOf, position } from "../media/logic";
 import { levelPercent, isCharging } from "../vehicle/logic";
 import { buildWeather, iconFor, isNight, type Fc, type Forecasts, type IconKey } from "../weather/logic";
@@ -128,7 +129,7 @@ export function birthdayOf(summary: string): string | undefined {
   return who || undefined;
 }
 
-export function buildCalendar(events: CalEvent[], now: number, locale = "en-GB"): CalendarModel | undefined {
+export function buildCalendar(events: CalEvent[], now: number, locale = language()): CalendarModel | undefined {
   const today0 = startOfDay(now), today1 = startOfDay(now, 1);
   const timed = events.filter((e) => !e.allDay && e.end > now).sort((a, b) => a.start - b.start || a.end - b.end);
   const allToday = events.filter((e) => e.allDay && e.start < today1 && e.end > today0);
@@ -250,7 +251,7 @@ export function buildBins(rows: BinRow[], dates: (number | undefined)[], now: nu
   const bins: BinItem[] = ordered.map(({ r, d, days }) => {
     const first = days === soonest;
     const out = first && (outTonight || days === 0);
-    const line = days === 0 && first ? "Collected today" : outTonight && first ? "Out tonight" : d !== undefined ? dayLabel(d, opts.locale ?? "en-GB") : "No date";
+    const line = days === 0 && first ? "Collected today" : outTonight && first ? "Out tonight" : d !== undefined ? dayLabel(d, opts.locale ?? language()) : "No date";
     return {
       name: r.name, colour: binColour(r.colour, opts.dark), entity: r.entity, out, later: !first,
       count: days === undefined ? "–" : days === 0 ? "Today" : String(days), unit: days === undefined || days === 0 ? "" : days === 1 ? "day" : "days", line,
@@ -298,7 +299,7 @@ export interface AgileModel {
   peak: boolean;
 }
 
-const pence = (p: number) => `${(Math.abs(p) >= 100 ? Math.round(p) : p.toFixed(1)).toString().replace("-", "−")}p`;
+const pence = (p: number) => `${fmtNum(Math.abs(p) >= 100 ? Math.round(p) : p, Math.abs(p) >= 100 ? 0 : 1).replace("-", "−")}p`;
 
 export function buildAgile(hass: HomeAssistant, cfg: HaloTodayConfig, now: number): AgileModel | undefined {
   if (!cfg.rates_today) return undefined;
@@ -378,9 +379,9 @@ export function buildTodayWeather(hass: HomeAssistant, entity: string, fc: Forec
     for (const h of ahead.slice(0, hoursN - 1)) {
       const d = new Date(h.datetime), p = num(h.precipitation_probability), mm = num(h.precipitation);
       hours.push({
-        label: clock(d.getTime()).slice(0, 2), icon: iconFor(h.condition, isNight(hass, d, h)), temp: num(h.temperature) === undefined ? undefined : Math.round(num(h.temperature)!),
+        label: hourLabel(d.getHours()), icon: iconFor(h.condition, isNight(hass, d, h)), temp: num(h.temperature) === undefined ? undefined : Math.round(num(h.temperature)!),
         rain: p !== undefined ? p / 100 : mm !== undefined ? Math.min(mm / 2, 1) : isWet(h) ? 0.6 : 0,
-        note: p !== undefined ? (p >= 30 ? `${Math.round(p)}%` : undefined) : mm !== undefined && mm >= 0.1 ? `${mm.toFixed(1)}` : undefined,
+        note: p !== undefined ? (p >= 30 ? `${Math.round(p)}%` : undefined) : mm !== undefined && mm >= 0.1 ? fmtNum(mm, 1) : undefined,
       });
     }
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bucket, buildModel, graphPath, historyWindow, layoutFor, randomOrigin } from "../src/cards/energy/logic";
+import { buildModel, layoutFor, randomOrigin } from "../src/cards/energy/logic";
+import { bucket, graphPath, historyWindow } from "../src/shared/history";
 import type { HaloEnergyConfig, HomeAssistant } from "../src/shared/types";
 
 const ent = (id: string, state: string, attributes: Record<string, any> = {}) => ({

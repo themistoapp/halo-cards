@@ -1,7 +1,8 @@
 import { css } from "lit";
 import { shadowStyles } from "../../shared/bloom";
+import { tileStyles } from "../../shared/tile";
 
-export const styles = [shadowStyles, css`
+export const styles = [shadowStyles, tileStyles, css`
   :host { display: block; height: 100%; }
   ha-card {
     --surface: var(--ha-card-background, var(--card-background-color, #fff));
@@ -60,13 +61,11 @@ export const styles = [shadowStyles, css`
   .lb { position: absolute; left: 50.9%; top: 42.1%; height: 47.5%; width: max(2px, 1.8%); transform: translateX(-50%); border-radius: 99px; background: rgba(255,255,255,.14); }
   .lb > i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 99px; background: #3ee08a; box-shadow: 0 0 4px 1px #3ee08a, 0 0 14px 4px color-mix(in srgb, #3ee08a 55%, transparent); transition: height .6s ease; }
 
-  /* Tiles */
+  /* Tiles: the shared tile (chip, figure, line below, graph) on frosted glass, coloured per source. */
   .tiles { flex: 1 0 0; min-height: var(--tmin, 0px); display: grid; gap: 8px; }
   .tile {
-    --g0:#f2c14e; --a0:#f47fa4; --ln:#b97d00; --px: 14px; --py: 14px;
-    position: relative; overflow: hidden; box-sizing: border-box; min-width: 0;
-    border-radius: 14px; border: 1px solid var(--line); padding: var(--py) var(--px);
-    display: flex; flex-direction: column; justify-content: flex-start; gap: 6px;
+    --g0:#f2c14e; --a0:#f47fa4; --ln:#b97d00;
+    border-radius: 14px; border: 1px solid var(--line);
     background: color-mix(in srgb, var(--surface) 80%, transparent);
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
@@ -80,19 +79,6 @@ export const styles = [shadowStyles, css`
   .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .tile.tap:focus-visible, .lb:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
   .tile.span { grid-column: 1 / -1; }
-  .top { display: flex; align-items: center; gap: 8px; }
-  .ico { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--surface) 72%, transparent); }
-  .ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .label { font-size: 13px; line-height: 18px; font-weight: 500; }
-  .fig { font-size: 38px; line-height: 1; font-weight: 400; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .unit { font-size: 14px; letter-spacing: 0; margin-left: 3px; }
-  .det { font-size: 12px; line-height: 16px; margin-top: 2px; }
-  /* The graph only ever takes the space left under the text (never behind it), and disappears if that is too little. */
-  .gw { flex: 1 1 0; min-height: 0; margin: 0 calc(var(--px) * -1) calc(var(--py) * -1); position: relative; container-type: size; }
-  .gw svg.graph { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 100%; animation: rise 1.2s cubic-bezier(.22,.7,.2,1) backwards; }
-  @container (max-height: 19px) { .gw svg.graph { display: none; } }
-  svg.graph .ln { fill: none; stroke: var(--ln); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-  @keyframes rise { from { transform: scaleY(0); opacity: 0; } }
   .empty { flex: 1; display: grid; place-items: center; text-align: center; font-size: 13px; color: var(--ink-2); padding: 0 24px; }
 
   /* Controls: reserve slider and mode pill */
@@ -123,17 +109,12 @@ export const styles = [shadowStyles, css`
   .regular { --tmin: 252px; }
   .tight { --tmin: 200px; }
   .regular .inner, .tight .inner { padding: 14px; gap: 10px; }
-  .regular .tile, .tight .tile { --px: 12px; --py: 10px; gap: 3px; }
-  .regular .ico, .tight .ico { width: 26px; height: 26px; }
-  .regular .ico svg, .tight .ico svg { width: 15px; height: 15px; }
-  .regular .fig, .tight .fig { font-size: 30px; }
-  .regular .unit, .tight .unit { font-size: 12px; }
-  .regular .det, .tight .det { font-size: 11px; line-height: 14px; margin-top: 0; }
+  .regular .tile, .tight .tile { --px: 12px; --py: 10px; --fig: 30px; }
   .regular .ctl, .tight .ctl { height: 56px; padding: 8px 12px; }
   .regular .rsv input, .tight .rsv input { margin-top: 0; }
 
   @media (prefers-reduced-motion: reduce) {
-    .bg, svg.graph { animation: none; }
+    .bg { animation: none; }
     .bg, .lb > i, .seg .th, .seg button { transition: none; }
   }
 `];

@@ -2,10 +2,10 @@ import { LitElement, html, nothing, svg } from "lit";
 import { state } from "lit/decorators.js";
 import type { HomeAssistant } from "../../shared/types";
 import { observeSize } from "../../shared/util";
-import { subscribeHistory } from "../energy/history";
-import type { Sample } from "../energy/logic";
+import { subscribeHistory, type Sample } from "../../shared/history";
 import { buildSolar, fmtKwh, parseForecast, smoothPath, startOfDay, type Hour, type HaloSolarConfig, type RawForecast, type SolarModel } from "./logic";
 import { styles } from "./styles";
+import { clockAt, fmtNum, hourLabel, setLocale } from "../../shared/format";
 
 type Day = "today" | "tomorrow";
 const REFRESH = 30 * 60_000;
@@ -43,6 +43,7 @@ export class HaloSolarCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass, first = !old;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     if (first) { this._load(); this._resubscribe(); }
     const a = this._config.actual;
@@ -115,8 +116,8 @@ export class HaloSolarCard extends LitElement {
 
   private _readout(m: SolarModel, day: Day) {
     if (m.empty) return html`<div class="readout"></div>`;
-    const hhmm = (x: number) => { const t = Math.round(x * 60); return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
-    const kw = (v: number) => v.toFixed(2);
+    const hhmm = clockAt;
+    const kw = (v: number) => fmtNum(v, 2);
     const at = this._hov ?? (day === "today" ? m.nowX : undefined);
     if (at === undefined) return html`<div class="readout">TOMORROW - ${fmtKwh(m.forecastKwh)} kWh forecast</div>`;
     const f = this._at(m.forecast, at) ?? 0;
@@ -140,9 +141,9 @@ export class HaloSolarCard extends LitElement {
     const ap = m.actual.map((p): [number, number] => [X(p.x), Y(p.kw)]);
     const grid = compact ? nothing : [0, 1, 2, 3].map((i) => {
       const v = i * m.axis.step, y = Y(v);
-      return svg`<line class="grid ${i ? "dash" : ""}" x1=${L} x2=${w - R} y1=${y} y2=${y}></line><text class="ax" x=${L - 6} y=${y + 3.5} text-anchor="end">${Number(v.toFixed(2))}</text>`;
+      return svg`<line class="grid ${i ? "dash" : ""}" x1=${L} x2=${w - R} y1=${y} y2=${y}></line><text class="ax" x=${L - 6} y=${y + 3.5} text-anchor="end">${fmtNum(v, undefined, { max: 2 })}</text>`;
     });
-    const xs = compact ? nothing : m.ticks.map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor="middle">${String(t).padStart(2, "0")}</text>`);
+    const xs = compact ? nothing : m.ticks.map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor="middle">${hourLabel(t)}</text>`);
     return html`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Solar forecast chart">
       <defs><linearGradient id="fa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--sol)" stop-opacity=".38"></stop><stop offset="1" stop-color="var(--sol)" stop-opacity=".04"></stop></linearGradient></defs>
       ${grid}${xs}

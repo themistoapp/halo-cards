@@ -8,6 +8,7 @@ import { fireMoreInfo, observeSize } from "../../shared/util";
 import { icon } from "./icons";
 import { buildWeather, forecastTypes, neededHeight, rowsFor, sectionsOf, watchedWeather, weeklyRows, type Forecasts, type HaloWeatherConfig, type WeatherModel } from "./logic";
 import { styles } from "./styles";
+import { setLocale } from "../../shared/format";
 
 registerBloomProps();
 
@@ -41,6 +42,7 @@ export class HaloWeatherCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     this._subscribe();
     if (!old || watchedWeather(this._config).some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();

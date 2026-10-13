@@ -4,6 +4,7 @@ import type { HomeAssistant } from "../../shared/types";
 import { observeSize } from "../../shared/util";
 import { buildAgile, fmtP, watchedAgile, type AgileModel, type Figure, type HaloAgileConfig } from "./logic";
 import { styles } from "./styles";
+import { clockAt, hourLabel, setLocale } from "../../shared/format";
 
 type Day = "today" | "tomorrow";
 const MIN_FIGURE = 64;
@@ -47,6 +48,7 @@ export class HaloAgileCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     if (!old || watchedAgile(this._config).some((id) => old.states[id] !== hass.states[id])) this.requestUpdate();
   }
@@ -93,7 +95,7 @@ export class HaloAgileCard extends LitElement {
 
   private _readout(m: AgileModel) {
     if (m.empty) return html`<div class="readout"></div>`;
-    const hhmm = (x: number) => { const t = Math.round(x * 60); return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+    const hhmm = clockAt;
     const b = this._sel !== undefined ? m.bars[this._sel] : undefined;
     if (b) return html`<div class="readout">${hhmm(b.x)} - ${fmtP(b.p)}p</div>`;
     const lo = m.bars.reduce((a, c) => (c.p < a.p ? c : a));
@@ -109,7 +111,7 @@ export class HaloAgileCard extends LitElement {
     const Y = (p: number) => T + (1 - (p - m.yMin) / (m.yMax - m.yMin)) * (h - T - B);
     const y0 = Y(0), gap = compact ? 0.6 : 1;
     const grid = compact ? nothing : m.ticks.map((t) => svg`<line class="grid ${t === 0 ? "zero" : "dash"}" x1=${L} x2=${w - R} y1=${Y(t)} y2=${Y(t)}></line><text class="ax" x=${L - 6} y=${Y(t) + 3.5} text-anchor="end">${t}</text>`);
-    const xs = compact ? nothing : [0, 6, 12, 18].map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor=${t === 0 ? "start" : "middle"}>${String(t).padStart(2, "0")}</text>`);
+    const xs = compact ? nothing : [0, 6, 12, 18].map((t) => svg`<text class="ax" x=${X(t)} y=${h - 4} text-anchor=${t === 0 ? "start" : "middle"}>${hourLabel(t)}</text>`);
     const bars = m.bars.map((b, i) => {
       const top = Y(Math.max(b.p, 0)), bottom = Y(Math.min(b.p, 0)), x = X(b.x) + gap / 2, bw = Math.max(X(b.x + b.w) - X(b.x) - gap, 1);
       return svg`<rect class="bar ${b.band} ${b.current ? "now" : ""} ${i === this._sel ? "sel" : ""}" x=${x} y=${top} width=${bw} height=${Math.max(bottom - top, 1)} rx=${compact ? 0.8 : 1.5}></rect>`;

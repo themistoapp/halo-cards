@@ -7,6 +7,7 @@ import { fireMoreInfo, isAvailable, unitOf } from "../../shared/util";
 import { linesFor, pickGreeting, toneAt, type CustomGreeting, type Tone } from "../today/greetings";
 import { DEFAULTS, buildTodayWeather, minutesOf, partOfDay, triggersOf } from "../today/logic";
 import { icon } from "../weather/icons";
+import { language, setLocale } from "../../shared/format";
 
 export type ChipRow = string | { entity: string; name?: string };
 export interface HaloTitleConfig {
@@ -89,6 +90,7 @@ export class HaloTitleCard extends LitElement {
   set hass(hass: HomeAssistant) {
     const old = this._hass;
     this._hass = hass;
+    setLocale(hass);
     if (!this._config) return;
     this._template();
     const ids = [this._config.weather, ...(this._config.chips ?? []).map((c) => chipOf(c).entity)].filter((x): x is string => !!x);
@@ -132,7 +134,7 @@ export class HaloTitleCard extends LitElement {
 
   override render() {
     const cfg = this._config!, hass = this._hass!;
-    const dark = !!hass.themes?.darkMode, locale = hass.locale?.language ?? "en-GB", now = new Date();
+    const dark = !!hass.themes?.darkMode, locale = language(), now = new Date();
     const style = cfg.style ?? "greeting";
     if (style === "heading") {
       const sub = isTemplate(cfg.subtitle) ? this._sub : cfg.subtitle;

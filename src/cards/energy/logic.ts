@@ -1,4 +1,5 @@
 import type { HassEntity, HaloEnergyConfig, HomeAssistant } from "../../shared/types";
+import { fmtNum } from "../../shared/format";
 
 export type Key = "solar" | "battery" | "grid" | "house";
 
@@ -49,13 +50,13 @@ export function kwh(e?: HassEntity): number | undefined {
 
 /** Hero power figures are shown in watts. */
 export const fmtKw = (v: number) => String(Math.round(Math.abs(v) * 1000));
-const fmtKwh = (v: number) => v.toFixed(1);
+const fmtKwh = (v: number) => fmtNum(v, 1);
 
 function cost(e?: HassEntity): string | undefined {
   const v = num(e);
   if (v === undefined) return undefined;
   const u = String(e!.attributes?.unit_of_measurement ?? "£");
-  const amount = v.toFixed(2);
+  const amount = fmtNum(v, 2);
   return u === "£" || u === "GBP" ? `£${amount}` : u === "$" || u === "USD" ? `$${amount}` : u === "€" || u === "EUR" ? `€${amount}` : `${amount} ${u}`;
 }
 
@@ -170,66 +171,6 @@ export function buildModel(hass: HomeAssistant, cfg: HaloEnergyConfig): Model {
 /** Entities the card reads, so it only re-renders when one of them changes. */
 export function watchedEntities(cfg: HaloEnergyConfig): string[] {
   return [cfg.solar_power, cfg.solar_energy, cfg.solar_forecast, cfg.battery_soc, cfg.battery_power, cfg.grid_power, cfg.grid_cost, cfg.home_power, cfg.reserve_entity, cfg.mode_entity, cfg.mode_self_entity, cfg.mode_ai_entity, cfg.updated_entity].filter((x): x is string => !!x);
-}
-
-// ---- history ---------------------------------------------------------------
-
-export interface Sample { t: number; v: number | null }
-
-/** Puts samples on n buckets between start and end; empty buckets carry the last value forward. */
-export function bucket(samples: Sample[], start: number, end: number, n: number): (number | null)[] {
-  const out: (number | null)[] = new Array(n).fill(null);
-  const width = (end - start) / n;
-  const sorted = [...samples].sort((a, b) => a.t - b.t);
-  let i = 0;
-  let last: number | null = null;
-  while (i < sorted.length && sorted[i].t < start) last = sorted[i++].v;
-  for (let b = 0; b < n; b++) {
-    const bEnd = start + (b + 1) * width;
-    let sum = 0, count = 0;
-    while (i < sorted.length && sorted[i].t < bEnd) {
-      const v = sorted[i++].v;
-      if (v !== null) { sum += v; count++; }
-      last = v;
-    }
-    out[b] = count ? sum / count : last;
-  }
-  return out;
-}
-
-/** Graph window: today from the start hour to now; early in the day, the last six hours instead. */
-export function historyWindow(now: number, startHour: number): [number, number] {
-  const d = new Date(now);
-  d.setHours(startHour, 0, 0, 0);
-  const start = d.getTime();
-  return now - start < 30 * 60_000 ? [now - 6 * 3600_000, now] : [start, now];
-}
-
-/** Smooth path through points (Catmull-Rom as cubic Beziers) in a 100 x 60 box. */
-export function graphPath(values: (number | null)[], max: number): { line: string; area: string } | undefined {
-  const pts: [number, number][] = [];
-  const n = values.length;
-  values.forEach((v, i) => {
-    if (v === null) return;
-    pts.push([(i / (n - 1)) * 100, 56 - Math.min(Math.max(v / max, 0), 1) * 48]);
-  });
-  if (pts.length < 2) return undefined;
-  let d = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2;
-    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-    d += ` C${c1[0].toFixed(2)},${c1[1].toFixed(2)} ${c2[0].toFixed(2)},${c2[1].toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`;
-  }
-  const last = pts[pts.length - 1], first = pts[0];
-  return { line: d, area: `${d} L${last[0].toFixed(2)},60 L${first[0].toFixed(2)},60 Z` };
-}
-
-/** Value that maps to the top of the graph. */
-export function graphMax(scale: "kw" | "percent", values: (number | null)[]): number {
-  if (scale === "percent") return 100;
-  const m = Math.max(0, ...values.filter((v): v is number => v !== null));
-  return Math.max(m * 1.15, 1);
 }
 
 /** Random start point on one of the four edges, slightly outside it. */
