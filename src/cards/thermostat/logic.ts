@@ -38,7 +38,9 @@ export interface ThermoModel {
   step: number;
   humidity?: number;
   modes: { id: string; label: string }[];
-  /** Background bloom size 0-1.2. */
+  /** Bloom colour: what it is doing, or (on but at target) the mode it is waiting in. None when off. */
+  glow?: "heat" | "cool";
+  /** Background bloom size: full while heating or cooling, small when on but at target. */
   k: number;
   unit: string;
 }
@@ -60,10 +62,18 @@ export function toneOf(s: HassEntity, cur?: number, tgt?: number, low?: number, 
   return "idle";
 }
 
+/** Full bloom while heating or cooling; a small one in the mode's colour when on but at target; none otherwise. */
+export function bloomOf(tone: Tone, mode: string): { glow?: "heat" | "cool"; k: number } {
+  if (tone === "heat" || tone === "cool") return { glow: tone, k: 1 };
+  if (tone === "idle" && (mode === "heat" || mode === "cool")) return { glow: mode, k: AT_TARGET_K };
+  return { k: 0 };
+}
+export const AT_TARGET_K = 0.45;
+
 export function buildThermostat(hass: HomeAssistant, cfg: HaloThermostatConfig): ThermoModel {
   const s = hass.states[cfg.entity];
   const unit = hass.config?.unit_system?.temperature ?? "°C";
-  const empty: ThermoModel = { name: cfg.name ?? "Thermostat", available: false, mode: "off", tone: "off", range: false, min: 7, max: 35, step: 0.5, modes: [], k: 0.4, unit };
+  const empty: ThermoModel = { name: cfg.name ?? "Thermostat", available: false, mode: "off", tone: "off", range: false, min: 7, max: 35, step: 0.5, modes: [], k: 0, unit };
   if (!s) return empty;
   const a = s.attributes;
   const available = isAvailable(s);
@@ -86,7 +96,7 @@ export function buildThermostat(hass: HomeAssistant, cfg: HaloThermostatConfig):
     step: Math.max(0.5, num(a.target_temp_step) ?? 0.5),
     humidity: hum === undefined ? undefined : Math.round(hum),
     modes: ids.map((id) => ({ id, label: MODE_LABELS[id] ?? id })),
-    k: tone === "heat" || tone === "cool" ? 1 : tone === "idle" ? 0.7 : 0.4,
+    ...bloomOf(tone, s.state),
     unit,
   };
 }

@@ -116,7 +116,7 @@ function forecast(kind: string, night = false) {
 function makeHass(dark: boolean, over = {}): HomeAssistant {
   const st = states(over) as Record<string, any>;
   return {
-    states: st, themes: { darkMode: dark },
+    states: st, themes: { darkMode: dark }, config: { unit_system: { temperature: "°C" } },
     entities: { "media_player.lounge": { device_id: "d1" }, "media_player.study": { device_id: "d2" } },
     devices: { d1: { model: "Era 300" }, d2: { model: "Sonos One" } },
     connection: {
@@ -142,6 +142,15 @@ const lights = { type: "custom:halo-light-card", name: "Living room", lights: [
   { entity: "light.tower", name: "Corner", type: "pole" }, { entity: "light.hall", type: "downlight" }, { entity: "light.lamp" } ] };
 
 const scenes = { type: "custom:halo-scenes-card", scenes: [{ entity: "scene.movie", colour: "#7a5cf0" }, { entity: "scene.relax", colour: "#e8803d" }, { entity: "scene.bright", colour: "#e8b923" }, { entity: "scene.night", colour: "#3d6ee8" }] };
+
+// Custom icons: pasted markup (a sun with a black outline and white face, to show the ink/surface swap) and a bare MDI path.
+const SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="11" fill="#F9C74F" stroke="#000" stroke-width="3"/><circle cx="32" cy="32" r="5" fill="#fff"/><g stroke="#F9C74F" stroke-width="4" stroke-linecap="round"><path d="M32 7V14M32 50V57M7 32H14M50 32H57"/><path d="M14.3 14.3L19 19M45 45L49.7 49.7M49.7 14.3L45 19M19 45L14.3 49.7"/></g></svg>`;
+const entities = { type: "custom:halo-entities-card", entities: [
+  { entity: "sensor.home_power", name: "House", colour: "#8a5cf6" },
+  { entity: "sensor.solar_power", name: "Solar", icon_svg: SUN, colour: "#d89a1b" },
+  { entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", decimals: 1 },
+  { entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon_svg: "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25Z", colour: "#2f86cf" },
+] };
 
 const th = (entity: string, extra = {}) => ({ type: "custom:halo-thermostat-card", entity, ...extra });
 
@@ -176,6 +185,11 @@ const specs: Spec[] = [
   { id: "scenes-plain", title: "Scenes no colours", tag: "halo-scenes-card", cfg: { ...scenes, scenes: ["scene.movie", "scene.relax", "scene.bright", "scene.night"] }, w: 378, h: 120 },
   { id: "scenes-night", title: "Scenes night", tag: "halo-scenes-card", cfg: scenes, w: 378, h: 120, dark: true },
   { id: "scenes-titled", title: "Scenes titled 12x3", tag: "halo-scenes-card", cfg: { ...scenes, name: "Scenes" }, w: 378, h: 176 },
+  { id: "ent", title: "Entities 12x2", tag: "halo-entities-card", cfg: entities, w: 378, h: 120 },
+  { id: "ent-nsp", title: "Entities 12x2 NSP", tag: "halo-entities-card", cfg: entities, w: 480, h: 120 },
+  { id: "ent-night", title: "Entities night", tag: "halo-entities-card", cfg: entities, w: 378, h: 120, dark: true },
+  { id: "ent-plain", title: "Entities plain ids", tag: "halo-entities-card", cfg: { ...entities, entities: ["sensor.soc", "sensor.grid_power", "select.mode", "sensor.missing"] }, w: 378, h: 120 },
+  { id: "ent-titled", title: "Entities titled, 6 tiles 12x5", tag: "halo-entities-card", cfg: { ...entities, name: "Home", entities: [...entities.entities, "sensor.soc", "sensor.grid_cost"] }, w: 378, h: 312 },
   { id: "th-heat", title: "Thermostat heating 12x7", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440 },
   { id: "th-376", title: "Thermostat 12x6", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 376 },
   { id: "th-cool", title: "Cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 440 },
@@ -187,6 +201,7 @@ const specs: Spec[] = [
   { id: "th-nsp", title: "Dial at 480x376", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 480, h: 376 },
   { id: "th-c-off", title: "Compact off", tag: "halo-thermostat-card", cfg: th("climate.off"), w: 378, h: 120 },
   { id: "th-c", title: "Compact 12x2", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 120 },
+  { id: "th-c-idle", title: "Compact idle at target", tag: "halo-thermostat-card", cfg: th("climate.idle"), w: 378, h: 120 },
   { id: "th-c480", title: "Compact 480", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 480, h: 120 },
   { id: "th-c-cool", title: "Compact cooling", tag: "halo-thermostat-card", cfg: th("climate.cooling"), w: 378, h: 120 },
   { id: "th-c-night", title: "Compact night", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 120, dark: true },

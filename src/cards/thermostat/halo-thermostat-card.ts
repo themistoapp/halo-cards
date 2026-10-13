@@ -191,7 +191,7 @@ export class HaloThermostatCard extends LitElement {
     const m = this._shown(buildThermostat(hass, cfg));
     const dark = !!hass.themes?.darkMode;
     const compact = this._h > 0 && this._h < 230;
-    const hex = m.tone === "heat" ? (dark ? HEAT.night : HEAT.day) : m.tone === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
+    const hex = m.glow === "heat" ? (dark ? HEAT.night : HEAT.day) : m.glow === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
     const c = shadesFromHex(hex, dark) ?? (dark ? GREY_NIGHT : GREY_DAY);
     const vars = { "--x1": "50%", "--y1": compact ? "125%" : "112%", "--x2": "50%", "--y2": "50%", "--k": String(hex ? m.k : 0), "--k2": "0", "--c0": c.c0, "--c1": c.c1, "--ca": c.ca };
     return html`<ha-card class="${dark ? "dark" : ""} ${m.tone} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>

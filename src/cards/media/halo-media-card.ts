@@ -5,7 +5,7 @@ import { GREY_DAY, GREY_NIGHT, randomOrigin, registerBloomProps } from "../../sh
 import { artPalette, paletteFromUrl, type ArtColours, type Palette } from "../../shared/colour";
 import type { HomeAssistant } from "../../shared/types";
 import { observeHeight } from "../../shared/util";
-import { bloomK, buildMedia, favouritesOf, fmtTime, playersOf, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
+import { accentK, bloomK, buildMedia, favouritesOf, fmtTime, playersOf, speakerFor, watchedMedia, type Favourite, type HaloMediaConfig, type MediaModel } from "./logic";
 import { SPEAKER_HEIGHT, SPEAKER_IMAGES } from "./speakers";
 import { styles } from "./styles";
 
@@ -242,7 +242,7 @@ export class HaloMediaCard extends LitElement {
     const c = this._colours(dark, active);
     const vars = {
       "--x1": this._origins.a[0], "--y1": this._origins.a[1], "--x2": this._origins.b[0], "--y2": this._origins.b[1],
-      "--k": String(bloomK(m.phase, m.volume)), "--k2": active && this._palette?.distinct ? String(+(bloomK(m.phase, m.volume) * 0.55).toFixed(2)) : "0",
+      "--k": String(bloomK(m.phase, m.volume)), "--k2": String(accentK(m.phase, m.volume, !!this._palette)),
       "--c0": c.c0, "--c1": c.c1, "--ca": c.ca,
     };
     const img = this._image(m);

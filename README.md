@@ -14,6 +14,7 @@ Each card is standalone: its own element, options and editor. Use any of them wi
 | Solar forecast | `custom:halo-solar-card` | 12 × 6 chart, 12 × 2 compact |
 | Agile rates | `custom:halo-agile-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
+| Entities | `custom:halo-entities-card` | 12 × 2 for up to four tiles; two more rows per extra four |
 
 ## Install (HACS)
 
@@ -129,9 +130,34 @@ colour: "#ffe3bd"        # glow for lights that report no colour (default warm w
 shadow: true
 ```
 
+## Halo Entities card (`custom:halo-entities-card`)
+
+A row of up to four tiles, each showing one reading: an icon, the value with its unit, and a name. More than four wrap onto further rows. Tap a tile for the entity's more-info.
+
+Any entity works. If it has more than one value (a thermostat's temperature and humidity, a weather entity's wind speed), the editor shows a **Value** list with each one's current reading. Pick one, or add the same entity again to show another. Attributes get a unit where one can be told (weather's own units, the temperature unit, % for humidity and battery); set `unit` to override.
+
+Icons: the entity's own icon by default, any `mdi:` icon, or your own SVG in `icon_svg`. That can be pasted `<svg>` markup, a 24 × 24 path (as on materialdesignicons.com), or a URL such as `/local/icons/boiler.svg`. Black in the SVG follows the text colour and white follows the card, so it works at night. Scripts, event handlers and outside links are removed.
+
+```yaml
+type: custom:halo-entities-card
+name: Home                     # optional heading
+entities:
+  - sensor.house_power         # plain entity id: its state
+  - entity: climate.hallway
+    attribute: current_humidity   # show an attribute instead of the state
+    name: Humidity
+    icon: mdi:water-percent
+  - entity: sensor.solar_power
+    icon_svg: /local/icons/sun.svg
+    colour: "#d89a1b"          # optional tint and glow, like Scenes
+    unit: W                    # optional
+    decimals: 0                # optional
+shadow: true
+```
+
 ## Halo Thermostat card (`custom:halo-thermostat-card`)
 
-Nest-style thermostat for any `climate` entity. Tall, it is a dial of fine ticks with the target in the middle and − / + below; short (under about 230px), it becomes a compact bar with the target in the middle, − / + either side, "Now" and humidity under it, and the tick bar along the bottom. The background glows orange while heating and blue while cooling, so there is no status text. Temperatures are shown to the nearest 0.5 degrees and the target moves in 0.5 steps (or the thermostat's own step if larger). Presses are sent once you stop tapping. In heat/cool range mode, − / + move both ends of the range together.
+Nest-style thermostat for any `climate` entity. Tall, it is a dial of fine ticks with the target in the middle and − / + below; short (under about 230px), it becomes a compact bar with the target in the middle, − / + either side, "Now" and humidity under it, and the tick bar along the bottom. The background glows orange while heating and blue while cooling, and keeps a small glow in that colour when the thermostat is on but already at its target, so there is no status text. Temperatures are shown to the nearest 0.5 degrees and the target moves in 0.5 steps (or the thermostat's own step if larger). Presses are sent once you stop tapping. In heat/cool range mode, − / + move both ends of the range together.
 
 ```yaml
 type: custom:halo-thermostat-card

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloomK, buildMedia, favouritesOf, fmtTime, mediaSource, nextRepeat, playersOf, position, speakerFor } from "../src/cards/media/logic";
+import { accentK, bloomK, buildMedia, favouritesOf, fmtTime, mediaSource, nextRepeat, playersOf, position, speakerFor } from "../src/cards/media/logic";
 import { ent, hassOf } from "./helpers";
 
 const feats = 1 | 4 | 8 | 16 | 32 | 512 | 16384 | 32768 | 262144;
@@ -80,5 +80,17 @@ describe("helpers", () => {
     expect(favouritesOf(h, { type: "x", entity: "e" }).map((f) => f.name)).toEqual(["Alpha", "Beta", "Gamma"]);
     expect(favouritesOf(h, { type: "x", entity: "e", favourites_include: ["c", "a"] }).map((f) => f.name)).toEqual(["Gamma", "Alpha"]);
     expect(favouritesOf(hassOf([]), { type: "x", entity: "e" })).toEqual([]);
+  });
+});
+
+describe("accentK", () => {
+  it("reaches as far as the main bloom, for one-colour artwork too", () => {
+    const k = bloomK("playing", 0.5);
+    expect(accentK("playing", 0.5, true) * 0.38).toBeCloseTo(k * 0.75, 1);
+    expect(accentK("paused", 0.5, true)).toBeLessThan(accentK("playing", 0.5, true));
+  });
+  it("is off when idle or there is no artwork colour", () => {
+    expect(accentK("idle", 0.5, true)).toBe(0);
+    expect(accentK("playing", 0.5, false)).toBe(0);
   });
 });

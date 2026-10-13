@@ -69,6 +69,15 @@ export function bloomK(phase: Phase, volume: number | undefined): number {
   return +(phase === "paused" ? k * 0.55 : k).toFixed(2);
 }
 
+/**
+ * Accent bloom size: as far-reaching as the main bloom. The accent fades out at k2 × 38% of the radius and the main one at
+ * k × 75%, so k2 is k scaled by 75/38. One-colour artwork gets it too (its accent is the same hue, deeper); no artwork, none.
+ */
+export function accentK(phase: Phase, volume: number | undefined, hasArt: boolean): number {
+  if (phase === "idle" || !hasArt) return 0;
+  return +(bloomK(phase, volume) * 75 / 38).toFixed(2);
+}
+
 export interface MediaModel {
   source: HassEntity;
   main: HassEntity;
