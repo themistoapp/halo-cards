@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVehicle, levelPercent, lockState } from "../src/cards/vehicle/logic";
+import { buildVehicle, levelPercent, lockState, placeDetail, street } from "../src/cards/vehicle/logic";
 import { ent, hassOf } from "./helpers";
 
 const m140i = () => hassOf([
@@ -24,7 +24,7 @@ describe("buildVehicle (petrol)", () => {
     expect(m.stats.map((s) => [s.label, s.value, s.unit])).toEqual([["Fuel", "32", "L"], ["Range", "312", "mi"], ["Odometer", "24,310", "mi"]]);
     expect(m.pct).toBeCloseTo(61.5, 1);
     expect(m.status).toMatchObject({ kind: "locked", label: "Locked" });
-    expect(m.chip).toBe("Home");
+    expect(m.chip).toMatch(/^Home · since /);
     expect(m.charging).toBe(false);
   });
   it("flags low and critical levels on the figure", () => {
@@ -65,7 +65,7 @@ describe("buildVehicle (electric)", () => {
     const m = buildVehicle(ev(), cfg);
     expect(m.status).toMatchObject({ kind: "charging", label: "Charging" });
     expect(m.charging).toBe(true);
-    expect(m.chip).toBe("Away");
+    expect(m.chip).toMatch(/^Away · since /);
     const h = ev(); h.states["sensor.soc"] = ent("sensor.soc", "8", { unit_of_measurement: "%" });
     expect(buildVehicle(h, cfg).tone).toBeUndefined();
     h.states["binary_sensor.charging"] = ent("binary_sensor.charging", "off");
@@ -89,5 +89,43 @@ describe("lockState", () => {
     expect(lockState(ent("lock.a", "unlocked"))).toBe("unlocked");
     expect(lockState(ent("binary_sensor.a", "on"))).toBe("unlocked");
     expect(lockState(ent("sensor.a", "SECURED"))).toBe("locked");
+  });
+});
+
+describe("vehicle: taps and location chip", () => {
+  const at = (h: number, m = 0, daysAgo = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); d.setDate(d.getDate() - daysAgo); return d; };
+  const withTracker = (state: string, attrs: Record<string, unknown> = {}, changed = at(9, 12)) => {
+    const h = m140i();
+    h.states["device_tracker.car"] = { ...ent("device_tracker.car", state, attrs), last_changed: changed.toISOString() };
+    h.states["zone.home"] = ent("zone.home", "0", { friendly_name: "Home", latitude: 51.5, longitude: -1.78 });
+    return h;
+  };
+  it("every figure knows its entity", () => {
+    const m = buildVehicle(m140i(), petrol);
+    expect(m.stats.map((s) => s.entity)).toEqual(["sensor.fuel", "sensor.range", "sensor.odo"]);
+    expect(m.levelEntity).toBe("sensor.fuel");
+    expect(m.chipEntity).toBe("device_tracker.car");
+  });
+  it("in a zone: the zone and since when", () => {
+    expect(placeDetail(withTracker("home"), petrol, at(15).getTime())).toBe("Home · since 09:12");
+    expect(placeDetail(withTracker("home", {}, at(9, 12, 2)), petrol, at(15).getTime())).toMatch(/^Home · since \w{3}/);
+  });
+  it("away: the distance from home in the range's units", () => {
+    const h = withTracker("not_home", { latitude: 51.56, longitude: -1.78 });
+    expect(placeDetail(h, petrol, at(15).getTime())).toBe("4.1 mi from Home");
+  });
+  it("away with an address sensor: the street alone", () => {
+    const h = withTracker("not_home", { latitude: 51.56, longitude: -1.78 });
+    h.states["sensor.addr"] = ent("sensor.addr", "12a High Street, Swindon, SN1 1AA, United Kingdom");
+    expect(placeDetail(h, { ...petrol, address: "sensor.addr" })).toBe("High Street");
+    h.states["sensor.addr"] = ent("sensor.addr", "12 High St, Swindon", { Thoroughfare: "Commercial Road" });
+    expect(placeDetail(h, { ...petrol, address: "sensor.addr" })).toBe("Commercial Road");
+  });
+  it("away with nothing else: since when", () => {
+    expect(placeDetail(withTracker("not_home"), petrol, at(15).getTime())).toBe("Away · since 09:12");
+  });
+  it("street() drops house numbers only", () => {
+    expect(street(ent("sensor.a", "221B Baker Street, London"))).toBe("Baker Street");
+    expect(street(ent("sensor.a", "Station Approach"))).toBe("Station Approach");
   });
 });

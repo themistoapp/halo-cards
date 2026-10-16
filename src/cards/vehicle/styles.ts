@@ -14,6 +14,14 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .row3 .tile { flex: 1; padding: 8px 10px; gap: 6px; }
   .stats { display: grid; gap: 8px; }
   .row3 .stats { gap: 6px; }
+  /* Figures, the bar and the chip open their entity. */
+  button.st, button.bar, button.chip { font-family: inherit; color: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button.st { font-size: inherit; line-height: inherit; background: none; border: 0; padding: 0; margin: 0; border-radius: 8px; min-width: 0; }
+  button.bar { border: 0; padding: 0; margin: 0; display: block; }
+  /* The chip takes what the title leaves and cuts the street off with an ellipsis. */
+  header h2 { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button.chip { min-width: 0; max-width: none; flex: 0 1 auto; }
+  button.st:focus-visible, button.bar:focus-visible, button.chip:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
   .v { font-size: 20px; line-height: 24px; font-weight: 500; letter-spacing: -.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .row3 .v { font-size: 16px; }
   .v small { font-size: 12px; font-weight: 400; margin-left: 2px; letter-spacing: 0; }

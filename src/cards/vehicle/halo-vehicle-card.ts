@@ -58,7 +58,8 @@ export class HaloVehicleCard extends LitElement {
   override shouldUpdate() { return !!this._config && !!this._hass; }
 
   private _stat(s: Stat) {
-    return html`<div><div class="lab">${s.label}</div><div class="v ${s.tone ?? ""}">${s.value}<small>${s.unit}</small></div></div>`;
+    const body = html`<div class="lab">${s.label}</div><div class="v ${s.tone ?? ""}">${s.value}<small>${s.unit}</small></div>`;
+    return s.entity ? html`<button class="st" @click=${() => fireMoreInfo(this, s.entity!)}>${body}</button>` : html`<div class="st">${body}</div>`;
   }
 
   override render() {
@@ -80,12 +81,12 @@ export class HaloVehicleCard extends LitElement {
       ? html`<div class="glass tile">
           ${m.stats.length ? html`<div class="stats" style=${styleMap({ gridTemplateColumns: cols })}>${m.stats.map((s) => this._stat(compact3 && s.label === "Odometer" ? { ...s, label: "Odo" } : s))}</div>` : nothing}
           ${m.pct !== undefined || m.status ? html`<div class="br">
-            ${m.pct !== undefined ? html`<div class="bar ${barCls}"><i style=${styleMap({ width: `${m.pct}%` })}></i></div>` : html`<div style="flex:1"></div>`}
+            ${m.pct !== undefined ? html`<button class="bar ${barCls}" aria-label="${m.kind === "ev" ? "Battery" : "Fuel"} ${Math.round(m.pct)}%" @click=${() => m.levelEntity && fireMoreInfo(this, m.levelEntity)}><i style=${styleMap({ width: `${m.pct}%` })}></i></button>` : html`<div style="flex:1"></div>`}
             ${m.status ? html`<button class="pill ${m.status.kind}" @click=${() => fireMoreInfo(this, m.status!.entity)}><svg viewBox="0 0 24 24">${ICONS[m.status.kind]}</svg>${m.status.label}</button>` : nothing}
           </div>` : nothing}
         </div>`
       : html`<div class="empty">Choose your vehicle's entities in the editor.</div>`;
-    const head = html`<header><h2>${m.name}</h2>${m.chip ? html`<span class="chip"><svg viewBox="0 0 24 24">${ICONS.pin}</svg><span>${m.chip}</span></span>` : nothing}</header>`;
+    const head = html`<header><h2>${m.name}</h2>${m.chip ? html`<button class="chip" title=${m.chip} @click=${() => m.chipEntity && fireMoreInfo(this, m.chipEntity)}><svg viewBox="0 0 24 24">${ICONS.pin}</svg><span>${m.chip}</span></button>` : nothing}</header>`;
     return html`<ha-card class="${dark ? "dark" : ""} ${compact3 ? "compact3" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
       <div class="inner">${head}${compact3 ? html`<div class="row3">${pic}${tile}</div>` : html`${pic}${tile}`}</div>

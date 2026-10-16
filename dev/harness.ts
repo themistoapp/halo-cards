@@ -361,6 +361,10 @@ const specs: Spec[] = [
   { id: "veh-m140i-night", title: "M140i 12x4 night", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248, dark: true },
   { id: "veh-m140i-3", title: "M140i 12x3", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 192 },
   { id: "veh-van-3", title: "e-Vivaro 12x3", tag: "halo-vehicle-card", cfg: van, w: 378, h: 192 },
+  { id: "veh-away", title: "M140i away, long street", tag: "halo-vehicle-card", cfg: { ...m140i, address: "sensor.m140i_address" }, w: 378, h: 248,
+    over: { "device_tracker.m140i": e("device_tracker.m140i", "not_home", { latitude: 51.56, longitude: -1.79 })[1], "sensor.m140i_address": e("sensor.m140i_address", "14 Great Western Way Industrial Estate Road, Swindon, SN5 7XX")[1] } },
+  { id: "veh-away-gps", title: "M140i away, distance", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248,
+    over: { "device_tracker.m140i": e("device_tracker.m140i", "not_home", { latitude: 51.62, longitude: -1.79 })[1], "zone.home": e("zone.home", "0", { friendly_name: "Home", latitude: 51.56, longitude: -1.78 })[1] } },
   { id: "veh-low", title: "e-Vivaro low, not charging", tag: "halo-vehicle-card", cfg: van, w: 378, h: 248, over: { "sensor.van_soc": e("sensor.van_soc", "14", { unit_of_measurement: "%" })[1], "binary_sensor.van_charging": e("binary_sensor.van_charging", "off")[1] } },
 ];
 

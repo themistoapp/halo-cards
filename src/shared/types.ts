@@ -11,7 +11,7 @@ export interface HomeAssistant {
   themes?: { darkMode?: boolean };
   /** The signed-in user's profile settings: language, number format ("language", "system", "comma_decimal", "decimal_comma", "space_comma", "none") and clock ("language", "system", "12", "24"). */
   locale?: { language?: string; number_format?: string; time_format?: string };
-  config?: { unit_system?: { temperature?: string } };
+  config?: { unit_system?: { temperature?: string; length?: string } };
   connection: {
     subscribeMessage<T>(cb: (msg: T) => void, msg: Record<string, unknown>): Promise<() => void>;
   };

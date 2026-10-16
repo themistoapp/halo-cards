@@ -14,6 +14,7 @@ const SCHEMA = [
   ent("level", "sensor"), ent("range", "sensor"), ent("odometer", "sensor"),
   ent("lock", ["lock", "binary_sensor", "sensor"]), ent("charging", ["binary_sensor", "sensor", "switch"]),
   ent("location", ["device_tracker", "sensor"]),
+  ent("address", "sensor"),
   { name: "tank_size", selector: { number: { min: 1, max: 500, mode: "box", unit_of_measurement: "L" } } },
   { name: "low_level", selector: { number: { min: 1, max: 99, mode: "box", unit_of_measurement: "%" } } },
   { name: "critical_level", selector: { number: { min: 1, max: 99, mode: "box", unit_of_measurement: "%" } } },
@@ -21,7 +22,7 @@ const SCHEMA = [
 const LABELS: Record<string, string> = {
   shadow: "Drop shadow",
   name: "Title", fuel_type: "Vehicle type", image_preset: "Built-in picture", image: "Your own picture (URL)", colour: "Vehicle colour (hex, e.g. #b3262f)",
-  level: "Fuel level / charge level", range: "Range", odometer: "Odometer", lock: "Lock", charging: "Charging status", location: "Location",
+  level: "Fuel level / charge level", range: "Range", odometer: "Odometer", lock: "Lock", charging: "Charging status", location: "Location", address: "Street while away (optional address sensor)",
   tank_size: "Fuel tank size (only if the sensor reports litres)", low_level: "Low at (%)", critical_level: "Critical at (%)",
 };
 

@@ -104,11 +104,13 @@ range: sensor.m140i_range
 odometer: sensor.m140i_odometer
 lock: lock.m140i
 location: device_tracker.m140i
+address: sensor.phone_geocoded_location   # optional: the street while away
 ```
 
 For an electric vehicle use `fuel_type: ev` and `charging: binary_sensor.van_charging` instead of `lock` / `tank_size`.
 
-- **Chip:** the location's zone name (Home, Depot), or Away. Hidden with no location.
+- **Chip:** in a zone, its name and since when (Home · since 14:05, or the weekday if earlier). Away, the street from `address` (any text sensor with an address, such as the mobile app's geocoded location; the street attribute if it has one, else the first part without the house number), else the distance from home if the tracker has GPS (4.2 mi from Home, in the range's miles or km), else Away · since when. Long streets are cut off to fit. Tap it for the tracker's map. Hidden with no location.
+- **Taps:** each figure (fuel or battery, range, odometer) and the bar open that entity's more-info.
 - **Bar:** petrol is a red gradient (the figure turns orange at `low_level`, default 20, and red at `critical_level`, default 10). Electric is black or white, orange or red when low, and green and flowing while charging.
 - **Status pill:** Locked or Unlocked for petrol, Charging or Not charging for electric. Tap it for the entity's more-info.
 - **Layout:** 12 × 4 puts the car above the figures; 12 × 3 puts it on the left.
