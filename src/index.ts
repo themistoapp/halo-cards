@@ -25,7 +25,7 @@ import { HaloTitleCardEditor } from "./cards/title/editor";
 import { HaloBackdropCard } from "./cards/backdrop/halo-backdrop-card";
 import { HaloBackdropCardEditor } from "./cards/backdrop/editor";
 
-export const VERSION = "0.24.0";
+export const VERSION = "0.25.0";
 
 // Each card stands alone: its own element, config and editor. Use any of them without the others.
 const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
