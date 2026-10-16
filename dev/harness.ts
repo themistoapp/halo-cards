@@ -130,6 +130,15 @@ function calendarEvents(id: string) {
   return [];
 }
 
+/** A climate service call lands on the fake thermostat a moment later, as it would in Home Assistant. */
+function applyClimate(hass: HomeAssistant, s: string, { entity_id, ...data }: Record<string, unknown>) {
+  const old = hass.states[entity_id as string];
+  if (!old) return;
+  const ent = s === "set_hvac_mode" ? { ...old, state: data.hvac_mode as string } : { ...old, attributes: { ...old.attributes, ...data } };
+  const next = { ...hass, states: { ...hass.states, [entity_id as string]: ent } };
+  for (const el of document.querySelectorAll("halo-thermostat-card")) if ((el as any)._hass === hass) (el as any).hass = next;
+}
+
 function makeHass(dark: boolean, over = {}): HomeAssistant {
   const st = states(over) as Record<string, any>;
   return {
@@ -144,7 +153,10 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
         setTimeout(() => cb({ states: out }), 50); return () => {};
       },
     },
-    async callService(d: string, s: string, data: Record<string, unknown>) { console.log("service", d, s, data); },
+    async callService(this: HomeAssistant, d: string, s: string, data: Record<string, unknown>) {
+      console.log("service", d, s, data);
+      if (d === "climate") setTimeout(() => applyClimate(this, s, data), 400);
+    },
     async callApi(_m: string, path: string) { return calendarEvents(path.split("?")[0].replace("calendars/", "")); },
     async callWS(m: { type?: string; statistic_ids?: string[]; start_time?: string }) {
       if (m?.type === "energy/solar_forecast") return solarForecast();

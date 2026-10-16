@@ -125,3 +125,25 @@ export const watchedThermostat = (cfg: HaloThermostatConfig) => [cfg.entity, ...
 
 /** Angle (degrees, 0 = top, clockwise) of a temperature on the dial ring, which sweeps 270 degrees from -135. */
 export const dialAngle = (v: number, min: number, max: number) => -135 + (270 * clamp(v, min, max) - 270 * min) / (max - min || 1);
+
+/** Temperature under a point on the dial ring, from its offset off the centre; points in the gap at the bottom go to the nearer end. */
+export function dialValue(dx: number, dy: number, min: number, max: number) {
+  let deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+  if (Math.abs(deg) > 135) deg = deg < 0 ? -135 : 135;
+  return min + ((deg + 135) / 270) * (max - min);
+}
+
+/** A dragged temperature, on a whole step and inside the thermostat's range. */
+export const snapTarget = (v: number, step: number, min: number, max: number) => clamp(round05(Math.round(v / step) * step), min, max);
+
+/** A key per character of the big figure that stays put as the number changes: whole-number digits counted from the
+ *  decimal point, decimals from it, for each end of a range. So 20 -> 20.5 keeps "2" and "0" and adds ".5". */
+export function glyphKeys(text: string): string[] {
+  const out: string[] = [];
+  text.split("–").forEach((part, s) => {
+    if (s) out.push(`d${s}`);
+    const whole = /^[-−]?\d*/.exec(part)![0].length;
+    for (let i = 0; i < part.length; i++) out.push(i < whole ? `${s}i${whole - i}` : `${s}f${i - whole}`);
+  });
+  return out;
+}

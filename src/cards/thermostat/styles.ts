@@ -32,6 +32,8 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .hero.off { fill: var(--ink-2); }
   .sub { font-size: 13px; fill: var(--ink-2); }
   .lim { font: 500 10px var(--code-font-family, ui-monospace, monospace); fill: var(--ink-2); }
+  /* Invisible band along the ring that picks up a press and drag. */
+  .grab { fill: none; stroke: transparent; stroke-width: 46; pointer-events: stroke; cursor: pointer; touch-action: none; }
   .rb { cursor: pointer; outline: none; }
   .rb circle { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
   .rb path { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; fill: none; }
@@ -64,10 +66,42 @@ export const styles = [themeStyles, bloomStyles, shadowStyles, css`
   .c button.pw[aria-pressed="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, var(--surface)); box-shadow: inset 0 1.5px 3px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.6); }
   .dark .c button.pw[aria-pressed="true"] { box-shadow: inset 0 1.5px 3px rgba(0,0,0,.7), inset 0 -1px 0 rgba(255,255,255,.06); }
   .bar { position: relative; height: 28px; margin-top: 4px; }
+  .bar.live { cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .bar.live::before { content: ""; position: absolute; inset: -8px -6px -6px; }
   .bar i { position: absolute; bottom: 0; width: 2px; height: 18px; border-radius: 1px; background: var(--ink); opacity: .2; }
   .bar i.lit { background: var(--tone); opacity: 1; }
   .bar i.band { opacity: .5; }
   .bar i.cur { width: 3px; height: 28px; border-radius: 2px; background: var(--ink); opacity: 1; }
   .bar i.tgt { width: 4px; height: 28px; border-radius: 2px; background: var(--tone); opacity: 1; }
+  /* Big figure, one element per character. While dragging it holds one decimal, grows a little and takes the mode colour;
+     the decimal slides out of the whole number when it appears and back in when it goes (reveal). A changed digit fades across,
+     drifting a few pixels the way the number went (up = it rose). */
+  .hero, .c .hv { font-variant-numeric: tabular-nums; }
+  @keyframes n-in-up { from { transform: translateY(.09em); opacity: 0; } }
+  @keyframes n-in-dn { from { transform: translateY(-.09em); opacity: 0; } }
+  @keyframes n-out-up { from { transform: none; opacity: 1; } to { transform: translateY(-.09em); opacity: 0; } }
+  @keyframes n-out-dn { from { transform: none; opacity: 1; } to { transform: translateY(.09em); opacity: 0; } }
+  @keyframes r-in { from { transform: translateX(-.25em); opacity: 0; } }
+  @keyframes r-out { to { transform: translateX(-.25em); opacity: 0; } }
+  @keyframes rw-in { from { max-width: 0; opacity: 0; } to { max-width: .7em; } }
+  @keyframes rw-out { from { max-width: .7em; } to { max-width: 0; opacity: 0; } }
+  .out:not(.reveal) { opacity: 0; }
+  .in.up { animation: n-in-up .18s ease-out both; }
+  .in.dn { animation: n-in-dn .18s ease-out both; }
+  .out.up { animation: n-out-up .18s ease-out both; }
+  .out.dn { animation: n-out-dn .18s ease-out both; }
+  .figure .in.reveal { animation: r-in .22s ease-out both; }
+  .figure .out.reveal { animation: r-out .22s ease-out both; }
+  .c .hv .in.reveal { animation: rw-in .22s ease-out both; overflow: hidden; }
+  .c .hv .out.reveal { animation: rw-out .22s ease-out both; overflow: hidden; }
+  .gl { transition: transform .22s ease-out; }
+  .c .hv .gc, .c .hv .gc > span { display: inline-block; vertical-align: top; }
+  .c .hv .gc { position: relative; }
+  .c .hv .gc > .out:not(.reveal) { position: absolute; left: 0; top: 0; }
+  .figure, .c .hv { transform-box: fill-box; transform-origin: 50% 60%; transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+  .figure .hero { transition: fill .25s; }
+  .dragging .figure, .dragging .c .hv { transform: scale(1.08); }
+  .dragging .figure .hero:not(.off) { fill: var(--tone); }
+  .dragging .c .hv { color: var(--tone); }
   .empty { flex: 1; display: grid; place-items: center; text-align: center; color: var(--ink-2); font-size: 13px; }
 `];

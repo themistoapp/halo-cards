@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bloomOf, buildThermostat, fmtTemp, round05, stepTarget, toneOf, turnOnMode } from "../src/cards/thermostat/logic";
+import { bloomOf, buildThermostat, dialAngle, dialValue, fmtTemp, glyphKeys, round05, snapTarget, stepTarget, toneOf, turnOnMode } from "../src/cards/thermostat/logic";
 import { ent, hassOf } from "./helpers";
 
 const climate = (state: string, a: Record<string, unknown> = {}) => ent("climate.hall", state, {
@@ -54,6 +54,25 @@ describe("range mode and limits", () => {
     expect(stepTarget(22, -1, 0.5, 9, 32)).toBe(21.5);
     expect(stepTarget(32, 1, 0.5, 9, 32)).toBe(32);
     expect(stepTarget(9, -1, 0.5, 9, 32)).toBe(9);
+  });
+  it("reads a temperature off a point on the dial, the bottom gap going to the nearer end", () => {
+    expect(dialValue(0, -100, 10, 30)).toBeCloseTo(20);
+    expect(dialValue(100, 0, 10, 30)).toBeCloseTo(20 + 20 / 3);
+    expect(dialValue(-1, 100, 10, 30)).toBe(10);
+    expect(dialValue(1, 100, 10, 30)).toBe(30);
+    const a = (dialAngle(23, 7, 35) * Math.PI) / 180;
+    expect(dialValue(Math.sin(a), -Math.cos(a), 7, 35)).toBeCloseTo(23);
+  });
+  it("keys the figure's characters around the decimal point", () => {
+    expect(glyphKeys("20")).toEqual(["0i2", "0i1"]);
+    expect(glyphKeys("20.5")).toEqual(["0i2", "0i1", "0f0", "0f1"]);
+    expect(glyphKeys("9,5")).toEqual(["0i1", "0f0", "0f1"]);
+    expect(glyphKeys("19–24")).toEqual(["0i2", "0i1", "d1", "1i2", "1i1"]);
+  });
+  it("snaps a dragged temperature to the step and range", () => {
+    expect(snapTarget(21.26, 0.5, 7, 35)).toBe(21.5);
+    expect(snapTarget(21.4, 1, 7, 35)).toBe(21);
+    expect(snapTarget(40, 0.5, 7, 35)).toBe(35);
   });
   it("is unavailable when the entity is missing", () => {
     expect(buildThermostat(hassOf([]), cfg).available).toBe(false);
