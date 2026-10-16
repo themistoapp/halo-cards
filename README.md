@@ -14,6 +14,7 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 | Thermostat | `custom:halo-thermostat-card` | 12 × 7 dial, 12 × 2 compact bar |
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
 | Graph (solar forecast, Agile rates and more) | `custom:halo-graph-card` | 12 × 6 chart, 12 × 2 compact |
+| Light (one light) | `custom:halo-single-light-card` | 12 × 4 full, 12 × 2 compact bar, 6 × 2 mini (layout follows the size) |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
 | Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph or gauge) |
 | Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
@@ -147,6 +148,33 @@ show_all_off: true       # "All off" button (default on)
 colour: "#ffe3bd"        # glow for lights that report no colour (default warm white)
 shadow: true
 ```
+
+## Halo Light card (`custom:halo-single-light-card`)
+
+One light. The card glows in the light's own colour, bigger with brightness, and the headline says what the light is doing in words ("Warm white", "Amber", "Off"). Three sizes, picked by the space it has:
+
+- **Full (12 × 4):** the name, the headline, tabs for Brightness, Warmth and Colour over one wide track, and preset swatches. With a fitting picture, it sits top right with its opening lit (a pendant hangs in from the top edge) and tapping it toggles the light; without one, the name chip shows the icon and there's a power button.
+- **Compact (12 × 2):** the picture or icon (tap toggles), the name and headline, three presets and a brightness track.
+- **Mini (6 × 2):** just the picture or icon and the name. Tap toggles, slide sideways to dim.
+
+Holding the picture, icon or mini tile opens the light's more-info. The card only offers what the light can do: a dimmer gets the brightness track alone, an on/off light gets no track, and white presets need colour temperature or colour (they are sent as a colour to lights without colour temperature). Lights that report no colour glow warm white, or the `colour` you set, and their headline says On.
+
+```yaml
+type: custom:halo-single-light-card
+entity: light.dining
+name: Dining            # default: the light's name
+fitting: pendant        # light type: downlight | pendant | lantern (wall lantern) | path (path light) | none (default: the icon)
+icon: mdi:ceiling-light # any mdi icon, used when there's no fitting picture (default: a bulb)
+layout: auto            # auto (default) | full | compact | mini
+colour: "#ffe3bd"       # glow for lights that report no colour (default warm white)
+presets:                # default: Candlelight 2200 K, Warm white 2700 K, Neutral white 4000 K, Daylight 6000 K, Amber, Rose, Violet, Ocean
+  - { name: Warm, kelvin: 2700 }
+  - { name: Reading, kelvin: 4000 }
+  - { name: Movie, colour: "#6a4cff" }
+shadow: true
+```
+
+`presets: []` hides the swatches. The compact bar shows the first three.
 
 ## Halo Entity card (`custom:halo-entity-card`)
 

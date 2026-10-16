@@ -4,6 +4,8 @@ import { HaloMediaCard } from "./cards/media/halo-media-card";
 import { HaloMediaCardEditor } from "./cards/media/editor";
 import { HaloLightCard } from "./cards/light/halo-light-card";
 import { HaloLightCardEditor } from "./cards/light/editor";
+import { HaloSingleLightCard } from "./cards/single-light/halo-single-light-card";
+import { HaloSingleLightCardEditor } from "./cards/single-light/editor";
 import { HaloScenesCard } from "./cards/scenes/halo-scenes-card";
 import { HaloScenesCardEditor } from "./cards/scenes/editor";
 import { HaloEntityCard } from "./cards/entity/halo-entity-card";
@@ -38,6 +40,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-scenes-card", HaloScenesCard, "halo-scenes-card-editor", HaloScenesCardEditor, "Halo Scenes", "A compact row of scene, script or button shortcuts."],
   ["halo-entity-card", HaloEntityCard, "halo-entity-card-editor", HaloEntityCardEditor, "Halo Entity", "One reading as a small or large tile: the state or any attribute, your own icon, a line below, colours by value and an optional history graph."],
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
+  ["halo-single-light-card", HaloSingleLightCard, "halo-single-light-card-editor", HaloSingleLightCardEditor, "Halo Light", "One light: on and off, brightness, warmth, colour and presets, with a lit picture of the fitting or any icon. Full, a compact bar, or a 6 × 2 mini tile."],
   ["halo-today-card", HaloTodayCard, "halo-today-card-editor", HaloTodayCardEditor, "Halo Today", "Today at a glance: your next events, the weather, bins, low vehicles, cheap Agile slots and what's playing, ordered by what matters now, under a greeting that can be polite, cheeky or rude."],
   ["halo-title-card", HaloTitleCard, "halo-title-card-editor", HaloTitleCardEditor, "Halo Title", "A greeting with the date and weather, the day as a big number, or a section heading with a subtitle and entity chips."],
   ["halo-backdrop-card", HaloBackdropCard, "halo-backdrop-card-editor", HaloBackdropCardEditor, "Halo Backdrop", "Paints the view's background with a sky that follows the sun, from first light to an aurora at night, with an optional daylight tile: time to sunset and since sunrise."],
