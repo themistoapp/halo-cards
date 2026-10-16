@@ -22,6 +22,8 @@ import { HaloTodayCard } from "./cards/today/halo-today-card";
 import { HaloTodayCardEditor } from "./cards/today/editor";
 import { HaloTitleCard } from "./cards/title/halo-title-card";
 import { HaloTitleCardEditor } from "./cards/title/editor";
+import { HaloBackdropCard } from "./cards/backdrop/halo-backdrop-card";
+import { HaloBackdropCardEditor } from "./cards/backdrop/editor";
 
 export const VERSION = "0.21.0";
 
@@ -38,6 +40,7 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-light-card", HaloLightCard, "halo-light-card-editor", HaloLightCardEditor, "Halo Lights", "Several lights as tiles: downlights, pendants and light bars that glow in the light's own colour and brightness."],
   ["halo-today-card", HaloTodayCard, "halo-today-card-editor", HaloTodayCardEditor, "Halo Today", "Today at a glance: your next events, the weather, bins, low vehicles, cheap Agile slots and what's playing, ordered by what matters now, under a greeting that can be polite, cheeky or rude."],
   ["halo-title-card", HaloTitleCard, "halo-title-card-editor", HaloTitleCardEditor, "Halo Title", "A greeting with the date and weather, the day as a big number, or a section heading with a subtitle and entity chips."],
+  ["halo-backdrop-card", HaloBackdropCard, "halo-backdrop-card-editor", HaloBackdropCardEditor, "Halo Backdrop", "Paints the view's background with a sky that follows the sun, from first light to an aurora at night, with an optional daylight tile: time to sunset and since sunrise."],
 ];
 
 declare global { interface Window { customCards?: Record<string, unknown>[] } }

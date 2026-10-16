@@ -28,6 +28,8 @@ if (pin) {
   };
 }
 const now = new Date().toISOString();
+/** The next time the clock reads hh:mm (sun.sun's next_rising and next_setting). */
+const sunNext = (hh: number, mm: number) => { const d = new Date(); d.setHours(hh, mm, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.toISOString(); };
 const e = (id: string, state: string, attributes: Record<string, unknown> = {}) => [id, { entity_id: id, state, attributes, last_updated: now, last_changed: now }] as const;
 
 function art(c1: string, c2: string) {
@@ -62,7 +64,7 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.idle", "heat", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "idle", current_temperature: 21.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
-      e("sun.sun", "above_horizon"),
+      e("sun.sun", new Date().getHours() * 60 + new Date().getMinutes() >= 448 && new Date().getHours() * 60 + new Date().getMinutes() < 1081 ? "above_horizon" : "below_horizon", { next_rising: sunNext(7, 28), next_setting: sunNext(18, 1) }),
       e("event.agile_today", "2026-10-12T00:00:00Z", { rates: agileRates(0, false) }), e("event.agile_tomorrow", "2026-10-13T00:00:00Z", { rates: agileRates(1, true) }),
       e("sensor.pv_total", String(Math.round(solarAct(new Date().getHours() + new Date().getMinutes() / 60) * 1000)), { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
       e("weather.home", "partlycloudy", { friendly_name: "Swindon", temperature: 14.4, humidity: 72, pressure: 1008.3, pressure_unit: "hPa", wind_speed: 22.4, wind_speed_unit: "km/h", wind_bearing: 225, cloud_coverage: 48, dew_point: 9.1, supported_features: 3 }),
@@ -350,6 +352,10 @@ const specs: Spec[] = [
   { id: "nsp-l4", title: "Lights NSP 4 lights 480x376", tag: "halo-light-card", cfg: { ...lights, lights: [lights.lights[0], lights.lights[1], lights.lights[2], lights.lights[3]] }, w: 480, h: 376 },
   { id: "nsp-l6", title: "Lights NSP 6 lights 480x376", tag: "halo-light-card", cfg: lights, w: 480, h: 376 },
   { id: "light-night", title: "Lights night", tag: "halo-light-card", cfg: lights, w: 378, h: 330, dark: true },
+  { id: "bd-tile", title: "Backdrop daylight tile 12x2", tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, w: 378, h: 120 },
+  { id: "bd-tile-night", title: "Backdrop tile night", tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, w: 378, h: 120, dark: true },
+  { id: "bd-tile-6", title: "Backdrop tile 6x2 (no arc)", tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, w: 185, h: 120 },
+  { id: "bd-hidden-edit", title: "Backdrop hidden, while editing", tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card", show: "hidden" }, w: 378, h: 0, setup: (c) => { c.preview = true; } },
   { id: "veh-m140i", title: "M140i 12x4", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248 },
   { id: "veh-van", title: "e-Vivaro 12x4", tag: "halo-vehicle-card", cfg: van, w: 378, h: 248 },
   { id: "veh-m140i-night", title: "M140i 12x4 night", tag: "halo-vehicle-card", cfg: m140i, w: 378, h: 248, dark: true },
@@ -361,7 +367,7 @@ const specs: Spec[] = [
 // ---- Screenshot scenes ----------------------------------------------------
 // ?scene=name renders one card, or a section of tiles on the real 12-column grid (56px rows, 8px gaps), on a transparent page.
 type Placed = { tag: string; cfg: object; col?: number; row?: number; c?: number; r: number };
-type Scene = { w: number; tiles: Placed[]; dark?: boolean; over?: Record<string, unknown> };
+type Scene = { w: number; tiles: Placed[]; dark?: boolean; over?: Record<string, unknown>; page?: boolean };
 
 /** Blue, underwater-looking artwork so the media card blooms blue. */
 function blueArt() {
@@ -423,6 +429,8 @@ const SCENES: Record<string, Scene> = {
   "entities-themes": { w: 440, tiles: themeTiles },
   "entities-graphs": { w: 440, tiles: graphTiles },
   "entities-gauges": { w: 440, tiles: gaugeTiles },
+  // A backdrop behind tiles, on a stand-in for the dashboard (its view background reads --lovelace-background). ?now=hh:mm picks the time.
+  "backdrop": { w: 440, page: true, tiles: [{ tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, col: 1, row: 1, c: 12, r: 2 }, ...gaugeTiles.map((t) => ({ ...t, row: (t.row ?? 1) + 2 }))] },
   "graph-solar": one("halo-graph-card", SOLAR, 6),
   "graph-agile-compact": one("halo-graph-card", AGILE, 2),
   "thermostat-large": one("halo-thermostat-card", th("climate.hallway"), 7),
@@ -444,7 +452,13 @@ if (sceneName && SCENES[sceneName]) {
     card.setConfig(t.cfg); card.hass = makeHass(dark, sc.over);
     box.append(card); grid.append(box);
   }
-  document.body.append(grid);
+  if (sc.page) {
+    // Like Home Assistant: the view background sits inside the dashboard root, which the backdrop paints.
+    const root = document.createElement("hui-root"), shadow = root.attachShadow({ mode: "open" });
+    const view = document.createElement("div");
+    view.style.cssText = `padding:24px;border-radius:16px;background:var(--lovelace-background, ${dark ? "#0e0e11" : "#f2f2f4"})`;
+    view.append(grid); shadow.append(view); document.body.append(root);
+  } else document.body.append(grid);
 } else for (const s of specs) {
   if (only && !only.split(",").includes(s.id)) continue;
   const cell = document.createElement("div"); cell.className = "cell" + (s.dark ? " dk" : "");

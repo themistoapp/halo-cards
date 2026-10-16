@@ -18,6 +18,7 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 | Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph or gauge) |
 | Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
 | Title | `custom:halo-title-card` | 12 × 2 greeting or date, 12 × 1 heading |
+| Backdrop | `custom:halo-backdrop-card` | 12 × 2 daylight tile, or hidden (no room taken) |
 
 ## Install (HACS)
 
@@ -247,6 +248,26 @@ style: heading                 # greeting | date | heading
 title: Downstairs
 subtitle: "{{ states.light | selectattr('state','eq','on') | list | count }} lights on"
 chips: [lock.front_door, { entity: sensor.living_room_temperature, name: Living room }]
+```
+
+## Halo Backdrop card (`custom:halo-backdrop-card`)
+
+Paints the background of the view it is on with a sky that follows the sun, behind all the other cards. Nine stages are placed around your sunrise and sunset: night, first light, sunrise, morning, midday, afternoon, golden hour, sunset and dusk. The sky blends between them minute by minute. A warm glow is the sun: it rises at the bottom left, crosses the top and sets at the bottom right, with a cooler glow on the horizon opposite. After dusk an aurora of green over blue drifts across the top until first light. In dark mode every stage is a deep version of itself.
+
+Sunrise and sunset come from Home Assistant's `sun.sun`, so there's nothing to set up. Without it the card uses 06:00 and 18:00.
+
+**Daylight tile** (default): time to sunset and time since sunrise by day, time to sunrise at night, with the sun's arc. Tap it for the sun's details. **Hidden**: no tile and no room taken on the dashboard; while editing, it shows as a strip of the sky so you can still pick it.
+
+Put one in each view you want painted. It sets the view's `--lovelace-background`, the same thing a theme's `lovelace-background` sets, and takes it away again when you leave the view. A background chosen in the view's own settings wins over it.
+
+```yaml
+type: custom:halo-backdrop-card
+show: tile          # tile | hidden
+strength: 1         # 0.4 to 1.5: how big and strong the glows are
+sun: moves          # moves | fixed (the sun's glow stays top left)
+grain: true
+name: Daylight      # optional; default Daylight by day and Night after sunset
+entity: sun.sun     # optional
 ```
 
 ## Halo Thermostat card (`custom:halo-thermostat-card`)
