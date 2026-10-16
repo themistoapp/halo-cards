@@ -125,6 +125,13 @@ describe("single light: card", () => {
     expect(m.root.querySelector(".mini .nm")!.textContent).toBe("Pendant");
     m.card.remove();
   });
+  it("starts at the size of the chosen layout", () => {
+    const sized = (layout?: string) => { const c = document.createElement("halo-single-light-card") as any; c.setConfig(cfg("light.pendant", layout ? { layout } : {})); return c.getGridOptions(); };
+    expect(sized("mini")).toMatchObject({ columns: 6, rows: 2 });
+    expect(sized("compact")).toMatchObject({ columns: 12, rows: 2 });
+    expect(sized("full")).toMatchObject({ columns: 12, rows: 4 });
+    expect(sized()).toMatchObject({ columns: 12, rows: 4 });
+  });
   it("compact: name, headline, three presets and brightness", async () => {
     const { card, root } = await mount(cfg("light.pendant", { layout: "compact", fitting: "path" }));
     expect(root.querySelector(".st")!.textContent).toBe("Warm white");

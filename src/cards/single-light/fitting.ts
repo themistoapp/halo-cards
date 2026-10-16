@@ -20,7 +20,8 @@ export function fitting(kind: Fitting | undefined) {
 }
 
 export const fittingStyles = css`
-  .fx { position: relative; display: block; flex: none; height: var(--fh, 92px); aspect-ratio: var(--ar); pointer-events: none; }
+  /* Width and height are both set outright (no aspect-ratio), so the picture and its lit opening line up the same in every browser. */
+  .fx { position: relative; display: block; flex: none; box-sizing: content-box; height: var(--fh, 92px); width: calc(var(--fh, 92px) * var(--ar)); pointer-events: none; }
   .fx img { position: relative; z-index: 1; display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.22)); }
   .dark .fx img { filter: drop-shadow(0 6px 12px rgba(0,0,0,.5)) brightness(.9); }
   /* The halo is light thrown on the wall or ceiling; the lit opening sits on top of the picture. */

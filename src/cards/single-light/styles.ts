@@ -46,7 +46,7 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .head { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
   .pic .head { max-width: calc(100% - 112px); }
   /* The picture, top right. A pendant hangs in from the top edge. */
-  .corner { position: absolute; z-index: 2; right: 18px; top: 14px; cursor: pointer; border-radius: 12px; }
+  .corner { position: absolute; z-index: 2; right: 18px; top: 14px; display: block; width: max-content; cursor: pointer; border-radius: 12px; }
   .corner .fx { --fh: 92px; }
   .corner.pendant { top: -36px; } .corner.pendant .fx { --fh: 132px; }
   .corner.downlight { top: 16px; } .corner.downlight .fx { --fh: 62px; }
@@ -90,7 +90,7 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .cico { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--well); box-shadow: var(--raise); color: var(--ink-2); transition: background .3s, box-shadow .3s; }
   .cico ha-icon { --mdc-icon-size: 18px; } .cico svg.ln { width: 18px; height: 18px; }
   .thumb { width: 44px; height: 40px; flex: none; display: grid; place-items: center; }
-  .thumb .fx { --fh: 40px; max-width: 44px; }
+  .thumb .fx { --fh: 40px; }
   .thumb .fx.downlight { --fh: 32px; }
   .ctx { flex: 1; min-width: 0; }
   .ctx .nm { font-size: 14px; line-height: 18px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -103,7 +103,7 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .mini .cico { width: 40px; height: 40px; }
   .mini .cico ha-icon { --mdc-icon-size: 20px; } .mini .cico svg.ln { width: 20px; height: 20px; }
   .mini .thumb { width: 48px; height: 44px; justify-items: start; }
-  .mini .thumb .fx { --fh: 44px; max-width: 48px; }
+  .mini .thumb .fx { --fh: 44px; }
   .mini .thumb .fx.downlight { --fh: 34px; }
   .mini .nm { font-size: 14px; line-height: 18px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .off .mini .nm { color: var(--ink-2); }

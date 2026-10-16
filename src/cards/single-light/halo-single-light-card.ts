@@ -51,8 +51,16 @@ export class HaloSingleLightCard extends LitElement {
     this._hass = hass;
     if (this._config && (!old || old.states[this._config.entity] !== hass.states[this._config.entity] || old.themes?.darkMode !== hass.themes?.darkMode)) this.requestUpdate();
   }
-  getCardSize() { return 4; }
-  getGridOptions() { return { columns: 12, rows: 4, min_columns: 3, min_rows: 2 }; }
+  getCardSize() { return this._config?.layout === "compact" || this._config?.layout === "mini" ? 2 : 4; }
+  /** The size the card starts at follows the chosen layout, so picking Compact or Mini in the config shrinks it too. */
+  getGridOptions() {
+    switch (this._config?.layout) {
+      case "mini": return { columns: 6, rows: 2, min_columns: 3, min_rows: 2 };
+      case "compact": return { columns: 12, rows: 2, min_columns: 6, min_rows: 2 };
+      case "full": return { columns: 12, rows: 4, min_columns: 6, min_rows: 3 };
+      default: return { columns: 12, rows: 4, min_columns: 3, min_rows: 2 };
+    }
+  }
 
   override connectedCallback() {
     super.connectedCallback();
