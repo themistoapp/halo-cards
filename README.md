@@ -256,7 +256,7 @@ Paints the background of the view it is on with a sky that follows the sun, behi
 
 Sunrise and sunset come from Home Assistant's `sun.sun`, so there's nothing to set up. Without it the card uses 06:00 and 18:00.
 
-**Daylight tile** (default): time to sunset and time since sunrise by day, time to sunrise at night, with the sun's arc. Tap it for the sun's details. **Hidden**: no tile and no room taken on the dashboard; while editing, it shows as a strip of the sky so you can still pick it.
+**Daylight tile** (default): time to sunset and time since sunrise by day, time to sunrise at night, beside the Entity card's semicircle gauge: it fills orange through the day and teal through the night (left out on tiles under about 300 px wide). Tap it for the sun's details. **Hidden**: no tile and no room taken on the dashboard; while editing, it shows as a strip of the sky so you can still pick it.
 
 Put one in each view you want painted. It sets the view's `--lovelace-background`, the same thing a theme's `lovelace-background` sets, and takes it away again when you leave the view. A background chosen in the view's own settings wins over it.
 

@@ -3,9 +3,10 @@ import { property, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { shadowStyles, themeStyles } from "../../shared/bloom";
 import { clock, setLocale } from "../../shared/format";
-import { PALETTE, tileStyles } from "../../shared/tile";
+import { PALETTE, gaugeColours, tileStyles } from "../../shared/tile";
 import type { HomeAssistant } from "../../shared/types";
-import { fireMoreInfo } from "../../shared/util";
+import { fireMoreInfo, observeSize } from "../../shared/util";
+import { gaugeStyles, semiGauge } from "../entity/gauge";
 import { daylight, duration, skyAt, skyBackground, sunTimes, type HaloBackdropConfig } from "./logic";
 
 const SUN_ICON = svg`<path d="M12 8a4 4 0 1 0 0 8a4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`;
@@ -24,21 +25,16 @@ function dashboardOf(el: Element): HTMLElement | undefined {
 
 /** Paints the view behind the other cards with a sky that follows the sun, and can show a daylight tile. */
 export class HaloBackdropCard extends LitElement {
-  static override styles = [themeStyles, shadowStyles, tileStyles, css`
+  static override styles = [themeStyles, shadowStyles, tileStyles, gaugeStyles, css`
     :host([hidden-backdrop]) { display: none; }
     ha-card { height: 100%; min-height: 120px; display: flex; flex-direction: column; container-type: inline-size; border-radius: var(--ha-card-border-radius, 12px); background: var(--surface); --track: color-mix(in srgb, var(--ink) 8%, transparent); }
     ha-card.dark { --track: color-mix(in srgb, var(--ink) 12%, transparent); }
     .tile { flex: 1 1 auto; min-height: 0; cursor: pointer; --chip-bg: var(--sunken); --chip-ico: var(--surface); --fig: 32px; justify-content: space-between; gap: 0; }
     .tile:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; border-radius: inherit; }
     .tchip .ico { color: var(--sun); }
-    .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
-    .row > div:first-child { min-width: 0; }
     .det { margin-top: 4px; -webkit-line-clamp: 1; }
-    .arc { flex: none; width: 32%; max-width: 160px; }
-    .arc svg { display: block; width: 100%; height: auto; overflow: visible; }
-    .arc .trk { stroke: var(--track); }
-    .times { display: flex; justify-content: space-between; font-size: 11px; line-height: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; margin-top: 2px; }
-    @container (max-width: 300px) { .arc { display: none; } }
+    /* The semicircle is the Entity card's gauge, beside the figure as on a short, wide entity tile. Narrow tiles leave it out. */
+    @container (max-width: 300px) { .beside .gz { display: none; } }
     /* Hidden, while editing: a strip of the sky so the card can be found and picked. */
     ha-card.ph { min-height: 56px; justify-content: center; padding: 10px 14px; background: var(--sky); color: var(--ink); }
     .ph .lab { color: inherit; opacity: .75; }
@@ -53,6 +49,13 @@ export class HaloBackdropCard extends LitElement {
   /** Set by Home Assistant in the card editor and (on newer versions) while the dashboard is being edited. */
   @property({ type: Boolean }) preview = false;
   @property({ type: Boolean }) editMode = false;
+  /** The gauge's fill, swept in and then eased along like the Entity card's. */
+  @state() private _gf = 0;
+  @state() private _w = 0;
+  @state() private _h = 0;
+  private _gTarget = -1;
+  private _raf?: number;
+  private _unobserve?: () => void;
   private _timer?: number;
   private _target?: HTMLElement;
   private _painted = "";
@@ -74,11 +77,33 @@ export class HaloBackdropCard extends LitElement {
     super.connectedCallback();
     // The sky moves a little every minute.
     this._timer = window.setInterval(() => this.requestUpdate(), 60_000);
+    this._unobserve = observeSize(this, (w, h) => { this._w = w; this._h = h; });
   }
   override disconnectedCallback() {
     super.disconnectedCallback();
     clearInterval(this._timer);
+    this._unobserve?.(); this._unobserve = undefined;
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = undefined; this._gTarget = -1; this._gf = 0;
     this._unpaint();
+  }
+
+  /** Sweeps the gauge from where it is to `target`: in from empty the first time, then along (same timing as the Entity card). */
+  private _ease(target: number) {
+    if (Math.abs(target - this._gTarget) < 1e-4) return;
+    const from = this._gTarget < 0 ? 0 : this._gf;
+    this._gTarget = target;
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = undefined;
+    const reduced = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || typeof requestAnimationFrame === "undefined") { this._gf = target; return; }
+    const t0 = performance.now(), dur = from === 0 ? 1100 : 700;
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / dur);
+      this._gf = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      this._raf = k < 1 ? requestAnimationFrame(step) : undefined;
+    };
+    this._raf = requestAnimationFrame(step);
   }
   override shouldUpdate() { return !!this._config && !!this._hass; }
 
@@ -107,6 +132,10 @@ export class HaloBackdropCard extends LitElement {
   override willUpdate() {
     // Hidden, it takes no room on the dashboard (except while editing, so it can still be picked).
     this.toggleAttribute("hidden-backdrop", this._config?.show === "hidden" && !this._editing);
+    if (this._config && this._hass && this._config.show !== "hidden") {
+      const now = new Date(), d = daylight(sunTimes(this._hass.states[this._config.entity ?? "sun.sun"], now), now.getTime());
+      this._ease(d?.p ?? 0);
+    }
   }
   override updated() {
     if (this._config && this._hass) this._paint(this._sky(new Date()).bg);
@@ -126,19 +155,15 @@ export class HaloBackdropCard extends LitElement {
     if (!d) { fig = html`<span class="fig">–</span>`; det = html`Needs the Sun integration (${cfg.entity ?? "sun.sun"})`; }
     else if (up) { fig = html`<span class="fig">${duration(d.until)}<span class="unit">left</span></span>`; det = html`<b>Up ${duration(d.since)}</b> · sunset ${clock(sun.nextSet!)}`; }
     else { fig = html`<span class="fig">${duration(d.until)}<span class="unit">to sunrise</span></span>`; det = html`<b>Sunrise ${clock(sun.nextRise!)}</b> · ${duration(d.length)} of daylight`; }
-    // Arc: the sun's way across the sky, a half-ellipse 200 wide and 50 high. At night the dot waits at sunrise or sunset.
-    const p = d ? (up ? d.p : (now.getHours() * 60 + now.getMinutes() < sun.rise ? 0 : 1)) : 0, a = Math.PI * (1 - p);
-    const px = 100 + 100 * Math.cos(a), py = 56 - 50 * Math.sin(a);
-    const arc = d ? html`<div class="arc"><svg viewBox="-8 -8 216 68" aria-hidden="true">
-        <path class="trk" d="M0 56 A100 50 0 0 1 200 56" fill="none" stroke-width="6" stroke-linecap="round"></path>
-        ${up && p > 0.002 ? svg`<path d="M0 56 A100 50 0 0 1 ${px.toFixed(1)} ${py.toFixed(1)}" fill="none" stroke=${colour} stroke-width="6" stroke-linecap="round"></path>` : nothing}
-        <circle cx=${px.toFixed(1)} cy=${py.toFixed(1)} r="7" fill=${colour} stroke="var(--surface)" stroke-width="3" opacity=${up ? 1 : 0.4}></circle></svg>
-        <div class="times"><span>${clock(sun.nextRise!)}</span><span>${clock(sun.nextSet!)}</span></div></div>` : nothing;
+    // The Entity card's semicircle, sized as on a short, wide entity tile: the day's progress in orange, the night's in teal.
+    const w = this._w || 378, h = this._h || 120, innerW = w - 28, bodyH = h - 28 - 32 - 6;
+    const gw = Math.min(2 * (bodyH - 2), innerW * 0.4);
+    const gauge = d && gw > 24 ? semiGauge(gw, Math.max(5, Math.round(gw * 0.1)), this._gf, gaugeColours(up ? "orange" : "teal", dark ? "night" : "day"), []) : nothing;
     return html`<ha-card class="${dark ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap({ "--sun": colour })}>
       <div class="tile" role="button" tabindex="0" aria-label=${title} @click=${() => fireMoreInfo(this, cfg.entity ?? "sun.sun")}
         @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fireMoreInfo(this, cfg.entity ?? "sun.sun"); } }}>
         <div class="top"><span class="tchip"><span class="ico"><svg viewBox="0 0 24 24">${up ? SUN_ICON : MOON_ICON}</svg></span><span class="label">${title}</span></span></div>
-        <div class="row"><div>${fig}<div class="det">${det}</div></div>${arc}</div>
+        <div class="beside"><div class="col">${fig}<div class="det">${det}</div></div>${gauge}</div>
       </div></ha-card>`;
   }
 }
