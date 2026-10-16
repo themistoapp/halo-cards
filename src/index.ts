@@ -23,7 +23,7 @@ import { HaloTodayCardEditor } from "./cards/today/editor";
 import { HaloTitleCard } from "./cards/title/halo-title-card";
 import { HaloTitleCardEditor } from "./cards/title/editor";
 
-export const VERSION = "0.20.0";
+export const VERSION = "0.21.0";
 
 // Each card stands alone: its own element, config and editor. Use any of them without the others.
 const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
