@@ -29,17 +29,15 @@ Manual: copy `halo-cards.js` from a release to `/config/www/` and add it as a da
 
 ## Halo theme
 
-A Home Assistant theme in the cards' colours, so HA's own screens, cards, dialogs and sidebar match them. Light is soft grey with a pale glow at the top left; dark is graphite deepening to midnight blue. Text, dividers and cards use the same colours as the Halo cards, cards get Halo's corners and shadow with no hairline border, the accent is ink (toggles and sliders are Halo blue), and state colours (lights on, heating, locked) come from the Halo palette.
+A Home Assistant theme in the cards' colours, so Home Assistant's own screens, cards, dialogs and sidebar match them: soft grey by day, graphite deepening to midnight blue at night. It lives in its own repository so HACS can install it as a theme: [themistoapp/halo-theme](https://github.com/themistoapp/halo-theme).
 
-1. Download `halo.yaml` from the latest release (or [themes/halo.yaml](themes/halo.yaml)) to `config/themes/` in Home Assistant.
-2. Make sure `configuration.yaml` loads themes:
+1. HACS → ⋮ → **Custom repositories** → add `https://github.com/themistoapp/halo-theme`, category **Theme**, and install **Halo Theme**.
+2. Make sure `configuration.yaml` loads themes (once; restart after adding it):
    ```yaml
    frontend:
      themes: !include_dir_merge_named themes
    ```
-3. Run the **frontend.reload_themes** action (restart if step 2 was new), then pick **Halo** under Profile → Theme, with the mode on Auto to follow day and night.
-
-A [Backdrop card](#halo-backdrop-card-customhalo-backdrop-card) on a view paints its sky over the theme's background.
+3. Run **frontend.reload_themes**, then pick **Halo** under Profile → Theme, mode Auto.
 
 ## Halo Energy card (`custom:halo-energy-card`)
 
