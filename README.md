@@ -29,7 +29,7 @@ Manual: copy `halo-cards.js` from a release to `/config/www/` and add it as a da
 
 ## Halo theme
 
-A Home Assistant theme in the cards' colours, so Home Assistant's own screens, cards, dialogs and sidebar match them: soft grey by day, graphite deepening to midnight blue at night. It lives in its own repository so HACS can install it as a theme: [themistoapp/halo-theme](https://github.com/themistoapp/halo-theme).
+Home Assistant themes in the cards' colours, so Home Assistant's own screens, cards, dialogs and sidebar match them: **Halo - Bloom** (a peach and lilac bloom by day, aurora green and midnight blue at night) and **Halo - Basic** (near white by day, graphite at night). It lives in its own repository so HACS can install them as themes: [themistoapp/halo-theme](https://github.com/themistoapp/halo-theme).
 
 1. HACS → ⋮ → **Custom repositories** → add `https://github.com/themistoapp/halo-theme`, category **Theme**, and install **Halo Theme**.
 2. Make sure `configuration.yaml` loads themes (once; restart after adding it):
@@ -37,7 +37,7 @@ A Home Assistant theme in the cards' colours, so Home Assistant's own screens, c
    frontend:
      themes: !include_dir_merge_named themes
    ```
-3. Run **frontend.reload_themes**, then pick **Halo** under Profile → Theme, mode Auto.
+3. Run **frontend.reload_themes**, then pick **Halo - Bloom** or **Halo - Basic** under Profile → Theme, mode Auto.
 
 ## Halo Energy card (`custom:halo-energy-card`)
 
