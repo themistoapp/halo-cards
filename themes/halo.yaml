@@ -1,0 +1,94 @@
+# Halo: a Home Assistant theme to go with Halo Cards.
+# Light: soft grey with a pale glow top left. Dark: graphite deepening to midnight blue.
+#
+# Install: save as config/themes/halo.yaml, make sure configuration.yaml has
+#   frontend:
+#     themes: !include_dir_merge_named themes
+# then run the frontend.reload_themes action (or restart) and pick Halo under Profile → Theme, mode Auto.
+# A Halo Backdrop card on a view paints over this background with its sky.
+
+Halo:
+  # Cards: Halo's corners and shadow, no hairline.
+  ha-card-border-radius: 12px
+  ha-card-border-width: 0px
+  modes:
+    light:
+      # Page
+      primary-background-color: "#eceef1"
+      secondary-background-color: "#e3e5ea"
+      lovelace-background: "radial-gradient(ellipse 90% 60% at 12% 0%, #fbfbfc 0%, transparent 70%), radial-gradient(ellipse 80% 60% at 100% 100%, #d5d9e1 0%, transparent 70%), linear-gradient(170deg, #f0f1f4 0%, #e2e5ea 100%) fixed"
+      # Text
+      primary-text-color: "#1b1b1f"
+      secondary-text-color: "#5c5c66"
+      text-primary-color: "#ffffff"
+      disabled-text-color: "#9a9aa4"
+      divider-color: "rgba(0, 0, 0, .10)"
+      # Accent: ink, as on the Halo cards; toggles and sliders in Halo blue so they don't look heavy.
+      primary-color: "#1b1b1f"
+      accent-color: "#2f7bff"
+      switch-checked-color: "#2f7bff"
+      slider-color: "#2f7bff"
+      # Cards
+      card-background-color: "#ffffff"
+      ha-card-background: "#ffffff"
+      ha-card-box-shadow: "0 14px 36px -4px rgba(20, 20, 40, .16), 0 3px 8px rgba(20, 20, 40, .08)"
+      # Header and sidebar sit on the page
+      app-header-background-color: "#eceef1"
+      app-header-text-color: "#1b1b1f"
+      sidebar-background-color: "#eceef1"
+      sidebar-text-color: "#1b1b1f"
+      sidebar-icon-color: "#5c5c66"
+      sidebar-selected-icon-color: "#1b1b1f"
+      sidebar-selected-text-color: "#1b1b1f"
+      # States in the Halo palette
+      state-icon-color: "#5c5c66"
+      state-light-active-color: "#c28a0c"
+      state-switch-active-color: "#2f7bff"
+      state-climate-heat-color: "#e8742f"
+      state-climate-cool-color: "#2f86cf"
+      state-lock-locked-color: "#1f9d63"
+      state-lock-unlocked-color: "#d6453d"
+      success-color: "#1f9d63"
+      warning-color: "#b45f06"
+      error-color: "#c2362b"
+      info-color: "#2f7bff"
+    dark:
+      # Page
+      primary-background-color: "#0d1017"
+      secondary-background-color: "#161a23"
+      lovelace-background: "radial-gradient(ellipse 90% 60% at 12% 0%, #22262e 0%, transparent 70%), radial-gradient(ellipse 90% 70% at 100% 100%, #0f2147 0%, transparent 70%), linear-gradient(170deg, #15171c 0%, #0f141f 55%, #0b1430 100%) fixed"
+      # Text
+      primary-text-color: "#ececf0"
+      secondary-text-color: "#9a9aa6"
+      text-primary-color: "#0d1017"
+      disabled-text-color: "#5e6270"
+      divider-color: "rgba(255, 255, 255, .10)"
+      # Accent
+      primary-color: "#ececf0"
+      accent-color: "#6aa3ff"
+      switch-checked-color: "#6aa3ff"
+      slider-color: "#6aa3ff"
+      # Cards: graphite with a hint of the blue
+      card-background-color: "#1a1d24"
+      ha-card-background: "#1a1d24"
+      ha-card-box-shadow: "0 14px 36px -4px rgba(0, 0, 0, .55), 0 3px 8px rgba(0, 0, 0, .35)"
+      # Header and sidebar
+      app-header-background-color: "#12151c"
+      app-header-text-color: "#ececf0"
+      sidebar-background-color: "#12151c"
+      sidebar-text-color: "#ececf0"
+      sidebar-icon-color: "#9a9aa6"
+      sidebar-selected-icon-color: "#ececf0"
+      sidebar-selected-text-color: "#ececf0"
+      # States
+      state-icon-color: "#9a9aa6"
+      state-light-active-color: "#f2b84a"
+      state-switch-active-color: "#6aa3ff"
+      state-climate-heat-color: "#ff9a5c"
+      state-climate-cool-color: "#6cc3ec"
+      state-lock-locked-color: "#4cc9a0"
+      state-lock-unlocked-color: "#ff7b72"
+      success-color: "#4cc9a0"
+      warning-color: "#f4a36a"
+      error-color: "#ff7b72"
+      info-color: "#6aa3ff"

@@ -27,6 +27,20 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 
 Manual: copy `halo-cards.js` from a release to `/config/www/` and add it as a dashboard resource (`/local/halo-cards.js`, type JavaScript module).
 
+## Halo theme
+
+A Home Assistant theme in the cards' colours, so HA's own screens, cards, dialogs and sidebar match them. Light is soft grey with a pale glow at the top left; dark is graphite deepening to midnight blue. Text, dividers and cards use the same colours as the Halo cards, cards get Halo's corners and shadow with no hairline border, the accent is ink (toggles and sliders are Halo blue), and state colours (lights on, heating, locked) come from the Halo palette.
+
+1. Download `halo.yaml` from the latest release (or [themes/halo.yaml](themes/halo.yaml)) to `config/themes/` in Home Assistant.
+2. Make sure `configuration.yaml` loads themes:
+   ```yaml
+   frontend:
+     themes: !include_dir_merge_named themes
+   ```
+3. Run the **frontend.reload_themes** action (restart if step 2 was new), then pick **Halo** under Profile → Theme, with the mode on Auto to follow day and night.
+
+A [Backdrop card](#halo-backdrop-card-customhalo-backdrop-card) on a view paints its sky over the theme's background.
+
 ## Halo Energy card (`custom:halo-energy-card`)
 
 EcoFlow Stream card: product image with an LED strip filled to the battery level, four tiles (Solar, Battery, Grid, House) with today's history graph (tap a tile, or the LED strip, to open that entity's history in Home Assistant; the battery tile shows power with the charge % beneath), a background that blooms in proportion to where the power is coming from, a backup reserve slider and a Self-powered / AI mode pill. Default size is 12 × 8 in the Sections view; it also works down to 12 × 5. Short slots lose the picture first, then the tiles tighten, and each tile's graph only uses the space under its text.
