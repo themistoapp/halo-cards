@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attributeUnit, buildTile, defaultScale, graphHours, matchRule, readValue, valueOptions, type HaloEntityConfig } from "../src/cards/entity/logic";
+import { attributeUnit, buildTile, defaultScale, displayOf, gaugeBands, graphHours, matchRule, readValue, valueOptions, type HaloEntityConfig } from "../src/cards/entity/logic";
 import { cleanConfig } from "../src/cards/entity/editor";
 import { cleanCss, sanitizeSvg, svgKind, themeColour } from "../src/cards/entity/svg-icon";
 import { ent, hassOf } from "./helpers";
@@ -11,6 +11,8 @@ const hass = () => hassOf([
   ent("weather.home", "rainy", { temperature: 12, temperature_unit: "°C", wind_speed: 14.4, wind_speed_unit: "km/h", forecast: [] }),
   ent("sensor.dead", "unavailable", { friendly_name: "Dead" }),
   ent("binary_sensor.door", "off", { friendly_name: "Door", tampered: false }),
+  ent("sensor.soc", "64", { unit_of_measurement: "%" }),
+  ent("number.reserve", "30", { min: 10, max: 90, step: 5 }),
 ]);
 
 describe("readValue", () => {
@@ -109,11 +111,56 @@ describe("graph", () => {
   });
 });
 
+describe("gauge", () => {
+  it("is picked with display, and old graph: true still means a graph", () => {
+    expect([{}, { graph: true }, { display: "gauge" }, { graph: true, display: "none" }, { display: "bogus" }].map((c) => displayOf({ type: "x", entity: "e", ...c } as HaloEntityConfig)))
+      .toEqual(["none", "graph", "gauge", "none", "none"]);
+    expect(tile({ display: "gauge" }).graph).toBeUndefined();
+    expect(tile({ display: "graph" }).gauge).toBeUndefined();
+  });
+  it("runs percentages 0 to 100 and number entities over their own range, unless told", () => {
+    expect(tile({ entity: "sensor.soc", display: "gauge" }).gauge).toMatchObject({ min: 0, max: 100, frac: 0.64, style: "ring", labels: true });
+    expect(tile({ entity: "number.reserve", display: "gauge" }).gauge).toMatchObject({ min: 10, max: 90, frac: 0.25 });
+    expect(tile({ entity: "number.reserve", display: "gauge", gauge_max: 50 }).gauge).toMatchObject({ min: 10, max: 50, frac: 0.5 });
+    expect(tile({ display: "gauge", gauge_min: 0, gauge_max: 3600, gauge_style: "semicircle" }).gauge).toMatchObject({ frac: 0.5, style: "semicircle" });
+  });
+  it("pins readings outside the range at the ends and copes with a range of nothing", () => {
+    expect(tile({ display: "gauge" }).gauge?.frac).toBe(1);
+    expect(tile({ display: "gauge", gauge_min: 2000, gauge_max: 3000 }).gauge?.frac).toBe(0);
+    expect(tile({ display: "gauge", gauge_min: 5, gauge_max: 5 }).gauge?.frac).toBe(0);
+  });
+  it("works on attributes, but not on text or a missing reading", () => {
+    expect(tile({ entity: "climate.hall", attribute: "current_humidity", display: "gauge" }).gauge).toMatchObject({ min: 0, max: 100, frac: 0.48 });
+    expect(tile({ entity: "binary_sensor.door", display: "gauge" }).gauge).toBeUndefined();
+    expect(tile({ entity: "sensor.dead", display: "gauge" }).gauge).toBeUndefined();
+  });
+  it("takes a colour rule, then its own colour, then the icon's", () => {
+    expect(tile({ display: "gauge", icon_colour: "teal" }).gauge?.colour).toBe("teal");
+    expect(tile({ display: "gauge", icon_colour: "teal", gauge_colour: "pink" }).gauge?.colour).toBe("pink");
+    expect(tile({ display: "gauge", gauge_colour: "pink", colour_rules: [{ above: 1000, colour: "red" }] }).gauge?.colour).toBe("red");
+  });
+  it("splits the track into bands by colour rule, only when asked", () => {
+    const rules = [{ above: 1500, colour: "red" }, { above: 1000, colour: "orange" }];
+    expect(gaugeBands(rules, "green", 400, 2000)).toEqual([
+      { from: 0, to: 0.375, colour: "green" }, { from: 0.375, to: 0.6875, colour: "orange" }, { from: 0.6875, to: 1, colour: "red" }]);
+    expect(gaugeBands(rules, undefined, 0, 1200)).toEqual([{ from: 1000 / 1200, to: 1, colour: "orange" }]);
+    expect(gaugeBands([{ below: 10, colour: "blue" }, { below: 20, colour: "blue" }], "green", 0, 40)).toEqual([{ from: 0, to: 0.5, colour: "blue" }, { from: 0.5, to: 1, colour: "green" }]);
+    expect(tile({ display: "gauge", colour_rules: rules }).gauge?.bands).toEqual([]);
+    expect(tile({ display: "gauge", gauge_min: 0, gauge_max: 2000, gauge_bands: true, colour_rules: rules }).gauge?.bands).toHaveLength(2);
+  });
+});
+
 describe("editor", () => {
   it("drops defaults and stand-ins from the YAML", () => {
     expect(cleanConfig({ type: "x", entity: "sensor.power", attribute: "$state", theme: "plain", show_icon: true, shadow: true, graph: false,
       graph_scale: "$auto", icon_colour: "$text", graph_colour: "grey", graph_hours: 24, name: "", colour_rules: [], size: "large" }))
       .toEqual({ type: "x", entity: "sensor.power", size: "large" });
+  });
+  it("drops the gauge's defaults too", () => {
+    expect(cleanConfig({ type: "x", entity: "sensor.power", display: "none", gauge_style: "ring", gauge_labels: true, gauge_bands: false, gauge_colour: "$icon" }))
+      .toEqual({ type: "x", entity: "sensor.power" });
+    expect(cleanConfig({ type: "x", entity: "sensor.power", display: "gauge", gauge_style: "line", gauge_labels: false, gauge_min: 0, gauge_max: 3000 }))
+      .toEqual({ type: "x", entity: "sensor.power", display: "gauge", gauge_style: "line", gauge_labels: false, gauge_min: 0, gauge_max: 3000 });
   });
 });
 

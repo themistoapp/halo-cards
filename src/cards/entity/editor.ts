@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { state } from "lit/decorators.js";
 import { PALETTE_NAMES } from "../../shared/tile";
 import type { HomeAssistant } from "../../shared/types";
-import { THEME_LABELS, valueOptions, type ColourRule, type HaloEntityConfig, type Theme } from "./logic";
+import { THEME_LABELS, displayOf, valueOptions, type ColourRule, type HaloEntityConfig, type Theme } from "./logic";
 import { sanitizeSvg, svgKind } from "./svg-icon";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -10,7 +10,7 @@ const sel = (options: { value: string; label: string }[], custom = false) => ({ 
 const THEMES = (Object.keys(THEME_LABELS) as Theme[]).map((value) => ({ value, label: THEME_LABELS[value] }));
 const COLOURS = PALETTE_NAMES.map((value) => ({ value, label: cap(value) }));
 /** ha-form's select can't hold an empty value, so "nothing chosen" has a stand-in that never reaches the config. */
-const STATE = "$state", AUTO = "$auto", TEXT = "$text";
+const STATE = "$state", AUTO = "$auto", TEXT = "$text", ICON = "$icon";
 
 function schema(hass: HomeAssistant, c: HaloEntityConfig) {
   const opts = c.entity ? valueOptions(hass, c.entity, c.attribute) : [];
@@ -38,9 +38,15 @@ function schema(hass: HomeAssistant, c: HaloEntityConfig) {
       { name: "secondary_entity", selector: { entity: {} } },
       ...(c.secondary_entity ? [...valueSelect("secondary_attribute", opts2), { name: "secondary_name", selector: { text: {} } }] : []),
     ] },
-    { type: "expandable", title: "Graph", schema: [
-      { name: "graph", selector: { boolean: {} } },
-      ...(c.graph ? [
+    { type: "expandable", title: "Below the figure", schema: [
+      { name: "display", selector: sel([{ value: "graph", label: "History graph" }, { value: "gauge", label: "Gauge" }, { value: "none", label: "Nothing" }]) },
+      ...(displayOf(c) === "gauge" ? [
+        { name: "gauge_style", selector: sel([{ value: "ring", label: "Ring" }, { value: "line", label: "Line" }, { value: "semicircle", label: "Semicircle" }]) },
+        { type: "grid", name: "", schema: [{ name: "gauge_min", selector: { number: { mode: "box", step: "any" } } }, { name: "gauge_max", selector: { number: { mode: "box", step: "any" } } }] },
+        { name: "gauge_colour", selector: sel([{ value: ICON, label: "Same as the icon" }, ...COLOURS], true) },
+        { type: "grid", name: "", schema: [{ name: "gauge_labels", selector: { boolean: {} } }, { name: "gauge_bands", selector: { boolean: {} } }] },
+      ] : []),
+      ...(displayOf(c) === "graph" ? [
         { type: "grid", name: "", schema: [
           { name: "graph_colour", selector: sel(COLOURS, true) },
           { name: "graph_hours", selector: { number: { min: 1, max: 168, mode: "box", unit_of_measurement: "h" } } },
@@ -67,7 +73,9 @@ const LABELS: Record<string, string> = {
   icon: "Icon", icon_colour: "Icon colour", show_icon: "Show icon", icon_svg: "Custom SVG icon - optional",
   unit: "Unit - optional", decimals: "Decimals - optional",
   secondary_text: "Your text - optional", secondary_entity: "Another entity - optional", secondary_attribute: "Its value", secondary_name: "Its name - optional",
-  graph: "Show a history graph", graph_colour: "Graph colour", graph_hours: "Period", graph_scale: "Scale", graph_min: "Bottom - optional", graph_max: "Top - optional",
+  display: "Show", gauge_style: "Gauge style", gauge_min: "Min - optional", gauge_max: "Max - optional", gauge_colour: "Gauge colour",
+  gauge_labels: "Show min and max", gauge_bands: "Colour bands from rules",
+  graph_colour: "Graph colour", graph_hours: "Period", graph_scale: "Scale", graph_min: "Bottom - optional", graph_max: "Top - optional",
   tap_action: "Tap", hold_action: "Hold", double_tap_action: "Double tap",
   above: "Above", below: "Below", colour: "Colour",
 };
@@ -75,7 +83,11 @@ const HELPERS: Record<string, string> = {
   size: "Small tiles are a quarter of a section and large ones half. Dragging the card's size in the layout editor works too.",
   theme: "Plain uses the card background. Black on white and white on black stay the same at night; gradients deepen a little.",
   icon_colour: "One of the colours, or type your own (e.g. #e8a33d).",
-  graph: "Large tiles only. Numbers from the entity's state, not attributes.",
+  display: "Graphs need a large tile and a number in the entity's state. Gauges fit any size and work on attributes too.",
+  gauge_style: "The ring holds the figure; the line sits under it; the semicircle has the figure in its bowl.",
+  gauge_min: "Leave empty for 0 to 100 on percentages, or a number entity's own min and max. Set both for anything else.",
+  gauge_colour: "One of the colours, or type your own. Gradient tiles draw the gauge in white. Colour rules win.",
+  gauge_bands: "Faint stretches of each colour rule's colour along the track.",
   graph_colour: "One of the colours, or type your own. Gradient tiles draw the graph in white.",
   graph_hours: "1 to 168 (a week). Over 24 hours uses Home Assistant's hourly statistics.",
   graph_scale: "Automatic starts power, energy and money at zero, runs percentages 0 to 100, and fits anything else to its own range.",
@@ -87,9 +99,10 @@ const HELPERS: Record<string, string> = {
 export function cleanConfig(v: Record<string, unknown>): HaloEntityConfig {
   const out: Record<string, unknown> = {};
   for (const [k, x] of Object.entries(v)) {
-    if (x === "" || x === undefined || x === null || x === STATE || x === AUTO || x === TEXT) continue;
+    if (x === "" || x === undefined || x === null || x === STATE || x === AUTO || x === TEXT || x === ICON) continue;
     if ((k === "theme" && x === "plain") || ((k === "show_icon" || k === "shadow") && x === true) || (k === "graph" && x === false)) continue;
     if ((k === "graph_colour" && x === "grey") || (k === "graph_hours" && x === 24)) continue;
+    if ((k === "display" && x === "none") || (k === "gauge_style" && x === "ring") || (k === "gauge_labels" && x === true) || (k === "gauge_bands" && x === false)) continue;
     if (k === "colour_rules" && Array.isArray(x) && !x.length) continue;
     out[k] = x;
   }
@@ -119,8 +132,10 @@ export class HaloEntityCardEditor extends LitElement {
 
   private _changed(v: Record<string, unknown>) {
     const old = this._config!;
+    // `display` replaces the old `graph` switch.
+    const { graph: _old, ...rest } = v;
     const next = cleanConfig({
-      ...v,
+      ...rest,
       colour_rules: old.colour_rules,
       // A different entity has different values: start again from its state.
       ...(v.entity !== old.entity ? { attribute: undefined } : {}),
@@ -147,9 +162,9 @@ export class HaloEntityCardEditor extends LitElement {
     const label = (s: { name: string }) => LABELS[s.name] ?? s.name;
     const helper = (s: { name: string }) => HELPERS[s.name];
     const data = {
-      size: "small", theme: "plain", shadow: true, show_icon: true, graph: false, ...c,
+      size: "small", theme: "plain", shadow: true, show_icon: true, gauge_style: "ring", gauge_labels: true, gauge_bands: false, ...c, display: displayOf(c),
       attribute: c.attribute ?? STATE, secondary_attribute: c.secondary_attribute ?? STATE, graph_scale: c.graph_scale ?? AUTO,
-      icon_colour: c.icon_colour ?? TEXT, graph_colour: c.graph_colour ?? "grey", graph_hours: c.graph_hours ?? 24,
+      icon_colour: c.icon_colour ?? TEXT, gauge_colour: c.gauge_colour ?? ICON, graph_colour: c.graph_colour ?? "grey", graph_hours: c.graph_hours ?? 24,
     };
     const rules = c.colour_rules ?? [];
     return html`
@@ -157,7 +172,7 @@ export class HaloEntityCardEditor extends LitElement {
         @value-changed=${(e: CustomEvent) => this._changed(e.detail.value)}></ha-form>
       ${this._preview(c.icon_svg)}
       <h3>Colour by value</h3>
-      <p class="note">The first rule the value meets recolours the icon and the graph. Set Above, Below, or both for a band.</p>
+      <p class="note">The first rule the value meets recolours the icon and the graph or gauge. Set Above, Below, or both for a band.</p>
       ${rules.map((r, i) => html`<div class="rule">
         <ha-form .hass=${this.hass} .data=${r} .schema=${RULE} .computeLabel=${label}
           @value-changed=${(e: CustomEvent) => this._setRules(rules.map((x, j) => (j === i ? (cleanConfig(e.detail.value) as unknown as ColourRule) : x)))}></ha-form>

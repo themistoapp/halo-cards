@@ -15,7 +15,7 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 | Weather | `custom:halo-weather-card` | 12 × 7 today or week, 12 × 2 compact |
 | Graph (solar forecast, Agile rates and more) | `custom:halo-graph-card` | 12 × 6 chart, 12 × 2 compact |
 | Lights | `custom:halo-light-card` | any width, height follows the number of lights |
-| Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph) |
+| Entity | `custom:halo-entity-card` | 3 × 2 small, 6 × 3 large (with a graph or gauge) |
 | Today | `custom:halo-today-card` | 12 wide; height follows what is showing. 4 boxes across from 640 px wide (wall panel) |
 | Title | `custom:halo-title-card` | 12 × 2 greeting or date, 12 × 1 heading |
 
@@ -135,16 +135,18 @@ shadow: true
 
 ## Halo Entity card (`custom:halo-entity-card`)
 
-One reading as a tile, laid out like the tiles on the Energy card: a chip with the icon and name, the figure, a line below, and on large tiles an optional history graph. Each tile is its own card, so you place, reorder and resize tiles in the Sections view like any other card, and Home Assistant's visibility conditions work per tile.
+One reading as a tile, laid out like the tiles on the Energy card: a chip with the icon and name, the figure, a line below, and under it a history graph (large tiles), a gauge (any size) or nothing. Each tile is its own card, so you place, reorder and resize tiles in the Sections view like any other card, and Home Assistant's visibility conditions work per tile.
 
 - **Size:** `small` (3 × 2, a quarter of a section) or `large` (6 × 3, half). The card reads the space it is given, so dragging a small tile to six columns wide makes it large. Small tiles never show a graph.
 - **Value:** any entity's state, or one of its attributes (a thermostat's humidity, a weather entity's wind speed): the editor lists each with its current reading. Attributes get a unit where one can be told; `unit` and `decimals` override.
 - **Icon:** the entity's own, any `mdi:` icon, or your own SVG in `icon_svg` (pasted `<svg>` markup, a 24 × 24 path, or a URL such as `/local/icons/boiler.svg`; black follows the text colour and white follows the card; scripts, event handlers and outside links are removed). `icon_colour` tints it.
 - **Look (`theme`):** `plain` (the card background), `light` (black on white) and `dark` (white on black), which stay as they are at night, and fifteen grainy gradients that go a little deeper at night: `dusk`, `slate`, `ember`, `solar`, `battery`, `grid`, `ocean`, `glacier`, `aurora`, `forest`, `rose`, `plum`, `sunset`, `sand`, `graphite`.
 - **Line below:** your own text (`secondary_text`) or another entity (`secondary_entity`, shown as its name then its value).
-- **Graph (large tiles):** `graph: true` draws the state's history along the bottom, over `graph_hours` (1 to 168, default 24). Up to a day it uses full history; longer periods use Home Assistant's hourly statistics, for sensors that have them. Power, energy and money start from zero, percentages run 0 to 100, and anything else fits its own range; `graph_scale` (`zero` or `range`), `graph_min` and `graph_max` override that. Only numeric states, not attributes.
+- **Below the figure (`display`):** `graph`, `gauge` or `none` (the default). Configs from before 0.21 with `graph: true` keep their graph.
+- **Gauge (any size):** `gauge_style` is `ring` (the figure inside it; the default), `line` (a bar under the figure) or `semicircle` (the figure in its bowl). It runs from `gauge_min` to `gauge_max`; leave them out and percentages run 0 to 100, number and input_number entities use their own min and max, and anything else uses 0 to 100, so set both for power, temperature and the like. Readings outside the range pin the gauge at the end. `gauge_colour` is a palette name or any CSS colour (default: the icon colour); the fill goes light to deep by day and dark to bright at night, and white on gradients. `gauge_labels: false` hides the min and max under the line and semicircle; `gauge_bands: true` draws each colour rule's stretch faintly along the track. Gauges work on attributes as well as states. Short, wide tiles (6 × 2) put the ring or semicircle beside the figure.
+- **Graph (large tiles):** `display: graph` draws the state's history along the bottom, over `graph_hours` (1 to 168, default 24). Up to a day it uses full history; longer periods use Home Assistant's hourly statistics, for sensors that have them. Power, energy and money start from zero, percentages run 0 to 100, and anything else fits its own range; `graph_scale` (`zero` or `range`), `graph_min` and `graph_max` override that. Only numeric states, not attributes.
 - **Colours:** `icon_colour` and `graph_colour` are separate. Pick `grey`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple` or `pink` (each has a day and a night shade), or give any CSS colour. On gradients the graph is white.
-- **Colour by value:** `colour_rules` recolour the icon and the graph. The first rule the value meets wins; give `above`, `below`, or both for a band.
+- **Colour by value:** `colour_rules` recolour the icon and the graph or gauge. The first rule the value meets wins; give `above`, `below`, or both for a band.
 - **Actions:** `tap_action` (default: more-info), `hold_action` and `double_tap_action` (default: nothing), in Home Assistant's usual format: `more-info`, `toggle`, `navigate`, `url`, `perform-action` or `none`, with optional `confirmation`.
 
 ```yaml
@@ -152,7 +154,7 @@ type: custom:halo-entity-card
 entity: sensor.office_co2
 name: Office
 size: large
-graph: true
+display: graph
 graph_hours: 24
 graph_colour: teal
 icon_colour: teal
@@ -161,6 +163,20 @@ colour_rules:
   - { above: 800, colour: orange }
 secondary_text: Window closed
 hold_action: { action: navigate, navigation_path: /dashboard-home/office }
+```
+
+```yaml
+type: custom:halo-entity-card
+entity: sensor.solar_power
+name: Solar
+size: large
+display: gauge
+gauge_style: semicircle
+gauge_min: 0
+gauge_max: 4000
+gauge_colour: yellow
+secondary_entity: sensor.solar_energy_today
+secondary_name: Today
 ```
 
 ```yaml

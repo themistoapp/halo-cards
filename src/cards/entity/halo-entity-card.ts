@@ -5,26 +5,38 @@ import { actionFor, gestures, hasAction, runAction, type Gesture } from "../../s
 import { shadowStyles, themeStyles } from "../../shared/bloom";
 import { currencyAfter, setLocale } from "../../shared/format";
 import { bucket, fetchStatistics, graphRange, subscribeHistory, type Sample } from "../../shared/history";
-import { figure, graphColours, iconColour, tileGraph, tileStyles, type ColourMode } from "../../shared/tile";
+import { fmtNum } from "../../shared/format";
+import { figure, gaugeColours, graphColours, iconColour, tileGraph, tileStyles, unitParts, type ColourMode } from "../../shared/tile";
 import type { HomeAssistant } from "../../shared/types";
 import { numState, observeSize } from "../../shared/util";
-import { buildTile, isGradient, watchedEntities, type EntityTile, type HaloEntityConfig } from "./logic";
+import { gaugeStyles, lineGauge, ringGauge, semiGauge } from "./gauge";
+import { buildTile, isGradient, watchedEntities, type EntityTile, type Gauge, type HaloEntityConfig } from "./logic";
 
 const GRAIN = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
 const BUCKETS = 48;
 /** Narrower than this is a small tile (three columns of a section); shorter than GRAPH_FROM has no room for a graph. */
 const SMALL_BELOW = 136;
 const GRAPH_FROM = 150;
+/** With less room than this under the chip, a ring or semicircle sits beside the figure instead of around it. */
+const BESIDE_BELOW = 100;
 let uid = 0;
 
 /** A value with its unit for the line below: currency before or after as the language writes it, % and degrees joined on, anything else after a space. */
 const withUnit = (v: string, unit: string) =>
   !unit ? v : /^[£$€¥]$/.test(unit) && !currencyAfter() ? `${unit}${v}` : unit === "%" || unit.startsWith("°") ? `${v}${unit}` : `${v} ${unit}`;
+/** A gauge's min or max: currency, % and degrees joined on, other units left off. */
+const endLabel = (n: number, unit: string) => { const u = unitParts(unit); return `${u.pre}${fmtNum(n)}${u.inline}`; };
+/** Rough width of the figure in em, to shrink it into a ring or beside a gauge. */
+const figEm = (value: string, unit: string) => {
+  const u = unitParts(unit);
+  return (u.pre + value + u.inline).length * 0.62 + (u.small ? u.small.length * 0.38 * 0.62 + 0.16 : 0);
+};
+const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** One entity as a tile: small (3 × 2) or large (6 × 3), arranged like any other card in a sections view. */
 export class HaloEntityCard extends LitElement {
-  static override styles = [themeStyles, shadowStyles, tileStyles, css`
-    ha-card { height: 100%; display: flex; flex-direction: column; container-type: inline-size; border-radius: var(--ha-card-border-radius, 12px); background: var(--surface); transition: transform .12s; }
+  static override styles = [themeStyles, shadowStyles, tileStyles, gaugeStyles, css`
+    ha-card { --track: color-mix(in srgb, var(--ink) 8%, transparent); height: 100%; display: flex; flex-direction: column; container-type: inline-size; border-radius: var(--ha-card-border-radius, 12px); background: var(--surface); transition: transform .12s; }
     ha-card:active { transform: scale(.98); }
     /* Outside a sections view nothing gives the card a height, so it takes its usual one. */
     ha-card.m-s { min-height: 120px; }
@@ -40,11 +52,12 @@ export class HaloEntityCard extends LitElement {
     halo-svg-icon { width: 16px; height: 16px; }
     .tight halo-svg-icon { width: 13px; height: 13px; }
 
+    ha-card.dark { --track: color-mix(in srgb, var(--ink) 12%, transparent); }
     /* Black on white and white on black are fixed: they don't change at night. */
-    ha-card.t-light { --surface: #fff; --ink: #1b1b1f; --ink-2: #5c5c66; --line: rgba(0, 0, 0, .06); --sunken: #f0f0f3; border: 1px solid var(--line); }
-    ha-card.t-dark { --surface: #141416; --ink: #f4f4f6; --ink-2: rgba(255, 255, 255, .66); --line: rgba(255, 255, 255, .08); --sunken: rgba(255, 255, 255, .1); border: 1px solid var(--line); }
+    ha-card.t-light { --surface: #fff; --ink: #1b1b1f; --ink-2: #5c5c66; --line: rgba(0, 0, 0, .06); --sunken: #f0f0f3; --track: rgba(0, 0, 0, .07); border: 1px solid var(--line); }
+    ha-card.t-dark { --surface: #141416; --ink: #f4f4f6; --ink-2: rgba(255, 255, 255, .66); --line: rgba(255, 255, 255, .08); --sunken: rgba(255, 255, 255, .1); --track: rgba(255, 255, 255, .12); border: 1px solid var(--line); }
     .t-dark .tile { --chip-ico: rgba(255, 255, 255, .14); }
-    ha-card.grad { --ink: #fff; --ink-2: rgba(255, 255, 255, .86); background: var(--g); border: 0; }
+    ha-card.grad { --ink: #fff; --ink-2: rgba(255, 255, 255, .86); --track: rgba(255, 255, 255, .3); background: var(--g); border: 0; }
     .grad .tile { --t-det: rgba(255, 255, 255, .88); --chip-bg: rgba(255, 255, 255, .82); --chip-ink: #1b1b1f; --chip-ico: #fff; }
     ha-card.grad::before { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; opacity: .55; background-image: ${unsafeCSS(GRAIN)}; }
     /* Gradients go a little deeper at night, as the blooms do. */
@@ -81,6 +94,11 @@ export class HaloEntityCard extends LitElement {
   @state() private _samples: Sample[] = [];
   @state() private _w = 0;
   @state() private _h = 0;
+  /** The gauge's fill as drawn, which eases towards the reading. */
+  @state() private _gf = 0;
+  private _gTarget = -1;
+  private _raf?: number;
+  private _tile?: EntityTile;
   private _id = ++uid;
   private _unobserve?: () => void;
   private _unsub?: () => void;
@@ -121,6 +139,13 @@ export class HaloEntityCard extends LitElement {
     super.disconnectedCallback();
     this._unobserve?.(); this._unobserve = undefined;
     this._stop();
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = undefined; this._gTarget = -1; this._gf = 0;
+  }
+  override willUpdate() {
+    if (!this._config || !this._hass) return;
+    this._tile = buildTile(this._hass, this._config);
+    this._ease(this._tile.gauge?.frac ?? 0);
   }
   override updated() { this._resubscribe(); }
 
@@ -162,6 +187,23 @@ export class HaloEntityCard extends LitElement {
     this._timer = window.setInterval(load, 10 * 60_000);
   }
 
+  /** Sweeps the gauge from where it is to `target`: in from empty the first time, then along to each new reading. */
+  private _ease(target: number) {
+    if (target === this._gTarget) return;
+    const from = this._gTarget < 0 ? 0 : this._gf;
+    this._gTarget = target;
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = undefined;
+    if (reducedMotion() || typeof requestAnimationFrame === "undefined") { this._gf = target; return; }
+    const t0 = performance.now(), dur = from === 0 ? 1100 : 700;
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / dur);
+      this._gf = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      this._raf = k < 1 ? requestAnimationFrame(step) : undefined;
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+
   private _act(g: Gesture) {
     if (!this._hass || !this._config) return;
     runAction(this, this._hass, actionFor(this._config, g), this._config.entity);
@@ -184,29 +226,87 @@ export class HaloEntityCard extends LitElement {
     return tileGraph(values, lo, hi, `eg${this._id}`, graphColours(t.graphColour, mode));
   }
 
+  private _det(t: EntityTile) {
+    const sec = t.secondary;
+    if (!sec) return nothing;
+    return "text" in sec ? sec.text : html`${sec.name ? html`<b>${sec.name}</b> ` : nothing}${withUnit(sec.value, sec.unit)}`;
+  }
+
+  /** The figure, the line below and the gauge, laid out for the room the tile has. */
+  private _gaugeBody(t: EntityTile, g: Gauge, mode: ColourMode, small: boolean) {
+    const large = this._config?.size === "large";
+    const w = this._w || (large ? 216 : 104), h = this._h || (large ? 184 : 120);
+    const px = small ? 9 : 14, chipH = small ? 24 : 32, gap = small ? 3 : 6;
+    const innerW = w - 2 * px, bodyH = h - 2 * px - chipH - gap;
+    const base = Math.min(Math.max(0.26 * w, 18), 38);
+    const fit = (fs: number, room: number) => Math.max(10, Math.min(fs, room / figEm(t.value, t.unit)));
+    const val = (fs: number, cls = "") => html`<div class="val ${cls}" style="--fig:${fs.toFixed(1)}px">${figure(t.value, t.unit)}</div>`;
+    const c = gaugeColours(g.colour, mode);
+    const bands = g.bands.map((b) => ({ ...b, colour: mode === "white" ? "#fff" : iconColour(b.colour, mode) ?? b.colour }));
+    const sec = this._det(t), hasDet = sec !== nothing;
+    const det = html`<div class="det">${sec}</div>`;
+    const frac = this._gf;
+
+    if (g.style === "line") {
+      // The bar always shows; to keep the figure a fair size, the labels go first, then the line below.
+      const barH = small ? 6 : 8, detH = small ? 17 : 22, labH = small ? 13 : 16, minFs = small ? 18 : 24;
+      let withDet = hasDet, withLab = g.labels;
+      const room = () => bodyH - (barH + gap + 2) - (withDet ? detH : 0) - (withLab ? labH : 0);
+      if (room() < minFs) withLab = false;
+      if (room() < minFs) withDet = false;
+      return html`${val(fit(Math.min(base, room()), innerW), "low")}${withDet ? det : nothing}
+        <div class="gl">${lineGauge(barH, frac, c, bands)}${withLab ? html`<div class="glab"><span>${endLabel(g.min, t.unit)}</span><span>${endLabel(g.max, t.unit)}</span></div>` : nothing}</div>`;
+    }
+    if (!small && bodyH < BESIDE_BELOW) {
+      // A short, wide tile: the gauge beside the figure.
+      const withDet = hasDet && bodyH - 22 >= 24;
+      const gw = g.style === "ring" ? Math.min(bodyH, innerW * 0.32) : Math.min(2 * (bodyH - 2), innerW * 0.4);
+      const gauge = g.style === "ring" ? ringGauge(gw, Math.max(5, Math.round(gw * 0.11)), frac, c, bands) : semiGauge(gw, Math.max(5, Math.round(gw * 0.1)), frac, c, bands);
+      return html`<div class="beside"><div class="col">${val(fit(Math.min(base, withDet ? bodyH - 22 : bodyH), innerW - gw - 12))}${withDet ? det : nothing}</div>${gauge}</div>`;
+    }
+    if (g.style === "ring") {
+      const d = Math.floor(Math.min(bodyH, innerW)), sw = Math.max(5, Math.round(d * 0.085)), inner = d - 2 * sw;
+      const withDet = !small && d >= 104 && hasDet;
+      const fs = fit(Math.min(base, Math.max(14, d * 0.26)), inner * 0.8);
+      const inside = html`<div class="in">${val(fs)}${withDet ? html`<div class="det" style="max-width:${Math.round(inner * 0.78)}px">${sec}</div>` : nothing}</div>`;
+      return html`<div class="gwrap">${ringGauge(d, sw, frac, c, bands, inside)}</div>`;
+    }
+    // Semicircle: the figure in the bowl, then min, the line below and max along the feet (small tiles: the line below alone).
+    const labH = !small && (g.labels || hasDet) ? 16 : 0, detBelow = small && hasDet ? 15 : 0;
+    const wa = Math.floor(Math.min(innerW, 2 * (bodyH - labH - detBelow - 4)));
+    const sw = Math.min(Math.max(Math.round(wa * 0.08), 5), 13);
+    const fs = fit(Math.min(base, Math.max(14, wa * 0.2)), (wa / 2 - sw) * 1.7);
+    const inside = html`<div class="in" style="justify-content:flex-end;padding-bottom:${(sw / 2).toFixed(1)}px">${val(fs)}</div>`;
+    const under = labH
+      ? html`<div class="glab" style="width:${wa}px;margin-top:4px">${g.labels ? html`<span>${endLabel(g.min, t.unit)}</span>` : nothing}<span class="d">${sec}</span>${g.labels ? html`<span>${endLabel(g.max, t.unit)}</span>` : nothing}</div>`
+      : detBelow ? html`<div class="det c" style="max-width:${innerW}px;margin-top:3px">${sec}</div>` : nothing;
+    return html`<div class="gwrap end">${semiGauge(wa, sw, frac, c, bands, inside)}${under}</div>`;
+  }
+
   override render() {
     const cfg = this._config!, hass = this._hass!;
-    const t = buildTile(hass, cfg);
+    const t = this._tile ?? buildTile(hass, cfg);
     const dark = !!hass.themes?.darkMode, grad = isGradient(t.theme), small = this._small, showGraph = this._graphShown(t);
     // Which palette: white on gradients, fixed for black on white / white on black, otherwise day or night.
     const mode: ColourMode = grad ? "white" : t.theme === "light" ? "day" : t.theme === "dark" ? "night" : dark ? "night" : "day";
     const ic = iconColour(t.iconColour, mode === "white" ? "day" : mode);
-    const sec = t.secondary;
+    const sec = this._det(t);
     const g = this._g;
     const classes = [
       dark ? "dark" : "", `t-${t.theme}`, grad ? `grad g-${t.theme}` : "", this.layout === "grid" ? "" : small ? "m-s" : "m-l",
       cfg.shadow === false ? "" : "halo-shadow", t.available ? "" : "off",
     ].join(" ");
     return html`<ha-card class=${classes}>
-      <div class="tile ${small ? "tight" : ""} ${showGraph ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}"
+      <div class="tile ${small ? "tight" : ""} ${showGraph || t.gauge ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}"
         @pointerdown=${g.down} @pointermove=${g.move} @pointerup=${g.up} @pointercancel=${g.cancel} @pointerleave=${g.cancel} @keydown=${g.key}
         @contextmenu=${(e: Event) => e.preventDefault()}>
         <div class="top"><span class="tchip ${t.showIcon ? "" : "bare"}">
           ${t.showIcon ? html`<span class="ico" style=${styleMap(ic ? { color: ic } : {})}>${this._icon(t)}</span>` : nothing}<span class="label">${t.name}</span>
         </span></div>
-        <div class="val">${figure(t.value, t.unit)}</div>
-        ${sec ? html`<div class="det">${"text" in sec ? sec.text : html`${sec.name ? html`<b>${sec.name}</b> ` : nothing}${withUnit(sec.value, sec.unit)}`}</div>` : nothing}
-        ${showGraph ? this._graph(t, mode) : nothing}
+        ${t.gauge ? this._gaugeBody(t, t.gauge, mode, small) : html`
+          <div class="val">${figure(t.value, t.unit)}</div>
+          ${sec !== nothing ? html`<div class="det">${sec}</div>` : nothing}
+          ${showGraph ? this._graph(t, mode) : nothing}`}
       </div>
     </ha-card>`;
   }

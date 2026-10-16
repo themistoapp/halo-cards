@@ -192,6 +192,11 @@ const tSmall = [
   tile({ entity: "sensor.grid_cost", name: "Today", theme: "dusk", secondary_text: "on electricity" }),
 ];
 const tLarge = tile({ entity: "sensor.home_power", name: "House", size: "large", icon_colour: "purple", graph: true, graph_colour: "purple", secondary_entity: "sensor.grid_power", secondary_name: "Grid" });
+// Gauges: battery ring, solar semicircle (0 to 1500 W), house line (0 to 3000 W), CO₂-style bands on house power.
+const gRing = tile({ entity: "sensor.soc", name: "Battery", size: "large", icon: "mdi:battery", icon_colour: "green", display: "gauge", secondary_text: "Charging" });
+const gSemi = tile({ entity: "sensor.solar_power", name: "Solar", size: "large", icon_svg: SUN, icon_colour: "yellow", display: "gauge", gauge_style: "semicircle", gauge_max: 1500, secondary_entity: "sensor.solar_today", secondary_name: "Today" });
+const gLine = tile({ entity: "sensor.home_power", name: "House", size: "large", icon_colour: "purple", display: "gauge", gauge_style: "line", gauge_max: 3000, secondary_entity: "sensor.grid_power", secondary_name: "Grid" });
+const gBands = { gauge_min: 0, gauge_max: 3000, gauge_bands: true, colour_rules: [{ above: 2000, colour: "red" }, { above: 1500, colour: "orange" }], icon_colour: "green" };
 const tRule = tile({ entity: "sensor.home_power", name: "House", size: "large", graph: true, colour_rules: [{ above: 1500, colour: "red" }, { above: 1000, colour: "orange" }], secondary_text: "Red above 1.5 kW" });
 
 const today = { type: "custom:halo-today-card", name: "Sam", greeting: "cheeky",
@@ -285,6 +290,26 @@ const specs: Spec[] = [
   { id: "ent-l-nog", title: "Entity large, no graph", tag: "halo-entity-card", cfg: { ...tLarge, graph: false }, w: 185, h: 184, setup: grid },
   { id: "ent-l-nsp", title: "Entity large NSP 236x184", tag: "halo-entity-card", cfg: tLarge, w: 236, h: 184, setup: grid },
   { id: "ent-s-nsp", title: "Entity small NSP 114x120", tag: "halo-entity-card", cfg: tSmall[0], w: 114, h: 120, setup: grid },
+  { id: "ent-g-ring", title: "Gauge ring 6x3", tag: "halo-entity-card", cfg: gRing, w: 185, h: 184, setup: grid },
+  { id: "ent-g-semi", title: "Gauge semicircle 6x3", tag: "halo-entity-card", cfg: gSemi, w: 185, h: 184, setup: grid },
+  { id: "ent-g-line", title: "Gauge line 6x3", tag: "halo-entity-card", cfg: gLine, w: 185, h: 184, setup: grid },
+  { id: "ent-g-ring-n", title: "Gauge ring night 236x184", tag: "halo-entity-card", cfg: gRing, w: 236, h: 184, dark: true, setup: grid },
+  { id: "ent-g-semi-n", title: "Gauge semicircle night 236x184", tag: "halo-entity-card", cfg: gSemi, w: 236, h: 184, dark: true, setup: grid },
+  { id: "ent-g-line-n", title: "Gauge line night 236x184", tag: "halo-entity-card", cfg: gLine, w: 236, h: 184, dark: true, setup: grid },
+  { id: "ent-g-ring-s", title: "Gauge ring 3x2", tag: "halo-entity-card", cfg: { ...gRing, size: "small" }, w: 88, h: 120, setup: grid },
+  { id: "ent-g-semi-s", title: "Gauge semicircle 3x2", tag: "halo-entity-card", cfg: { ...gSemi, size: "small" }, w: 88, h: 120, setup: grid },
+  { id: "ent-g-line-s", title: "Gauge line 3x2", tag: "halo-entity-card", cfg: { ...gLine, size: "small" }, w: 88, h: 120, setup: grid },
+  { id: "ent-g-ring-w", title: "Gauge ring resized 6x2", tag: "halo-entity-card", cfg: gRing, w: 185, h: 120, setup: grid },
+  { id: "ent-g-semi-w", title: "Gauge semicircle resized 6x2", tag: "halo-entity-card", cfg: gSemi, w: 185, h: 120, setup: grid },
+  { id: "ent-g-line-w", title: "Gauge line resized 6x2", tag: "halo-entity-card", cfg: gLine, w: 185, h: 120, setup: grid },
+  { id: "ent-g-grad", title: "Gauge ring, Aurora", tag: "halo-entity-card", cfg: { ...gRing, theme: "aurora" }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-grad-semi", title: "Gauge semicircle, Solar gradient", tag: "halo-entity-card", cfg: { ...gSemi, theme: "solar" }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-light", title: "Gauge line, black on white", tag: "halo-entity-card", cfg: { ...gLine, theme: "light" }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-dark", title: "Gauge semicircle, white on black", tag: "halo-entity-card", cfg: { ...gSemi, theme: "dark" }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-bands", title: "Gauge semicircle, colour bands", tag: "halo-entity-card", cfg: { ...gSemi, entity: "sensor.home_power", name: "House", ...gBands }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-bands-l", title: "Gauge line, colour bands", tag: "halo-entity-card", cfg: { ...gLine, ...gBands }, w: 185, h: 184, setup: grid },
+  { id: "ent-g-attr", title: "Gauge on an attribute (humidity)", tag: "halo-entity-card", cfg: tile({ entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon: "mdi:water-percent", icon_colour: "blue", display: "gauge", gauge_style: "semicircle" }), w: 88, h: 120, setup: grid },
+  { id: "ent-g-masonry", title: "Gauge ring, masonry", tag: "halo-entity-card", cfg: gRing, w: 378, h: 0 },
   { id: "ent-masonry", title: "Entity large, masonry (no height given)", tag: "halo-entity-card", cfg: tLarge, w: 378, h: 0 },
   { id: "th-heat", title: "Thermostat heating 12x7", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 440 },
   { id: "th-376", title: "Thermostat 12x6", tag: "halo-thermostat-card", cfg: th("climate.hallway"), w: 378, h: 376 },
@@ -382,6 +407,13 @@ const graphTiles: Placed[] = [
   { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" }), col: 7, row: 4, c: 3, r: 2 },
   { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Today", theme: "ember", show_icon: false, secondary_text: "on power" }), col: 10, row: 4, c: 3, r: 2 },
 ];
+const gaugeTiles: Placed[] = [
+  { tag: "halo-entity-card", cfg: gRing, col: 1, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: gSemi, col: 7, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: gLine, col: 1, row: 4, c: 6, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", icon: "mdi:water-percent", icon_colour: "blue", display: "gauge" }), col: 7, row: 4, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Spent", theme: "ember", display: "gauge", gauge_style: "line", gauge_max: 5, show_icon: false, secondary_text: "of £5" }), col: 10, row: 4, c: 3, r: 2 },
+];
 const SCENES: Record<string, Scene> = {
   "vehicle-m140i": one("halo-vehicle-card", m140i, 4),
   "media-nirvana": one("halo-media-card", media, 9, { over: nirvana() }),
@@ -390,6 +422,7 @@ const SCENES: Record<string, Scene> = {
   "entities-mix": { w: 440, tiles: mixTiles },
   "entities-themes": { w: 440, tiles: themeTiles },
   "entities-graphs": { w: 440, tiles: graphTiles },
+  "entities-gauges": { w: 440, tiles: gaugeTiles },
   "graph-solar": one("halo-graph-card", SOLAR, 6),
   "graph-agile-compact": one("halo-graph-card", AGILE, 2),
   "thermostat-large": one("halo-thermostat-card", th("climate.hallway"), 7),

@@ -26,7 +26,9 @@ export interface HaloEntityConfig extends ActionSet {
   theme?: Theme;
   /** Starting size in a sections view: small is 3 × 2, large 6 × 3. Resizing the card works too. */
   size?: "small" | "large";
-  /** History graph along the bottom (large tiles only). */
+  /** What sits below the figure: a history graph, a gauge, or nothing. Without it, `graph: true` means a graph. */
+  display?: Display;
+  /** History graph along the bottom (large tiles only). Older configs; `display` wins. */
   graph?: boolean;
   graph_colour?: string;
   /** 1 to 168 hours (default 24). Over 24 hours uses hourly statistics. */
@@ -35,6 +37,16 @@ export interface HaloEntityConfig extends ActionSet {
   graph_scale?: "zero" | "range";
   graph_min?: number;
   graph_max?: number;
+  gauge_style?: GaugeStyle;
+  /** The gauge's ends. Unset: 0 to 100 for percentages, a number entity's own min and max, otherwise 0 to 100. */
+  gauge_min?: number;
+  gauge_max?: number;
+  /** Palette name or any CSS colour (default: the icon colour). */
+  gauge_colour?: string;
+  /** Min and max under the line and semicircle (default on). */
+  gauge_labels?: boolean;
+  /** Faint colour-rule bands on the gauge's track (default off). */
+  gauge_bands?: boolean;
   colour_rules?: ColourRule[];
   /** Line below the value: your own text, or a second entity (wins if both are set). */
   secondary_text?: string;
@@ -47,6 +59,10 @@ export interface HaloEntityConfig extends ActionSet {
 
 /** Where a value is read from: an entity's state, or one of its attributes. */
 interface ValueSource { entity: string; attribute?: string; unit?: string; decimals?: number }
+
+export type Display = "graph" | "gauge" | "none";
+export type GaugeStyle = "ring" | "line" | "semicircle";
+const GAUGE_STYLES: GaugeStyle[] = ["ring", "line", "semicircle"];
 
 export const GRADIENTS = ["dusk", "slate", "ember", "solar", "battery", "grid", "ocean", "glacier", "aurora", "forest", "rose", "plum", "sunset", "sand", "graphite"] as const;
 export type Theme = "plain" | "light" | "dark" | (typeof GRADIENTS)[number];
@@ -75,6 +91,14 @@ export interface EntityTile {
   secondary?: { name?: string; value: string; unit: string } | { text: string };
   /** Set when a graph is wanted and possible: the state (not an attribute) and a number. */
   graph?: { hours: number; scale: GraphScale; min?: number; max?: number; statistics: boolean };
+  /** Set when a gauge is wanted and the reading is a number (state or attribute). */
+  gauge?: Gauge;
+}
+
+/** A gauge: where the reading sits between min and max (0 to 1), its colour, and the colour-rule bands along the track. */
+export interface Gauge {
+  style: GaugeStyle; min: number; max: number; frac: number; colour?: string; labels: boolean;
+  bands: { from: number; to: number; colour: string }[];
 }
 
 /** Attributes that are plumbing, not readings: never offered as a value. */
@@ -152,14 +176,54 @@ export function buildTile(hass: HomeAssistant, cfg: HaloEntityConfig): EntityTil
     : (s?.attributes.friendly_name as string | undefined) || pretty(cfg.entity.split(".")[1] ?? cfg.entity));
   const rule = num === undefined ? undefined : matchRule(cfg.colour_rules, num);
   const hours = graphHours(cfg.graph_hours);
+  const display = displayOf(cfg);
   return {
     entity: cfg.entity, name, value, unit, available, num, svg: cfg.icon_svg?.trim() || undefined, ...iconFor(s, cfg),
     theme: isTheme(cfg.theme) ? cfg.theme : "plain", showIcon: cfg.show_icon !== false, secondary: secondaryOf(hass, cfg),
     iconColour: rule ?? cfg.icon_colour, graphColour: rule ?? cfg.graph_colour,
-    graph: cfg.graph && !cfg.attribute && s && num !== undefined
+    gauge: display === "gauge" && num !== undefined ? gaugeOf(cfg, s, unit, num, rule ?? cfg.gauge_colour ?? cfg.icon_colour) : undefined,
+    graph: display === "graph" && !cfg.attribute && s && num !== undefined
       ? { hours, scale: cfg.graph_scale ?? defaultScale(s, unit), min: cfg.graph_min, max: cfg.graph_max, statistics: hours > 24 && !!s.attributes.state_class }
       : undefined,
   };
+}
+
+export const displayOf = (cfg: HaloEntityConfig): Display =>
+  cfg.display === "graph" || cfg.display === "gauge" || cfg.display === "none" ? cfg.display : cfg.graph ? "graph" : "none";
+
+const finite = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
+/** The gauge's ends: yours, else the entity's own range (percentages 0 to 100, a number entity's min and max), else 0 to 100. */
+export function gaugeRange(cfg: HaloEntityConfig, s: HassEntity | undefined, unit: string): [number, number] {
+  const own: [number, number] | undefined = unit === "%" ? [0, 100]
+    : !cfg.attribute && s && finite(s.attributes.min) !== undefined && finite(s.attributes.max) !== undefined ? [s.attributes.min as number, s.attributes.max as number] : undefined;
+  const lo = finite(cfg.gauge_min) ?? own?.[0] ?? 0;
+  const hi = finite(cfg.gauge_max) ?? own?.[1] ?? 100;
+  return [lo, hi];
+}
+
+function gaugeOf(cfg: HaloEntityConfig, s: HassEntity | undefined, unit: string, num: number, colour: string | undefined): Gauge {
+  const [min, max] = gaugeRange(cfg, s, unit);
+  const frac = max > min ? Math.min(Math.max((num - min) / (max - min), 0), 1) : 0;
+  return {
+    style: GAUGE_STYLES.includes(cfg.gauge_style as GaugeStyle) ? cfg.gauge_style! : "ring", min, max, frac, colour, labels: cfg.gauge_labels !== false,
+    bands: cfg.gauge_bands ? gaugeBands(cfg.colour_rules, cfg.gauge_colour ?? cfg.icon_colour, min, max) : [],
+  };
+}
+
+/** Stretches of the track (0 to 1) by the colour each part of the range would get from the rules. Parts no rule covers take the base colour, or none. */
+export function gaugeBands(rules: ColourRule[] | undefined, base: string | undefined, min: number, max: number): Gauge["bands"] {
+  if (!rules?.length || !(max > min)) return [];
+  const cuts = [...new Set([min, max, ...rules.flatMap((r) => [r.above, r.below]).filter((x): x is number => typeof x === "number" && Number.isFinite(x) && x > min && x < max)])].sort((a, b) => a - b);
+  const out: Gauge["bands"] = [];
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const colour = matchRule(rules, (cuts[i] + cuts[i + 1]) / 2) ?? base;
+    if (!colour) continue;
+    const from = (cuts[i] - min) / (max - min), to = (cuts[i + 1] - min) / (max - min);
+    const last = out[out.length - 1];
+    if (last && last.colour === colour && last.to === from) last.to = to; else out.push({ from, to, colour });
+  }
+  return out;
 }
 
 function secondaryOf(hass: HomeAssistant, cfg: HaloEntityConfig): EntityTile["secondary"] {

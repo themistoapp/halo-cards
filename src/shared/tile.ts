@@ -47,6 +47,17 @@ export function graphColours(colour: string | undefined, mode: ColourMode): Grap
   return { ...PALETTE[named(colour) ?? "grey"][mode === "night" ? 1 : 0], o0: 0.85, o1: 0.45 };
 }
 
+/** A gauge's two ends: light to deep by day, dark to bright at night (the graph's top fill and line colours), white on a gradient. */
+export function gaugeColours(colour: string | undefined, mode: ColourMode): { from: string; to: string } {
+  if (mode === "white") return { from: "rgba(255, 255, 255, .6)", to: "#fff" };
+  const own = custom(colour);
+  if (own) {
+    return mode === "night" ? { from: `color-mix(in srgb, ${own} 50%, #000)`, to: `color-mix(in srgb, ${own} 70%, #fff)` } : { from: `color-mix(in srgb, ${own} 55%, #fff)`, to: own };
+  }
+  const p = PALETTE[named(colour) ?? "grey"][mode === "night" ? 1 : 0];
+  return { from: p.g0, to: p.ln };
+}
+
 /** The icon's colour: the palette's line colour, your own colour, or undefined to follow the text. On a gradient the chip is white, so the day colour. */
 export function iconColour(colour: string | undefined, mode: ColourMode): string | undefined {
   const n = named(colour);
