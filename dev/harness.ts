@@ -11,9 +11,9 @@ if (!customElements.get("ha-icon")) customElements.define("ha-icon", class exten
   connectedCallback() { this.style.cssText = "display:inline-flex;width:var(--mdc-icon-size,20px);height:var(--mdc-icon-size,20px)"; this._draw(); }
   private _draw() { const d = MDI[this._i] ?? MDI["mdi:palette"]; (this.shadowRoot ?? this.attachShadow({ mode: "open" })).innerHTML = `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor"><path d="${d}"/></svg>`; }
 });
-// Home Assistant's own ha-card gives every card its rounded corners; the cards' own styles win over these.
+// Home Assistant's own ha-card gives every card its rounded corners, a 1px border and the card colour; the cards' own styles win over these.
 if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {
-  constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:block;border-radius:var(--ha-card-border-radius,12px)}</style><slot></slot>`; }
+  constructor() { super(); this.attachShadow({ mode: "open" }).innerHTML = `<style>:host{display:block;border-radius:var(--ha-card-border-radius,12px);border:1px solid var(--ha-card-border-color,var(--divider-color,#e0e0e0));background:var(--ha-card-background,var(--card-background-color,#fff))}</style><slot></slot>`; }
 });
 const q = new URLSearchParams(location.search);
 const only = q.get("only");
@@ -430,7 +430,8 @@ const SCENES: Record<string, Scene> = {
   "entities-graphs": { w: 440, tiles: graphTiles },
   "entities-gauges": { w: 440, tiles: gaugeTiles },
   // A backdrop behind tiles, on a stand-in for the dashboard (its view background reads --lovelace-background). ?now=hh:mm picks the time.
-  "backdrop": { w: 440, page: true, tiles: [{ tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, col: 1, row: 1, c: 12, r: 2 }, ...gaugeTiles.map((t) => ({ ...t, row: (t.row ?? 1) + 2 }))] },
+  "backdrop": { w: 440, page: true, tiles: [{ tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, col: 1, row: 1, c: 12, r: 2 }, ...gaugeTiles.map((t) => ({ ...t, row: (t.row ?? 1) + 2 })),
+    { tag: "halo-vehicle-card", cfg: m140i, col: 1, row: 8, c: 12, r: 4 }] },
   "graph-solar": one("halo-graph-card", SOLAR, 6),
   "graph-agile-compact": one("halo-graph-card", AGILE, 2),
   "thermostat-large": one("halo-thermostat-card", th("climate.hallway"), 7),

@@ -23,6 +23,8 @@ export const GREY_NIGHT = { c0: "#5a606e", c1: "#3d424d", ca: "#5a606e" };
 
 /** Two-bloom background (--x1 --y1 --x2 --y2 origins, --k --k2 sizes, --c0 --c1 --ca colours) and the film grain. */
 export const bloomStyles = css`
+  /* The bloom fills the card to its edges: drop the theme's border and card colour, or they show round the edge as a pale ring (clearest on a Backdrop sky). */
+  ha-card { border: 0; background: transparent; }
   @keyframes bloom-in { from { --k: 0; --k2: 0; } }
   .bg {
     position: absolute; inset: 0;

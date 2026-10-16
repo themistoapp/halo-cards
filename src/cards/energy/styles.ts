@@ -18,6 +18,8 @@ export const styles = [shadowStyles, tileStyles, css`
     --r0:#6f5cff; --r1:#c4bcff;
     display: block; position: relative; height: 100%; box-sizing: border-box; overflow: hidden;
     color: var(--ink); font-family: var(--paper-font-body1_-_font-family, system-ui, sans-serif);
+    /* The bloom fills the card: no theme border or card colour round the edge. */
+    border: 0; background: transparent;
   }
   ha-card.dark {
     --sunken: color-mix(in srgb, var(--ink) 14%, transparent);

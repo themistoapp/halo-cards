@@ -1,4 +1,5 @@
 import type { HassEntity } from "../../shared/types";
+import { hexToHsl, hslToHex } from "../../shared/colour";
 import { clamp } from "../../shared/util";
 
 // The Backdrop card's sky: nine stages placed around sunrise and sunset, blended minute by minute. A warm glow is the sun
@@ -23,7 +24,7 @@ export type Stage = "night" | "predawn" | "sunrise" | "morning" | "midday" | "af
 /** b the base, a the sun's glow, c the glow on the horizon. */
 export interface SkyColours { b: string; a: string; c: string }
 
-export const SKY: Record<"light" | "dark", Record<Stage, SkyColours>> = {
+const RAW_SKY: Record<"light" | "dark", Record<Stage, SkyColours>> = {
   light: {
     night:     { b: "#e2ecec", a: "#c4e6dc", c: "#bcd2ee" },
     predawn:   { b: "#e9e4ef", a: "#c4b3e6", c: "#f1c3cd" },
@@ -48,7 +49,15 @@ export const SKY: Record<"light" | "dark", Record<Stage, SkyColours>> = {
   },
 };
 /** The aurora's two bands: green over blue. */
-export const AURORA = { light: { g: "#9fe3c9", b: "#a9c8f0" }, dark: { g: "#127a62", b: "#1b4a8a" } };
+const RAW_AURORA = { light: { g: "#9fe3c9", b: "#a9c8f0" }, dark: { g: "#127a62", b: "#1b4a8a" } };
+
+/** How much of each colour's saturation the sky keeps: the same hues and lightness, a little calmer. */
+export const SATURATION = 0.72;
+const calm = (c: string) => { const h = hexToHsl(c); return h ? hslToHex(h.h, h.s * SATURATION, h.l) : c; };
+const calmAll = <T extends object>(o: T): T =>
+  Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Object.fromEntries(Object.entries(v as Record<string, string>).map(([n, c]) => [n, calm(c)]))])) as T;
+export const SKY = { light: calmAll(RAW_SKY.light), dark: calmAll(RAW_SKY.dark) };
+export const AURORA = calmAll(RAW_AURORA);
 
 const DAY_MS = 86_400_000;
 const minuteOf = (d: Date) => d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
