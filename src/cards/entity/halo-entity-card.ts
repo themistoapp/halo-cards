@@ -276,13 +276,16 @@ export class HaloEntityCard extends LitElement {
     const mode: ColourMode = grad ? "white" : t.theme === "light" ? "day" : t.theme === "dark" ? "night" : dark ? "night" : "day";
     const ic = iconColour(t.iconColour, mode === "white" ? "day" : mode);
     const sec = this._det(t);
+    // Two rows tall but wider than a small tile (a small tile stretched in the layout editor): the small tile's spacing,
+    // or the figure and the line below don't fit the height. Gauges lay themselves out for the room they have.
+    const short = !small && !t.gauge && this._h > 0 && this._h < GRAPH_FROM;
     const g = this._g;
     const classes = [
       dark ? "dark" : "", `t-${t.theme}`, grad ? `grad g-${t.theme}` : "", this.layout === "grid" ? "" : small ? "m-s" : "m-l",
       cfg.shadow === false ? "" : "halo-shadow", t.available ? "" : "off",
     ].join(" ");
     return html`<ha-card class=${classes}>
-      <div class="tile ${small ? "tight" : ""} ${showGraph || t.gauge ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}"
+      <div class="tile ${small || short ? "tight" : ""} ${showGraph || t.gauge ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}"
         @pointerdown=${g.down} @pointermove=${g.move} @pointerup=${g.up} @pointercancel=${g.cancel} @pointerleave=${g.cancel} @keydown=${g.key}
         @contextmenu=${(e: Event) => e.preventDefault()}>
         <div class="top"><span class="tchip ${t.showIcon ? "" : "bare"}">

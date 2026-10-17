@@ -299,6 +299,11 @@ const specs: Spec[] = [
   { id: "ent-l-nog", title: "Entity large, no graph", tag: "halo-entity-card", cfg: { ...tLarge, graph: false }, w: 185, h: 184, setup: grid },
   { id: "ent-l-nsp", title: "Entity large NSP 236x184", tag: "halo-entity-card", cfg: tLarge, w: 236, h: 184, setup: grid },
   { id: "ent-s-nsp", title: "Entity small NSP 114x120", tag: "halo-entity-card", cfg: tSmall[0], w: 114, h: 120, setup: grid },
+  // Small tiles stretched to 6 x 2 in the layout editor: wide but short, so the line below must still fit.
+  { id: "ent-w6", title: "Entity small stretched to 6x2, line below", tag: "halo-entity-card", cfg: tile({ entity: "sensor.solar_power", name: "Solar", secondary_entity: "sensor.solar_today", secondary_name: "Today" }), w: 185, h: 120, setup: grid },
+  { id: "ent-w6-text", title: "Entity small stretched to 6x2, your text", tag: "halo-entity-card", cfg: tile({ entity: "climate.hallway", attribute: "current_temperature", name: "Hallway", decimals: 1, icon_colour: "orange", secondary_text: "Heating to 22°" }), w: 185, h: 120, setup: grid },
+  { id: "ent-w6-graph", title: "Entity small stretched to 6x2, graph on", tag: "halo-entity-card", cfg: tile({ entity: "sensor.home_power", name: "House", graph: true, secondary_entity: "sensor.grid_power", secondary_name: "Grid" }), w: 185, h: 120, setup: grid },
+  { id: "ent-w12", title: "Entity small stretched to 12x2", tag: "halo-entity-card", cfg: tile({ entity: "sensor.solar_power", name: "Solar", secondary_entity: "sensor.solar_today", secondary_name: "Today" }), w: 378, h: 120, setup: grid },
   { id: "ent-g-ring", title: "Gauge ring 6x3", tag: "halo-entity-card", cfg: gRing, w: 185, h: 184, setup: grid },
   { id: "ent-g-semi", title: "Gauge semicircle 6x3", tag: "halo-entity-card", cfg: gSemi, w: 185, h: 184, setup: grid },
   { id: "ent-g-line", title: "Gauge line 6x3", tag: "halo-entity-card", cfg: gLine, w: 185, h: 184, setup: grid },
