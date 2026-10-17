@@ -21,6 +21,8 @@ Numbers, times and dates follow your Home Assistant profile: language, number fo
 | Title | `custom:halo-title-card` | 12 × 2 greeting or date, 12 × 1 heading |
 | Backdrop | `custom:halo-backdrop-card` | 12 × 2 daylight tile, or hidden (no room taken) |
 
+And four badges for the row at the top of a view (`badges:`): thermostat, gauge, weather and on/off. See [Halo badges](#halo-badges).
+
 ## Install (HACS)
 
 1. HACS → ⋮ → **Custom repositories** → add this repository, category **Dashboard**.
@@ -388,6 +390,81 @@ figures:
   - { label: Remaining, series: Forecast, calc: remaining, window: today }
   - { label: Today, series: Forecast, calc: total, window: today }
   - { label: Tomorrow, series: Forecast, calc: total, window: tomorrow }
+```
+
+## Halo badges
+
+Four badges for the `badges:` row above a view's first section, at Home Assistant's own badge size (a 36px pill). Add them from the badge dialog (**+ Add badge**, then search Halo); each has a visual editor. They take the Entity card's looks (`theme`: plain, light, dark, or a gradient: dusk, slate, ember, solar, battery, grid, ocean, glacier, aurora, forest, rose, plum, sunset, sand, graphite), and these options too:
+
+- `name`: defaults to the entity's name.
+- `show_name: false` hides the small name line. A badge with only a name beside its dial or ring becomes a round 36px badge.
+- `shadow: false` drops the soft shadow.
+- `tap_action`, `hold_action`, `double_tap_action` are Home Assistant's standard actions. By default a tap opens more-info (the on/off badge toggles), and a hold opens more-info.
+
+Colour rules work as on the Entity card: the first rule the value meets sets the colour, with `above`, `below` or both. Here a rule with neither catches everything left, so a list can end with "otherwise".
+
+### Thermostat badge (`custom:halo-thermostat-badge`)
+
+A mini dial with the thermostat card's ticks round 270°, a thicker tick at the room temperature and the room temperature in the middle. With a `climate` entity it follows the thermostat card. While heating or cooling, the ticks between the room and the target light and a bloom rises from the bottom edge in orange or blue. On but at the target, the bloom lies wide and low and the target tick shows. Off, there is no bloom and no target. Heat/cool ranges show both setpoints. The badge's bloom is softer than the card's. Set `bloom_colour: temperature` to colour it by the room temperature instead, using the colour rules.
+
+It also takes a temperature sensor. That has no target, and its bloom lies low in the colour of the reading's band. With no rules, the bands are blue below 18°, yellow below 20°, orange below 22° and red above.
+
+```yaml
+type: custom:halo-thermostat-badge
+entity: climate.hallway          # or a temperature sensor
+bloom_colour: action             # action (heat/cool, as the card) | temperature
+colour_rules:                    # optional; for sensors and bloom_colour: temperature
+  - below: 18
+    colour: blue
+  - below: 21
+    colour: yellow
+  - colour: red
+min: 10                          # sensors only: the dial's range (default 10 to 30)
+max: 30
+```
+
+### Gauge badge (`custom:halo-gauge-badge`)
+
+Any number between a min and max as a small ring. `inside: value` puts the reading in the ring with the name beside it. `inside: icon` puts the icon in the ring, with the name and reading beside it. No bloom.
+
+```yaml
+type: custom:halo-gauge-badge
+entity: sensor.office_co2
+attribute: current_humidity      # optional: an attribute instead of the state
+min: 400                         # default 0 (or a number entity's own min)
+max: 2000                        # default 100
+inside: value                    # value | icon
+icon: mdi:molecule-co2           # inside: icon; defaults to the entity's own icon
+colour: grey                     # when no rule matches
+decimals: 0                      # optional
+colour_rules:
+  - below: 800
+    colour: green
+  - below: 1200
+    colour: yellow
+  - colour: red
+```
+
+### Weather badge (`custom:halo-weather-badge`)
+
+One badge with three things it can show. `now` is the temperature, with the conditions as the icon. `sun` is the time of whichever comes next, sunrise or sunset, from `sun.sun`, and needs no weather entity. `rain` is today's chance of rain from the forecast (today's daily figure, else the highest of today's remaining hours), with a drop that fills to match.
+
+```yaml
+type: custom:halo-weather-badge
+entity: weather.home
+show: now                        # now | sun | rain
+```
+
+### On/off badge (`custom:halo-boolean-badge`)
+
+Any entity that is on or off: lights, switches, helpers, doors (open counts as on), people (home counts as on). Off stands proud of the dashboard. On is pressed in, with the same well and inner shadow as the thermostat card's heat button. Each state can take a colour: a palette name or your own colour tints the badge, and a gradient name fills it. A tap toggles lights, switches, fans, covers and helpers, and opens more-info for anything else.
+
+```yaml
+type: custom:halo-boolean-badge
+entity: light.lamp
+icon: mdi:lamp                   # optional, defaults to the entity's own icon
+on_colour: ember                 # a palette colour, a gradient, or your own (e.g. "#e8a33d")
+off_colour: none
 ```
 
 ## Development

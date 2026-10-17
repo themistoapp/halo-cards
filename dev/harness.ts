@@ -64,6 +64,9 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.idle", "heat", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "idle", current_temperature: 21.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.off", "off", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "off", current_temperature: 20.5, temperature: 21, min_temp: 9, max_temp: 32, current_humidity: 47 }),
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
+      e("sensor.lounge_temperature", "17.3", { friendly_name: "Lounge", unit_of_measurement: "°C", device_class: "temperature" }),
+      e("sensor.office_co2", "870", { friendly_name: "Office CO₂", unit_of_measurement: "ppm" }),
+      e("switch.fan", "off", { friendly_name: "Bedroom fan", icon: "mdi:fan" }), e("binary_sensor.back_door", "off", { friendly_name: "Back door", device_class: "door" }),
       e("sun.sun", new Date().getHours() * 60 + new Date().getMinutes() >= 448 && new Date().getHours() * 60 + new Date().getMinutes() < 1081 ? "above_horizon" : "below_horizon", { next_rising: sunNext(7, 28), next_setting: sunNext(18, 1) }),
       e("event.agile_today", "2026-10-12T00:00:00Z", { rates: agileRates(0, false) }), e("event.agile_tomorrow", "2026-10-13T00:00:00Z", { rates: agileRates(1, true) }),
       e("sensor.pv_total", String(Math.round(solarAct(new Date().getHours() + new Date().getMinutes() / 60) * 1000)), { friendly_name: "PV total", unit_of_measurement: "W", device_class: "power" }),
@@ -456,6 +459,35 @@ const SCENES: Record<string, Scene> = {
   "thermostat-compact": one("halo-thermostat-card", th("climate.hallway"), 2),
 };
 
+// ?badges renders every badge in rows, day then night, on a stand-in for the dashboard.
+const BADGE_ROWS: [string, object][][] = [
+  [["halo-thermostat-badge", { entity: "climate.hallway" }], ["halo-thermostat-badge", { entity: "climate.cooling" }], ["halo-thermostat-badge", { entity: "climate.idle" }],
+    ["halo-thermostat-badge", { entity: "climate.off" }], ["halo-thermostat-badge", { entity: "climate.range" }], ["halo-thermostat-badge", { entity: "sensor.lounge_temperature" }],
+    ["halo-thermostat-badge", { entity: "climate.hallway", show_name: false }]],
+  [["halo-gauge-badge", { entity: "sensor.office_co2", min: 400, max: 2000, colour_rules: [{ below: 800, colour: "green" }, { below: 1200, colour: "yellow" }, { colour: "red" }] }],
+    ["halo-gauge-badge", { entity: "sensor.soc", name: "Battery", colour_rules: [{ below: 20, colour: "red" }, { below: 50, colour: "orange" }, { colour: "green" }] }],
+    ["halo-gauge-badge", { entity: "sensor.soc", name: "Battery", inside: "icon", icon: "mdi:battery", colour: "green" }],
+    ["halo-gauge-badge", { entity: "climate.hallway", attribute: "current_humidity", name: "Humidity", inside: "icon", icon: "mdi:water-percent", colour: "blue" }]],
+  [["halo-weather-badge", { entity: "weather.home" }], ["halo-weather-badge", { show: "sun" }], ["halo-weather-badge", { entity: "weather.home", show: "rain" }], ["halo-weather-badge", { entity: "weather.night" }]],
+  [["halo-boolean-badge", { entity: "light.lamp", on_colour: "ember" }], ["halo-boolean-badge", { entity: "switch.fan" }], ["halo-boolean-badge", { entity: "binary_sensor.back_door", icon: "mdi:door" }],
+    ["halo-boolean-badge", { entity: "light.pendant", on_colour: "yellow", icon: "mdi:lightbulb" }], ["halo-boolean-badge", { entity: "light.hall", off_colour: "blue", icon: "mdi:lightbulb-outline" }]],
+  ["plain", "light", "dark", "dusk", "ember", "ocean", "aurora", "graphite"].map((theme) => ["halo-thermostat-badge", { entity: "climate.hallway", theme }] as [string, object]),
+];
+if (q.has("badges")) {
+  document.body.style.cssText = "margin:0;padding:24px;display:block;background:transparent";
+  for (const dark of [false, true]) {
+    const view = document.createElement("div");
+    view.className = dark ? "dk" : "";
+    view.style.cssText = `padding:20px;margin-bottom:16px;border-radius:16px;display:grid;gap:12px;background:${dark ? "#131417" : "#f0f0f3"}`;
+    for (const row of BADGE_ROWS) {
+      const r = document.createElement("div"); r.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+      for (const [tag, cfg] of row) { const b = document.createElement(tag) as any; b.setConfig({ type: `custom:${tag}`, ...cfg }); b.hass = makeHass(dark); r.append(b); }
+      view.append(r);
+    }
+    document.body.append(view);
+  }
+}
+
 const sceneName = q.get("scene");
 if (sceneName && SCENES[sceneName]) {
   const sc = SCENES[sceneName], dark = q.has("dark") || !!sc.dark;
@@ -478,7 +510,7 @@ if (sceneName && SCENES[sceneName]) {
     view.style.cssText = `padding:24px;border-radius:16px;background:var(--lovelace-background, ${dark ? "#0e0e11" : "#f2f2f4"})`;
     view.append(grid); shadow.append(view); document.body.append(root);
   } else document.body.append(grid);
-} else for (const s of specs) {
+} else if (!q.has("badges")) for (const s of specs) {
   if (only && !only.split(",").includes(s.id)) continue;
   const cell = document.createElement("div"); cell.className = "cell" + (s.dark ? " dk" : "");
   cell.innerHTML = `<div class="cap">${s.title}</div>`;

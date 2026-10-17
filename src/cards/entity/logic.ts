@@ -1,4 +1,5 @@
 import type { ActionSet } from "../../shared/actions";
+import { GRADIENTS } from "../../shared/looks";
 import { fmtNum } from "../../shared/format";
 import type { GraphScale } from "../../shared/history";
 import type { HassEntity, HomeAssistant } from "../../shared/types";
@@ -64,7 +65,7 @@ export type Display = "graph" | "gauge" | "none";
 export type GaugeStyle = "ring" | "line" | "semicircle";
 const GAUGE_STYLES: GaugeStyle[] = ["ring", "line", "semicircle"];
 
-export const GRADIENTS = ["dusk", "slate", "ember", "solar", "battery", "grid", "ocean", "glacier", "aurora", "forest", "rose", "plum", "sunset", "sand", "graphite"] as const;
+export { GRADIENTS };
 export type Theme = "plain" | "light" | "dark" | (typeof GRADIENTS)[number];
 export const THEME_LABELS: Record<Theme, string> = {
   plain: "Plain", light: "Black on white", dark: "White on black",

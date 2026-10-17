@@ -26,6 +26,8 @@ import { HaloTitleCard } from "./cards/title/halo-title-card";
 import { HaloTitleCardEditor } from "./cards/title/editor";
 import { HaloBackdropCard } from "./cards/backdrop/halo-backdrop-card";
 import { HaloBackdropCardEditor } from "./cards/backdrop/editor";
+import { HaloBooleanBadge, HaloGaugeBadge, HaloThermostatBadge, HaloWeatherBadge } from "./cards/badges/halo-badges";
+import { HaloBooleanBadgeEditor, HaloGaugeBadgeEditor, HaloThermostatBadgeEditor, HaloWeatherBadgeEditor } from "./cards/badges/editors";
 
 export const VERSION = "0.28.1";
 
@@ -46,7 +48,15 @@ const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor
   ["halo-backdrop-card", HaloBackdropCard, "halo-backdrop-card-editor", HaloBackdropCardEditor, "Halo Backdrop", "Paints the view's background with a sky that follows the sun, from first light to an aurora at night, with an optional daylight tile: time to sunset and since sunrise."],
 ];
 
-declare global { interface Window { customCards?: Record<string, unknown>[] } }
+// Badges for the row at the top of a view (badges:), registered the same way under window.customBadges.
+const BADGES: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
+  ["halo-thermostat-badge", HaloThermostatBadge, "halo-thermostat-badge-editor", HaloThermostatBadgeEditor, "Halo Thermostat badge", "A mini thermostat dial with the room temperature in the middle, glowing while it heats or cools. Takes a climate entity or a temperature sensor."],
+  ["halo-gauge-badge", HaloGaugeBadge, "halo-gauge-badge-editor", HaloGaugeBadgeEditor, "Halo Gauge badge", "Any number between a min and max as a small ring, with the value or the icon inside, coloured by value."],
+  ["halo-weather-badge", HaloWeatherBadge, "halo-weather-badge-editor", HaloWeatherBadgeEditor, "Halo Weather badge", "The temperature now, the next sunrise or sunset, or today's chance of rain."],
+  ["halo-boolean-badge", HaloBooleanBadge, "halo-boolean-badge-editor", HaloBooleanBadgeEditor, "Halo On/Off badge", "On or off: pressed in when on, with a colour or gradient for each state. Tap toggles."],
+];
+
+declare global { interface Window { customCards?: Record<string, unknown>[]; customBadges?: Record<string, unknown>[] } }
 window.customCards ||= [];
 // Custom SVG icons (Entity card and its editor).
 if (!customElements.get("halo-svg-icon")) customElements.define("halo-svg-icon", HaloSvgIcon);
@@ -59,6 +69,13 @@ for (const [tag, cls, editorTag, editor, name, description] of CARDS) {
   if (!customElements.get(tag)) customElements.define(tag, cls);
   if (!customElements.get(editorTag)) customElements.define(editorTag, editor);
   if (!window.customCards.some((c) => c.type === tag)) window.customCards.push({ type: tag, name, description, preview: true });
+}
+
+window.customBadges ||= [];
+for (const [tag, cls, editorTag, editor, name, description] of BADGES) {
+  if (!customElements.get(tag)) customElements.define(tag, cls);
+  if (!customElements.get(editorTag)) customElements.define(editorTag, editor);
+  if (!window.customBadges.some((c) => c.type === tag)) window.customBadges.push({ type: tag, name, description, preview: true });
 }
 
 console.info(`%c HALO-CARDS %c ${VERSION} `, "background:#111;color:#fff;border-radius:3px 0 0 3px", "background:#3ee08a;color:#111;border-radius:0 3px 3px 0");
