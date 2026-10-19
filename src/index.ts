@@ -29,7 +29,7 @@ import { HaloBackdropCardEditor } from "./cards/backdrop/editor";
 import { HaloBooleanBadge, HaloGaugeBadge, HaloThermostatBadge, HaloWeatherBadge } from "./cards/badges/halo-badges";
 import { HaloBooleanBadgeEditor, HaloGaugeBadgeEditor, HaloThermostatBadgeEditor, HaloWeatherBadgeEditor } from "./cards/badges/editors";
 
-export const VERSION = "0.29.1";
+export const VERSION = "0.29.2";
 
 // Each card stands alone: its own element, config and editor. Use any of them without the others.
 const CARDS: [string, CustomElementConstructor, string, CustomElementConstructor, string, string][] = [
