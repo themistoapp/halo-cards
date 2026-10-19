@@ -125,6 +125,19 @@ describe("single light: card", () => {
     expect(m.root.querySelector(".mini .nm")!.textContent).toBe("Pendant");
     m.card.remove();
   });
+  it("lights every bulb or shade of the fitting", async () => {
+    let m = await mount(cfg("light.pendant", { layout: "full", fitting: "chandelier" }));
+    expect(m.root.querySelectorAll(".corner.chandelier .fx .lit")).toHaveLength(5);
+    m.card.remove();
+    m = await mount(cfg("light.pendant", { layout: "full", fitting: "fairy" }));
+    expect(m.root.querySelectorAll(".corner.fairy .fx .lit")).toHaveLength(13);
+    m.card.remove();
+    for (const f of ["bar", "bloom", "gem", "string"]) {
+      m = await mount(cfg("light.pendant", { layout: "full", fitting: f }));
+      expect(m.root.querySelector(`.corner.${f} img`)).not.toBeNull();
+      m.card.remove();
+    }
+  });
   it("starts at the size of the chosen layout", () => {
     const sized = (layout?: string) => { const c = document.createElement("halo-single-light-card") as any; c.setConfig(cfg("light.pendant", layout ? { layout } : {})); return c.getGridOptions(); };
     expect(sized("mini")).toMatchObject({ columns: 6, rows: 2 });

@@ -9,7 +9,9 @@ const SCHEMA = [
   { type: "grid", name: "", schema: [
     { name: "fitting", selector: { select: { mode: "dropdown", options: [
       { value: "none", label: "None (icon)" }, { value: "downlight", label: "Downlight" }, { value: "pendant", label: "Pendant" },
-      { value: "lantern", label: "Wall lantern" }, { value: "path", label: "Path light" } ] } } },
+      { value: "lantern", label: "Wall lantern" }, { value: "path", label: "Path light" }, { value: "bar", label: "Floor light bar" },
+      { value: "bloom", label: "Table lamp (Bloom)" }, { value: "gem", label: "Hanging gem bulb" }, { value: "chandelier", label: "Chandelier" },
+      { value: "fairy", label: "Fairy lights" }, { value: "string", label: "String lights" } ] } } },
     { name: "icon", selector: { icon: {} } },
   ] },
   { name: "layout", selector: { select: { mode: "dropdown", options: [

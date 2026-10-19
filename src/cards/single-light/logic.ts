@@ -2,7 +2,7 @@ import type { HassEntity, HomeAssistant } from "../../shared/types";
 import { clamp, isAvailable } from "../../shared/util";
 import { WARM_WHITE, brightnessPct } from "../light/logic";
 
-export type Fitting = "none" | "downlight" | "pendant" | "lantern" | "path";
+export type Fitting = "none" | "downlight" | "pendant" | "lantern" | "path" | "bar" | "bloom" | "gem" | "chandelier" | "fairy" | "string";
 export type Layout = "auto" | "full" | "compact" | "mini";
 /** A preset: a white (kelvin) or a colour (hex). */
 export interface Preset { name?: string; kelvin?: number; colour?: string }
@@ -23,7 +23,7 @@ export interface HaloSingleLightConfig {
   shadow?: boolean;
 }
 
-export const FITTINGS: Fitting[] = ["none", "downlight", "pendant", "lantern", "path"];
+export const FITTINGS: Fitting[] = ["none", "downlight", "pendant", "lantern", "path", "bar", "bloom", "gem", "chandelier", "fairy", "string"];
 export const DEFAULT_PRESETS: Preset[] = [
   { name: "Candlelight", kelvin: 2200 }, { name: "Warm white", kelvin: 2700 }, { name: "Neutral white", kelvin: 4000 }, { name: "Daylight", kelvin: 6000 },
   { name: "Amber", colour: "#f59e47" }, { name: "Rose", colour: "#f54790" }, { name: "Violet", colour: "#9847f5" }, { name: "Ocean", colour: "#47adf5" },

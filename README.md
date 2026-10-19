@@ -165,7 +165,7 @@ Holding the picture, icon or mini tile opens the light's more-info. The card onl
 type: custom:halo-single-light-card
 entity: light.dining
 name: Dining            # default: the light's name
-fitting: pendant        # light type: downlight | pendant | lantern (wall lantern) | path (path light) | none (default: the icon)
+fitting: pendant        # light type: downlight | pendant | lantern (wall lantern) | path (path light) | bar (floor light bar) | bloom (table lamp) | gem (hanging gem bulb) | chandelier | fairy (fairy lights) | string (string lights) | none (default: the icon)
 icon: mdi:ceiling-light # any mdi icon, used when there's no fitting picture (default: a bulb)
 layout: auto            # auto (default) | full | compact | mini
 colour: "#ffe3bd"       # glow for lights that report no colour (default warm white)

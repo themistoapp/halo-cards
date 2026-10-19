@@ -51,6 +51,9 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .corner.pendant { top: -36px; } .corner.pendant .fx { --fh: 132px; }
   .corner.downlight { top: 16px; } .corner.downlight .fx { --fh: 62px; }
   .corner.path .fx { --fh: 76px; }
+  .corner.gem { top: -24px; } .corner.gem .fx { --fh: 120px; }
+  .corner.bar { top: 12px; } .corner.bar .fx { --fh: 96px; }
+  .corner.bloom .fx, .corner.chandelier .fx { --fh: 84px; }
 
   /* Track: one long pill. Brightness fills with the light; warmth and colour are the scale itself with a ring knob. */
   .track { position: relative; flex: none; height: 44px; border-radius: 14px; background: var(--well); box-shadow: var(--raise); overflow: hidden; cursor: pointer; touch-action: none; }
