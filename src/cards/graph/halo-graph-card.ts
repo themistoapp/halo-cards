@@ -266,8 +266,8 @@ export class HaloGraphCard extends LitElement {
     const day: Day = this._day === "tomorrow" && dayPill ? "tomorrow" : "today";
     const period = chartWindow(cfg, now, day);
     const w = cfg.fit ? fitWindow(series, period) : period;
-    const figs = (cfg.figures ?? []).slice(0, MAX_FIGURES).map((f) => buildFigure(hass, cfg, series, f, now, period));
     const compact = this._h > 0 && this._h < 230;
+    const figs = (cfg.figures ?? []).slice(0, MAX_FIGURES).map((f) => buildFigure(hass, cfg, series, f, now, period, compact ? undefined : this._hov));
     const cls = `${dark ? "dark" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}`;
 
     if (compact) {

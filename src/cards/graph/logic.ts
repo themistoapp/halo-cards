@@ -246,7 +246,8 @@ function figureWindow(f: FigureConfig, now: number, period: [number, number]): [
   }
 }
 
-export function buildFigure(hass: HomeAssistant, cfg: HaloGraphConfig, series: Series[], f: FigureConfig, now: number, period: [number, number]): Figure {
+/** `at`: the time under the pointer. Now and Next read from there instead of from now, like the readout under the chart. */
+export function buildFigure(hass: HomeAssistant, cfg: HaloGraphConfig, series: Series[], f: FigureConfig, now: number, period: [number, number], at?: number): Figure {
   const base = { icon: f.icon, icon_svg: f.icon_svg, icon_colour: f.icon_colour };
   if (f.entity) {
     const e: HassEntity | undefined = hass.states[f.entity];
@@ -265,11 +266,15 @@ export function buildFigure(hass: HomeAssistant, cfg: HaloGraphConfig, series: S
   const inW = (t0: number) => t0 >= w[0] && t0 < w[1];
   switch (calc) {
     case "now": {
-      if (s.kind === "slots") { const x = slotAt(s, now); return out(x?.v, s.unit, x ? `until ${clock(x.t1)}` : undefined); }
+      if (s.kind === "slots") {
+        const x = slotAt(s, at ?? now);
+        return out(x?.v, s.unit, !x ? undefined : at === undefined ? `until ${clock(x.t1)}` : `${clock(x.t0)}–${clock(x.t1)}`);
+      }
+      if (at !== undefined) return out(valueAt(s, at), s.unit, `at ${clock(Math.round(at / 300_000) * 300_000)}`);
       return out(s.points.length ? s.points[s.points.length - 1].v : undefined);
     }
     case "next": {
-      const cur = slotAt(s, now), x = s.slots.find((y) => y.t0 >= (cur?.t1 ?? now));
+      const ref = at ?? now, cur = slotAt(s, ref), x = s.slots.find((y) => y.t0 >= (cur?.t1 ?? ref));
       return out(x?.v, s.unit, x ? `from ${clock(x.t0)}` : undefined);
     }
     case "lowest": case "highest": {

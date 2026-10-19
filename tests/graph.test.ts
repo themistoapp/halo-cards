@@ -123,6 +123,14 @@ describe("figures", () => {
     expect(fig({ calc: "now" })).toMatchObject({ label: "Now", value: "12.0", unit: "p", note: "until 14:30" });
     expect(fig({ calc: "next", label: "Next rate" })).toMatchObject({ label: "Next rate", value: "20.0", note: "from 14:30" });
   });
+  it("reads Now and Next at the pointer while hovering, and leaves the rest alone", () => {
+    const hov = (f: FigureConfig) => buildFigure(hass(), c, s, f, NOW, [at(12, 0), at(13, 0)], at(12, 18, 10));
+    expect(hov({ calc: "now" })).toMatchObject({ value: "40.0", note: "18:00–18:30" });
+    expect(hov({ calc: "next" })).toMatchObject({ value: "10.0", note: "from 18:30" });
+    expect(buildFigure(hass(), c, s, { series: "Actual", calc: "now" }, NOW, [at(12, 0), at(13, 0)], at(12, 11, 2))).toMatchObject({ value: "1.03", unit: "kW", note: "at 11:00" });
+    expect(hov({ calc: "highest", window: "today" })).toEqual(fig({ calc: "highest", window: "today" }));
+    expect(hov({ entity: "sensor.temp" })).toEqual(fig({ entity: "sensor.temp" }));
+  });
   it("finds the lowest, highest and average over a window", () => {
     expect(fig({ calc: "lowest", window: "today" })).toMatchObject({ value: "5.0", note: "at 03:00" });
     expect(fig({ calc: "highest", window: "today" })).toMatchObject({ value: "40.0", note: "at 18:00" });
