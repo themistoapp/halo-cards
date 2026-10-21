@@ -87,8 +87,8 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .sw.sm button { width: 24px; height: 24px; border-width: 2px; }
   .sw.sm button[aria-pressed="true"]::after { inset: -5px; border-width: 1.5px; }
 
-  /* Compact: icon or thumbnail, name and headline, three presets, brightness under. */
-  .compact { padding: 10px 12px 12px; gap: 8px; justify-content: space-between; container-type: inline-size; }
+  /* Compact: icon or thumbnail, name and headline, as many presets as fit, brightness under. At 12 x 3 the presets get their own row. */
+  .compact { padding: 10px 12px 12px; gap: 8px; justify-content: space-between; }
   .crow { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .cico { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--well); box-shadow: var(--raise); color: var(--ink-2); transition: background .3s, box-shadow .3s; }
   .cico ha-icon { --mdc-icon-size: 18px; } .cico svg.ln { width: 18px; height: 18px; }
@@ -99,7 +99,6 @@ export const styles = [themeStyles, shadowStyles, fittingStyles, css`
   .ctx .nm { font-size: 14px; line-height: 18px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ctx .st { font-size: 12px; line-height: 16px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .compact .track { height: 40px; }
-  @container (max-width: 290px) { .compact .sw { display: none; } }
 
   /* Mini, 6 x 2: the icon (or the fitting) and the name. Sliding sideways dims; a thin bar shows while it does. */
   .mini { padding: 12px 14px; justify-content: space-between; gap: 6px; cursor: pointer; touch-action: pan-y; }

@@ -156,8 +156,8 @@ shadow: true
 One light. The card glows in the light's own colour, bigger with brightness, and the headline says what the light is doing in words ("Warm white", "Amber", "Off"). Three sizes, picked by the space it has:
 
 - **Full (12 × 4):** the name, the headline, tabs for Brightness, Warmth and Colour over one wide track, and preset swatches. With a fitting picture, it sits top right with its opening lit (a pendant hangs in from the top edge) and tapping it toggles the light; without one, the name chip shows the icon and there's a power button.
-- **Compact (12 × 2):** the picture or icon (tap toggles), the name and headline, three presets and a brightness track.
-- **Mini (6 × 2):** just the picture or icon and the name. Tap toggles, slide sideways to dim.
+- **Compact (12 × 2):** the picture or icon (tap toggles), the name and headline, as many presets as fit beside them (five at full width, two on a 9-column bar) and a brightness track. At 12 × 3 the presets get a full row of their own under the track.
+- **Mini (6 × 2):** just the picture or icon and the name. Tap toggles, slide sideways to dim. A 6 × 3 mini adds a row of presets along the bottom.
 
 Holding the picture, icon or mini tile opens the light's more-info. The card only offers what the light can do: a dimmer gets the brightness track alone, an on/off light gets no track, and white presets need colour temperature or colour (they are sent as a colour to lights without colour temperature). Lights that report no colour glow warm white, or the `colour` you set, and their headline says On.
 
@@ -176,7 +176,7 @@ presets:                # default: Candlelight 2200 K, Warm white 2700 K, Neutra
 shadow: true
 ```
 
-`presets: []` hides the swatches. The compact bar shows the first three.
+Presets can also be set in the editor's Presets section: add a white (warmth in kelvin) or a colour (hex, or tap the dot to pick one), name them, reorder, remove, or reset to the built-in eight. `presets: []` (No presets in the editor) hides the swatches. Where they don't all fit, the card takes whites and colours in turn, each in your order.
 
 ## Halo Entity card (`custom:halo-entity-card`)
 

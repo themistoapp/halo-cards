@@ -6,8 +6,8 @@ import type { HomeAssistant } from "../../shared/types";
 import { clamp, fireMoreInfo, observeSize } from "../../shared/util";
 import { fitting } from "./fitting";
 import {
-  capsOf, css, headline, hsRgb, intensity, isSelected, kelvinRgb, nameOf, pickLayout, presetCss, presetName, presetService, presetsFor, readLight,
-  type Caps, type HaloSingleLightConfig, type LightState, type Preset,
+  capsOf, css, headline, hsRgb, intensity, isSelected, kelvinRgb, nameOf, pickLayout, pickPresets, presetCss, presetName, presetService, presetSlots, presetsFor,
+  readLight, type Caps, type HaloSingleLightConfig, type LightState, type Preset, type Slots,
 } from "./logic";
 import { styles } from "./styles";
 
@@ -190,7 +190,8 @@ export class HaloSingleLightCard extends LitElement {
     const one = (p: Preset) => html`<button aria-label=${presetName(p)} title=${presetName(p)} aria-pressed=${isSelected(p, l) ? "true" : "false"} style="--c:${presetCss(p)}"
       @click=${() => { this._pend = {}; this._call("turn_on", presetService(p, caps)); }}></button>`;
     const whites = list.filter((p) => p.kelvin), colours = list.filter((p) => !p.kelvin);
-    return html`<div class="sw ${small ? "sm" : ""} ${list.length < 6 ? "few" : ""}">${whites.map(one)}${!small && whites.length && colours.length ? html`<span class="div"></span>` : nothing}${colours.map(one)}</div>`;
+    // The mini is a button itself: keep taps and keys on a swatch from toggling the light too.
+    return html`<div class="sw ${small ? "sm" : ""} ${!small && list.length < 6 ? "few" : ""}" @pointerdown=${(e: Event) => e.stopPropagation()} @keydown=${(e: Event) => e.stopPropagation()}>${whites.map(one)}${!small && whites.length && colours.length ? html`<span class="div"></span>` : nothing}${colours.map(one)}</div>`;
   }
   private _tabs(caps: Caps): Tab[] {
     const t: Tab[] = [];
@@ -200,7 +201,7 @@ export class HaloSingleLightCard extends LitElement {
     return t;
   }
 
-  private _full(name: string, title: string, l: LightState, caps: Caps, presets: Preset[]) {
+  private _full(name: string, title: string, l: LightState, caps: Caps, presets: Preset[], slots: Slots) {
     const fit = this._config!.fitting;
     const pic = !!fit && fit !== "none";
     const tabs = this._tabs(caps), tab = tabs.includes(this._tab) ? this._tab : tabs[0];
@@ -217,24 +218,27 @@ export class HaloSingleLightCard extends LitElement {
       <div class="spacer"></div>
       ${tabs.length > 1 ? html`<div class="seg" role="group" aria-label="Adjust">${tabs.map((t) => html`<button aria-pressed=${t === tab ? "true" : "false"} @click=${() => { this._tab = t; }}>${labels[t]}</button>`)}</div>` : nothing}
       ${tab && l.available ? this._track(tab, l, caps) : nothing}
-      ${l.available ? this._swatches(presets, l, caps) : nothing}
+      ${l.available ? this._swatches(pickPresets(presets, slots.n), l, caps) : nothing}
     </div>`;
   }
   private _thumb(name: string) {
     const fit = this._config!.fitting;
     return fit && fit !== "none" ? html`<span class="thumb">${fitting(fit)}</span>` : html`<span class="cico">${this._icon()}</span>`;
   }
-  private _compact(name: string, title: string, l: LightState, caps: Caps, presets: Preset[]) {
-    return html`<div class="inner compact"><div class="crow">
+  private _compact(name: string, title: string, l: LightState, caps: Caps, presets: Preset[], slots: Slots) {
+    const shown = l.available ? pickPresets(presets, slots.n) : [];
+    return html`<div class="inner compact ${slots.where === "row" ? "tall" : ""}"><div class="crow">
         <button class="tog" aria-label="${name}: turn on or off" @pointerdown=${(e: PointerEvent) => this._press(e)} @keydown=${(e: KeyboardEvent) => this._key(e)} @contextmenu=${(e: Event) => e.preventDefault()}>${this._thumb(name)}</button>
         <div class="ctx"><div class="nm">${name}</div><div class="st">${title}</div></div>
-        ${l.available ? this._swatches(presets.slice(0, 3), l, caps, true) : nothing}
-      </div>${caps.dimmable && l.available ? this._track("b", l, caps) : nothing}</div>`;
+        ${slots.where === "inline" ? this._swatches(shown, l, caps, true) : nothing}
+      </div>${caps.dimmable && l.available ? this._track("b", l, caps) : nothing}
+      ${slots.where === "row" ? this._swatches(shown, l, caps) : nothing}</div>`;
   }
-  private _mini(name: string, title: string, l: LightState, caps: Caps) {
+  private _mini(name: string, title: string, l: LightState, caps: Caps, presets: Preset[], slots: Slots) {
     return html`<div class="inner mini" role="button" tabindex="0" aria-label="${name}, ${title}" @pointerdown=${(e: PointerEvent) => this._miniDown(e, l, caps)}
       @keydown=${(e: KeyboardEvent) => this._key(e)} @contextmenu=${(e: Event) => e.preventDefault()}>
       ${this._thumb(name)}<div class="nm">${name}</div>
+      ${slots.where === "row" && l.available ? this._swatches(pickPresets(presets, slots.n), l, caps, true) : nothing}
       ${this._dragging ? html`<div class="lvl"><i style="width:${l.pct}%"></i></div>` : nothing}</div>`;
   }
 
@@ -245,13 +249,14 @@ export class HaloSingleLightCard extends LitElement {
     const l = this._shown(readLight(s, cfg));
     const name = nameOf(hass, cfg), title = headline(l, presets);
     const dark = !!hass.themes?.darkMode;
-    const layout = pickLayout(cfg, this._w, this._h);
+    const layout = pickLayout(cfg, this._w, this._h), slots = presetSlots(layout, this._w, this._h);
     const i = intensity(l.on, caps.dimmable, l.pct);
     const pic = !!cfg.fitting && cfg.fitting !== "none";
     // The glow: gathered behind the picture in the top-right corner, or spreading from the icon on the small sizes.
     const [bx, by, bw, bh] = layout === "full" ? (pic ? ["92%", "4%", 120, 130] : ["14%", "6%", 130, 120]) : layout === "compact" ? ["0%", "40%", 130, 170] : ["8%", "10%", 170, 190];
     const vars = { "--glow": css(l.glow), "--c0": css(l.glow), "--i": i.toFixed(2), "--bx": bx, "--by": by, "--bw": (bw * i).toFixed(1), "--bh": (bh * i).toFixed(1) };
-    const body = layout === "mini" ? this._mini(name, title, l, caps) : layout === "compact" ? this._compact(name, title, l, caps, presets) : this._full(name, title, l, caps, presets);
+    const body = layout === "mini" ? this._mini(name, title, l, caps, presets, slots)
+      : layout === "compact" ? this._compact(name, title, l, caps, presets, slots) : this._full(name, title, l, caps, presets, slots);
     return html`<ha-card class="${dark ? "dark" : ""} ${l.on ? "on" : "off"} ${l.available ? "" : "na"} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>${body}
     </ha-card>`;

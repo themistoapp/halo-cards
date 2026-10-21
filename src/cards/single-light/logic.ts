@@ -77,6 +77,33 @@ const presetRgb = (p: Preset): RGB | undefined => (p.kelvin ? kelvinRgb(p.kelvin
 export function presetsFor(cfg: HaloSingleLightConfig, caps: Caps): Preset[] {
   return (cfg.presets ?? DEFAULT_PRESETS).filter((p) => (p.kelvin ? caps.temp || caps.colour : p.colour ? caps.colour && !!hexRgb(p.colour) : false));
 }
+/** Up to n presets, whites and colours in turn (each kind in list order), so a colour light gets some of both. */
+export function pickPresets(list: Preset[], n: number): Preset[] {
+  if (n >= list.length) return list;
+  const whites = list.filter((p) => p.kelvin), colours = list.filter((p) => !p.kelvin), out: Preset[] = [];
+  for (let i = 0; out.length < n; i++) {
+    if (i < whites.length) out.push(whites[i]);
+    if (out.length < n && i < colours.length) out.push(colours[i]);
+  }
+  return out;
+}
+
+/** Where the swatches go: a row of their own, beside the name (compact), or nowhere; and how many fit. */
+export interface Slots { where: "row" | "inline" | "none"; n: number }
+const fit = (room: number, size: number, gap: number) => Math.max(0, Math.floor((room + gap) / (size + gap)));
+/** Tall enough (a 12 × 3 bar or a 6 × 3 mini) for a row of swatches under everything else. */
+export const ROW_FROM = 168;
+export function presetSlots(layout: Exclude<Layout, "auto">, w: number, h: number): Slots {
+  // Full and tall rows: 30px swatches, 6px apart, less the padding and the white | colour divider.
+  if (layout === "full") return { where: "row", n: w > 0 ? fit(w - 39, 30, 6) : Infinity };
+  if (layout === "compact") {
+    if (h >= ROW_FROM) return { where: "row", n: w > 0 ? fit(w - 31, 30, 6) : Infinity };
+    // Beside the name: 24px swatches, 8px apart, after the thumbnail and at least 110px for the name.
+    const n = w > 0 ? fit(w - 198, 24, 8) : 3;
+    return n >= 2 ? { where: "inline", n } : { where: "none", n: 0 };
+  }
+  return h >= ROW_FROM && w > 0 ? { where: "row", n: fit(w - 28, 24, 6) } : { where: "none", n: 0 };
+}
 export const presetName = (p: Preset) => p.name || (p.kelvin ? kelvinName(p.kelvin) : p.colour ?? "");
 export const presetCss = (p: Preset) => css(presetRgb(p) ?? [255, 227, 189]);
 

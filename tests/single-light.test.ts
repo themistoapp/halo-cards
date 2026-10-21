@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import "../src/index";
-import { cleanSingleLight } from "../src/cards/single-light/editor";
+import { cleanPreset, cleanSingleLight, presetsToSave } from "../src/cards/single-light/editor";
 import {
-  DEFAULT_PRESETS, capsOf, headline, hsRgb, isSelected, kelvinRgb, pickLayout, presetService, presetsFor, readLight, rgbHs,
+  DEFAULT_PRESETS, capsOf, headline, hsRgb, isSelected, kelvinRgb, pickLayout, pickPresets, presetService, presetSlots, presetsFor, readLight, rgbHs,
 } from "../src/cards/single-light/logic";
 import { ent, hassOf } from "./helpers";
 
@@ -78,6 +78,62 @@ describe("single light: layout", () => {
   });
 });
 
+describe("single light: fitting presets in", () => {
+  it("takes whites and colours in turn, each in list order", () => {
+    const names = (n: number) => pickPresets(DEFAULT_PRESETS, n).map((p) => p.name);
+    expect(names(2)).toEqual(["Candlelight", "Amber"]);
+    expect(names(5)).toEqual(["Candlelight", "Amber", "Warm white", "Rose", "Neutral white"]);
+    expect(names(20)).toHaveLength(8);
+    const whites = [{ kelvin: 2200 }, { kelvin: 2700 }, { kelvin: 4000 }];
+    expect(pickPresets([...whites, { colour: "#f00" }], 3)).toEqual([{ kelvin: 2200 }, { colour: "#f00" }, { kelvin: 2700 }]);
+    expect(pickPresets(whites, 2)).toEqual(whites.slice(0, 2));
+  });
+  it("fits as many as the width allows, with a row of their own when tall", () => {
+    expect(presetSlots("compact", 378, 120)).toEqual({ where: "inline", n: 5 });
+    expect(presetSlots("compact", 280, 120)).toEqual({ where: "inline", n: 2 });
+    expect(presetSlots("compact", 240, 120)).toEqual({ where: "none", n: 0 });
+    expect(presetSlots("compact", 0, 0)).toEqual({ where: "inline", n: 3 });
+    expect(presetSlots("compact", 378, 184)).toEqual({ where: "row", n: 9 });
+    expect(presetSlots("full", 378, 248).n).toBe(9);
+    expect(presetSlots("full", 250, 248).n).toBe(6);
+    expect(presetSlots("mini", 185, 120)).toEqual({ where: "none", n: 0 });
+    expect(presetSlots("mini", 185, 184)).toEqual({ where: "row", n: 5 });
+  });
+});
+
+describe("single light: preset editor", () => {
+  it("tidies a preset and saves nothing when they match the built-in ones", () => {
+    expect(cleanPreset({ name: " ", kelvin: 3010.4 })).toEqual({ kelvin: 3010 });
+    expect(cleanPreset({ name: "Mint ", colour: " #5fe0b0" })).toEqual({ name: "Mint", colour: "#5fe0b0" });
+    expect(presetsToSave(DEFAULT_PRESETS.map((p) => ({ ...p })))).toBeUndefined();
+    expect(presetsToSave([{ kelvin: 3000 }])).toEqual([{ kelvin: 3000 }]);
+    expect(presetsToSave([])).toEqual([]);
+  });
+  it("adds, removes and resets presets from the editor", async () => {
+    const ed = document.createElement("halo-single-light-card-editor") as any;
+    ed.hass = hassOf([warm]);
+    ed.setConfig(cfg("light.pendant"));
+    const seen: any[] = [];
+    ed.addEventListener("config-changed", (e: CustomEvent) => seen.push(e.detail.config));
+    document.body.append(ed);
+    await ed.updateComplete;
+    const root = ed.shadowRoot as ShadowRoot, btn = (t: string) => [...root.querySelectorAll("button")].find((b) => b.textContent === t) as HTMLButtonElement;
+    expect(root.querySelectorAll(".row")).toHaveLength(8);
+    btn("Add colour").click();
+    expect(seen.at(-1).presets).toHaveLength(9);
+    await ed.updateComplete;
+    (root.querySelectorAll(".row")[0].querySelector(".bar button:last-child") as HTMLElement).click();
+    expect(seen.at(-1).presets.map((p: any) => p.name ?? p.colour)).toEqual(["Warm white", "Neutral white", "Daylight", "Amber", "Rose", "Violet", "Ocean", "#47adf5"]);
+    await ed.updateComplete;
+    btn("No presets").click();
+    expect(seen.at(-1).presets).toEqual([]);
+    await ed.updateComplete;
+    btn("Reset to built-in").click();
+    expect("presets" in seen.at(-1)).toBe(false);
+    ed.remove();
+  });
+});
+
 describe("single light: card", () => {
   const mount = async (config: Record<string, unknown>, list = [warm, rose, dimmer, plain]) => {
     const card = document.createElement("halo-single-light-card") as any;
@@ -144,6 +200,33 @@ describe("single light: card", () => {
     expect(sized("compact")).toMatchObject({ columns: 12, rows: 2 });
     expect(sized("full")).toMatchObject({ columns: 12, rows: 4 });
     expect(sized()).toMatchObject({ columns: 12, rows: 4 });
+  });
+  it("compact: more presets when wider, a row of them when tall; a tall mini gets a row too", async () => {
+    const sized = async (config: Record<string, unknown>, w: number, h: number) => {
+      const m = await mount(config);
+      m.card._w = w; m.card._h = h;
+      await m.card.updateComplete;
+      return m;
+    };
+    let m = await sized(cfg("light.pendant"), 378, 120);
+    expect(m.root.querySelectorAll(".crow .sw button")).toHaveLength(5);
+    m.card.remove();
+    m = await sized(cfg("light.pendant"), 378, 184);
+    expect(m.root.querySelector(".compact.tall > .sw")).not.toBeNull();
+    expect(m.root.querySelectorAll(".sw button")).toHaveLength(8);
+    expect(m.root.querySelector(".sw .div")).not.toBeNull();
+    m.card.remove();
+    m = await sized(cfg("light.pendant"), 185, 120);
+    expect(m.root.querySelector(".sw")).toBeNull();
+    m.card.remove();
+    m = await sized(cfg("light.pendant"), 185, 184);
+    expect(m.root.querySelectorAll(".mini .sw button")).toHaveLength(5);
+    const sw = m.root.querySelector(".mini .sw button") as HTMLElement;
+    sw.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, composed: true, button: 0 }));
+    sw.click();
+    expect(m.hass.callService).toHaveBeenCalledTimes(1);
+    expect(m.hass.callService).toHaveBeenCalledWith("light", "turn_on", { entity_id: "light.pendant", color_temp_kelvin: 2200 });
+    m.card.remove();
   });
   it("compact: name, headline, three presets and brightness", async () => {
     const { card, root } = await mount(cfg("light.pendant", { layout: "compact", fitting: "path" }));
