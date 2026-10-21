@@ -20,10 +20,10 @@ export interface ActionConfig {
 export type Gesture = "tap" | "hold" | "double_tap";
 export interface ActionSet { tap_action?: ActionConfig; hold_action?: ActionConfig; double_tap_action?: ActionConfig }
 
-/** Tap opens more-info unless told otherwise; hold and double tap do nothing unless set. */
-export function actionFor(cfg: ActionSet, g: Gesture): ActionConfig {
+/** Tap opens more-info (or `tap`, where a card toggles by default) unless told otherwise; hold and double tap do nothing unless set. */
+export function actionFor(cfg: ActionSet, g: Gesture, tap = "more-info"): ActionConfig {
   const a = g === "tap" ? cfg.tap_action : g === "hold" ? cfg.hold_action : cfg.double_tap_action;
-  return a?.action ? a : { action: g === "tap" ? "more-info" : "none" };
+  return a?.action ? a : { action: g === "tap" ? tap : "none" };
 }
 
 export const hasAction = (cfg: ActionSet, g: Gesture) => actionFor(cfg, g).action !== "none";

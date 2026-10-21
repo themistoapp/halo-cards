@@ -66,6 +66,8 @@ function states(over: Record<string, ReturnType<typeof e>[1]> = {}) {
       e("climate.range", "heat_cool", { friendly_name: "Hallway", hvac_modes: ["heat", "cool", "heat_cool", "off"], hvac_action: "heating", current_temperature: 18.7, target_temp_low: 19.5, target_temp_high: 24, min_temp: 9, max_temp: 32, current_humidity: 50 }),
       e("sensor.lounge_temperature", "17.3", { friendly_name: "Lounge", unit_of_measurement: "°C", device_class: "temperature" }),
       e("sensor.office_co2", "870", { friendly_name: "Office CO₂", unit_of_measurement: "ppm" }),
+      e("switch.kettle", "on", { friendly_name: "Kettle" }), e("binary_sensor.front_door", "on", { friendly_name: "Front door", device_class: "door" }),
+      e("binary_sensor.hall_motion", "off", { friendly_name: "Hallway motion", device_class: "motion" }), e("light.garage", "unavailable", { friendly_name: "Garage" }),
       e("switch.fan", "off", { friendly_name: "Bedroom fan", icon: "mdi:fan" }), e("binary_sensor.back_door", "off", { friendly_name: "Back door", device_class: "door" }),
       e("sun.sun", new Date().getHours() * 60 + new Date().getMinutes() >= 448 && new Date().getHours() * 60 + new Date().getMinutes() < 1081 ? "above_horizon" : "below_horizon", { next_rising: sunNext(7, 28), next_setting: sunNext(18, 1) }),
       e("event.agile_today", "2026-10-12T00:00:00Z", { rates: agileRates(0, false) }), e("event.agile_tomorrow", "2026-10-13T00:00:00Z", { rates: agileRates(1, true) }),
@@ -148,6 +150,14 @@ function applyClimate(hass: HomeAssistant, s: string, { entity_id, ...data }: Re
   for (const el of document.querySelectorAll("halo-thermostat-card")) if ((el as any)._hass === hass) (el as any).hass = next;
 }
 
+/** homeassistant.toggle flips an on/off entity, so the Entity card's tap can be tried. */
+function applyToggle(hass: HomeAssistant, { entity_id }: Record<string, unknown>) {
+  const old = hass.states[entity_id as string];
+  if (!old || (old.state !== "on" && old.state !== "off")) return;
+  const next = { ...hass, states: { ...hass.states, [entity_id as string]: { ...old, state: old.state === "on" ? "off" : "on" } } };
+  for (const el of document.querySelectorAll("halo-entity-card")) if ((el as any)._hass === hass) (el as any).hass = next;
+}
+
 function makeHass(dark: boolean, over = {}): HomeAssistant {
   const st = states(over) as Record<string, any>;
   return {
@@ -165,6 +175,7 @@ function makeHass(dark: boolean, over = {}): HomeAssistant {
     async callService(this: HomeAssistant, d: string, s: string, data: Record<string, unknown>) {
       console.log("service", d, s, data);
       if (d === "climate") setTimeout(() => applyClimate(this, s, data), 400);
+      if (d === "homeassistant" && s === "toggle") applyToggle(this, data);
     },
     async callApi(_m: string, path: string) { return calendarEvents(path.split("?")[0].replace("calendars/", "")); },
     async callWS(m: { type?: string; statistic_ids?: string[]; start_time?: string }) {
@@ -288,6 +299,12 @@ const specs: Spec[] = [
   { id: "scenes-titled", title: "Scenes titled 12x3", tag: "halo-scenes-card", cfg: { ...scenes, name: "Scenes" }, w: 378, h: 176 },
   ...tSmall.map((cfg, i) => ({ id: `ent-s${i}`, title: "Entity small 3x2", tag: "halo-entity-card", cfg, w: 88, h: 120, setup: grid })),
   ...tSmall.map((cfg, i) => ({ id: `ent-sn${i}`, title: "Entity small night", tag: "halo-entity-card", cfg, w: 88, h: 120, dark: true, setup: grid })),
+  ...[["switch.kettle", "plain"], ["binary_sensor.front_door", "light"], ["light.lamp", "ocean"], ["binary_sensor.hall_motion", "plain"], ["light.garage", "plain"]].flatMap(([entity, theme], i) => [
+    { id: `ent-on${i}`, title: "Entity on/off small", tag: "halo-entity-card", cfg: tile({ entity, theme }), w: 88, h: 120, setup: grid },
+    { id: `ent-on-n${i}`, title: "Entity on/off small night", tag: "halo-entity-card", cfg: tile({ entity, theme }), w: 88, h: 120, dark: true, setup: grid },
+  ]),
+  { id: "ent-on-l", title: "Entity on/off large, white on black", tag: "halo-entity-card", cfg: tile({ entity: "light.lamp", name: "Living room lamp", theme: "dark", size: "large", secondary_text: "Tap to switch" }), w: 185, h: 184, setup: grid },
+  { id: "ent-on-pink", title: "Entity on/off, pink on colour", tag: "halo-entity-card", cfg: tile({ entity: "switch.kettle", on_colour: "pink" }), w: 88, h: 120, setup: grid },
   { id: "ent-l", title: "Entity large 6x3", tag: "halo-entity-card", cfg: tLarge, w: 185, h: 184, setup: grid },
   { id: "ent-l-night", title: "Entity large night", tag: "halo-entity-card", cfg: tLarge, w: 185, h: 184, dark: true, setup: grid },
   { id: "ent-l-soc", title: "Entity large, % (0 to 100), black on white", tag: "halo-entity-card", cfg: tile({ entity: "sensor.soc", name: "Battery", theme: "light", size: "large", graph: true, graph_colour: "green", icon_colour: "green", secondary_text: "Discharging" }), w: 185, h: 184, setup: grid },
@@ -445,6 +462,13 @@ const graphTiles: Placed[] = [
   { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_power", name: "Grid", theme: "grid", icon: "mdi:flash", secondary_text: "Importing" }), col: 7, row: 4, c: 3, r: 2 },
   { tag: "halo-entity-card", cfg: T({ entity: "sensor.grid_cost", name: "Today", theme: "ember", show_icon: false, secondary_text: "on power" }), col: 10, row: 4, c: 3, r: 2 },
 ];
+const onoffTiles: Placed[] = [
+  { tag: "halo-entity-card", cfg: T({ entity: "switch.kettle" }), col: 1, row: 1, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "binary_sensor.front_door" }), col: 4, row: 1, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "light.lamp", name: "Living room lamp", size: "large", secondary_text: "Tap to switch" }), col: 7, row: 1, c: 6, r: 3 },
+  { tag: "halo-entity-card", cfg: T({ entity: "binary_sensor.hall_motion", theme: "ocean" }), col: 1, row: 3, c: 3, r: 2 },
+  { tag: "halo-entity-card", cfg: T({ entity: "light.garage" }), col: 4, row: 3, c: 3, r: 2 },
+];
 const gaugeTiles: Placed[] = [
   { tag: "halo-entity-card", cfg: gRing, col: 1, row: 1, c: 6, r: 3 },
   { tag: "halo-entity-card", cfg: gSemi, col: 7, row: 1, c: 6, r: 3 },
@@ -461,6 +485,7 @@ const SCENES: Record<string, Scene> = {
   "entities-themes": { w: 440, tiles: themeTiles },
   "entities-graphs": { w: 440, tiles: graphTiles },
   "entities-gauges": { w: 440, tiles: gaugeTiles },
+  "entities-onoff": { w: 440, tiles: onoffTiles },
   // A backdrop behind tiles, on a stand-in for the dashboard (its view background reads --lovelace-background). ?now=hh:mm picks the time.
   "backdrop": { w: 440, page: true, tiles: [{ tag: "halo-backdrop-card", cfg: { type: "custom:halo-backdrop-card" }, col: 1, row: 1, c: 12, r: 2 }, ...gaugeTiles.map((t) => ({ ...t, row: (t.row ?? 1) + 2 })),
     { tag: "halo-vehicle-card", cfg: m140i, col: 1, row: 8, c: 12, r: 4 }] },

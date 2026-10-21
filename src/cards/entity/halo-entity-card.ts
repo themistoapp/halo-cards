@@ -11,7 +11,7 @@ import { figure, gaugeColours, graphColours, iconColour, tileGraph, tileStyles, 
 import type { HomeAssistant } from "../../shared/types";
 import { numState, observeSize } from "../../shared/util";
 import { gaugeStyles, lineGauge, ringGauge, semiGauge } from "./gauge";
-import { buildTile, isGradient, watchedEntities, type EntityTile, type Gauge, type HaloEntityConfig } from "./logic";
+import { buildTile, isGradient, tapDefault, watchedEntities, type EntityTile, type Gauge, type HaloEntityConfig } from "./logic";
 
 const GRAIN = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
 const BUCKETS = 48;
@@ -50,6 +50,9 @@ export class HaloEntityCard extends LitElement {
     .off .val, .off .det { opacity: .5; }
     .tchip .ico ha-icon, .tchip .ico ha-state-icon { --mdc-icon-size: 16px; display: inline-flex; }
     .tight .tchip .ico ha-icon, .tight .tchip .ico ha-state-icon { --mdc-icon-size: 13px; }
+    /* On: the disc fills with the on colour and the icon turns white. */
+    .tchip .ico { transition: color .6s ease, background-color .6s ease; }
+    .tchip .ico.lit { color: #fff; }
     halo-svg-icon { width: 16px; height: 16px; }
     .tight halo-svg-icon { width: 13px; height: 13px; }
 
@@ -63,7 +66,7 @@ export class HaloEntityCard extends LitElement {
     ha-card.grad::before { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: overlay; opacity: .55; background-image: ${unsafeCSS(GRAIN)}; }
     /* Gradients go a little deeper at night, as the blooms do. */
     ha-card.grad.dark::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: rgba(0, 0, 0, .34); }
-    @media (prefers-reduced-motion: reduce) { ha-card { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { ha-card, .tchip .ico { transition: none; } }
   `];
 
   static getConfigElement() { return document.createElement("halo-entity-card-editor"); }
@@ -191,7 +194,7 @@ export class HaloEntityCard extends LitElement {
 
   private _act(g: Gesture) {
     if (!this._hass || !this._config) return;
-    runAction(this, this._hass, actionFor(this._config, g), this._config.entity);
+    runAction(this, this._hass, actionFor(this._config, g, tapDefault(this._config)), this._config.entity);
   }
 
   private _icon(t: EntityTile) {
@@ -285,11 +288,11 @@ export class HaloEntityCard extends LitElement {
       cfg.shadow === false ? "" : "halo-shadow", t.available ? "" : "off",
     ].join(" ");
     return html`<ha-card class=${classes}>
-      <div class="tile ${small || short ? "tight" : ""} ${showGraph || t.gauge ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}"
+      <div class="tile ${small || short ? "tight" : ""} ${showGraph || t.gauge ? "" : "nog"}" role="button" tabindex="0" aria-label="${t.name}: ${t.value} ${t.unit}" aria-pressed=${t.on === undefined ? nothing : String(t.on)}
         @pointerdown=${g.down} @pointermove=${g.move} @pointerup=${g.up} @pointercancel=${g.cancel} @pointerleave=${g.cancel} @keydown=${g.key}
         @contextmenu=${(e: Event) => e.preventDefault()}>
         <div class="top"><span class="tchip ${t.showIcon ? "" : "bare"}">
-          ${t.showIcon ? html`<span class="ico" style=${styleMap(ic ? { color: ic } : {})}>${this._icon(t)}</span>` : nothing}<span class="label">${t.name}</span>
+          ${t.showIcon ? html`<span class="ico ${t.onFill ? "lit" : ""}" style=${styleMap(t.onFill ? { background: t.onFill } : ic ? { color: ic } : {})}>${this._icon(t)}</span>` : nothing}<span class="label">${t.name}</span>
         </span></div>
         ${t.gauge ? this._gaugeBody(t, t.gauge, mode, small) : html`
           <div class="val">${figure(t.value, t.unit)}</div>

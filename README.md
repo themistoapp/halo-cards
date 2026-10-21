@@ -185,6 +185,7 @@ One reading as a tile, laid out like the tiles on the Energy card: a chip with t
 - **Size:** `small` (3 × 2, a quarter of a section) or `large` (6 × 3, half). The card reads the space it is given, so dragging a small tile to six columns wide makes it large. Small tiles never show a graph.
 - **Value:** any entity's state, or one of its attributes (a thermostat's humidity, a weather entity's wind speed): the editor lists each with its current reading. Attributes get a unit where one can be told; `unit` and `decimals` override.
 - **Icon:** the entity's own, any `mdi:` icon, or your own SVG in `icon_svg` (pasted `<svg>` markup, a 24 × 24 path, or a URL such as `/local/icons/boiler.svg`; black follows the text colour and white follows the card; scripts, event handlers and outside links are removed). `icon_colour` tints it.
+- **On/off entities:** switches, lights, binary sensors, input booleans, fans and the like show Home Assistant's own state (On, Open, Detected) and, while on, the disc behind the icon fills orange and the icon turns white. `on_colour` picks another palette colour or any CSS colour; `none` turns the highlight off.
 - **Look (`theme`):** `plain` (the card background), `light` (black on white) and `dark` (white on black), which stay as they are at night, and fifteen grainy gradients that go a little deeper at night: `dusk`, `slate`, `ember`, `solar`, `battery`, `grid`, `ocean`, `glacier`, `aurora`, `forest`, `rose`, `plum`, `sunset`, `sand`, `graphite`.
 - **Line below:** your own text (`secondary_text`) or another entity (`secondary_entity`, shown as its name then its value).
 - **Below the figure (`display`):** `graph`, `gauge` or `none` (the default). Configs from before 0.21 with `graph: true` keep their graph.
@@ -192,7 +193,7 @@ One reading as a tile, laid out like the tiles on the Energy card: a chip with t
 - **Graph (large tiles):** `display: graph` draws the state's history along the bottom, over `graph_hours` (1 to 168, default 24). Up to a day it uses full history; longer periods use Home Assistant's hourly statistics, for sensors that have them. Power, energy and money start from zero, percentages run 0 to 100, and anything else fits its own range; `graph_scale` (`zero` or `range`), `graph_min` and `graph_max` override that. Only numeric states, not attributes.
 - **Colours:** `icon_colour` and `graph_colour` are separate. Pick `grey`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple` or `pink` (each has a day and a night shade), or give any CSS colour. On gradients the graph is white.
 - **Colour by value:** `colour_rules` recolour the icon and the graph or gauge. The first rule the value meets wins; give `above`, `below`, or both for a band.
-- **Actions:** `tap_action` (default: more-info), `hold_action` and `double_tap_action` (default: nothing), in Home Assistant's usual format: `more-info`, `toggle`, `navigate`, `url`, `perform-action` or `none`, with optional `confirmation`.
+- **Actions:** `tap_action` (default: more-info; toggle for on/off entities that can be toggled), `hold_action` and `double_tap_action` (default: nothing), in Home Assistant's usual format: `more-info`, `toggle`, `navigate`, `url`, `perform-action` or `none`, with optional `confirmation`.
 
 ```yaml
 type: custom:halo-entity-card

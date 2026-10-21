@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { attributeUnit, buildTile, defaultScale, displayOf, gaugeBands, graphHours, matchRule, readValue, valueOptions, type HaloEntityConfig } from "../src/cards/entity/logic";
+import { attributeUnit, buildTile, defaultScale, displayOf, gaugeBands, graphHours, isOnOff, matchRule, readValue, tapDefault, valueOptions, type HaloEntityConfig } from "../src/cards/entity/logic";
+import { actionFor } from "../src/shared/actions";
 import { cleanConfig } from "../src/cards/entity/editor";
 import { cleanCss, sanitizeSvg, svgKind, themeColour } from "../src/cards/entity/svg-icon";
 import { ent, hassOf } from "./helpers";
@@ -11,6 +12,10 @@ const hass = () => hassOf([
   ent("weather.home", "rainy", { temperature: 12, temperature_unit: "°C", wind_speed: 14.4, wind_speed_unit: "km/h", forecast: [] }),
   ent("sensor.dead", "unavailable", { friendly_name: "Dead" }),
   ent("binary_sensor.door", "off", { friendly_name: "Door", tampered: false }),
+  ent("binary_sensor.motion", "on", { friendly_name: "Motion", device_class: "motion" }),
+  ent("switch.kettle", "on", { friendly_name: "Kettle" }),
+  ent("light.lamp", "off", { friendly_name: "Lamp", brightness: null }),
+  ent("light.dead", "unavailable", {}),
   ent("sensor.soc", "64", { unit_of_measurement: "%" }),
   ent("number.reserve", "30", { min: 10, max: 90, step: 5 }),
 ]);
@@ -226,5 +231,41 @@ describe("themes and the line below", () => {
     expect(tile({ secondary_text: "  Hallway  " }).secondary).toEqual({ text: "Hallway" });
     expect(tile({ secondary_entity: "sensor.temp", secondary_name: "Inside", secondary_text: "ignored" }).secondary).toEqual({ name: "Inside", value: "19.46", unit: "°C" });
     expect(tile({}).secondary).toBeUndefined();
+  });
+});
+
+describe("on/off entities", () => {
+  const h = hass();
+  const tile = (cfg: Partial<HaloEntityConfig>) => buildTile(h, { type: "custom:halo-entity-card", entity: "switch.kettle", ...cfg });
+  it("knows on/off entities by domain, reading the state only", () => {
+    expect([isOnOff("switch.kettle"), isOnOff("light.lamp"), isOnOff("binary_sensor.door"), isOnOff("input_boolean.guest"), isOnOff("sensor.power"), isOnOff("climate.hall"), isOnOff("light.lamp", "brightness")])
+      .toEqual([true, true, true, true, false, false, false]);
+  });
+  it("fills the disc orange while on, nothing while off, unavailable or for other entities", () => {
+    expect(tile({})).toMatchObject({ on: true, onFill: "#e8742f" });
+    expect(tile({ entity: "light.lamp" })).toMatchObject({ on: false, onFill: undefined });
+    expect(tile({ entity: "light.dead" })).toMatchObject({ on: undefined, onFill: undefined, available: false });
+    expect(tile({ entity: "sensor.power" })).toMatchObject({ on: undefined, onFill: undefined });
+    expect(tile({ entity: "binary_sensor.door", attribute: "tampered" }).on).toBeUndefined();
+    expect(tile({ entity: "binary_sensor.motion" })).toMatchObject({ on: true, onFill: "#e8742f" });
+  });
+  it("takes your on colour: a palette name, your own, or none", () => {
+    expect(tile({ on_colour: "teal" }).onFill).toBe("#1a9f95");
+    expect(tile({ on_colour: "#123456" }).onFill).toBe("#123456");
+    expect(tile({ on_colour: "none" }).onFill).toBeUndefined();
+    expect(tile({ on_colour: "None" }).on).toBe(true);
+  });
+  it("keeps the icon colour for the off state", () => {
+    expect(tile({ entity: "light.lamp", icon_colour: "blue" }).iconColour).toBe("blue");
+  });
+  it("taps toggle what can be toggled, else open more-info", () => {
+    const tap = (cfg: Partial<HaloEntityConfig>) => { const c = { type: "x", entity: "switch.kettle", ...cfg }; return actionFor(c, "tap", tapDefault(c)).action; };
+    expect([tap({}), tap({ entity: "light.lamp" }), tap({ entity: "binary_sensor.door" }), tap({ entity: "sensor.power" }), tap({ tap_action: { action: "more-info" } })])
+      .toEqual(["toggle", "toggle", "more-info", "more-info", "more-info"]);
+    expect(actionFor({}, "hold", "toggle").action).toBe("none");
+  });
+  it("drops the default on colour from the YAML", () => {
+    expect(cleanConfig({ type: "x", entity: "switch.kettle", on_colour: "orange" })).toEqual({ type: "x", entity: "switch.kettle" });
+    expect(cleanConfig({ type: "x", entity: "switch.kettle", on_colour: "none" })).toEqual({ type: "x", entity: "switch.kettle", on_colour: "none" });
   });
 });

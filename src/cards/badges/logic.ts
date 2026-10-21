@@ -3,8 +3,8 @@ import { hexToHsl, hslToHex } from "../../shared/colour";
 import { clock, fmtNum } from "../../shared/format";
 import { isGradientName } from "../../shared/looks";
 import { chartColour } from "../../shared/tile";
-import type { HassEntity, HomeAssistant } from "../../shared/types";
-import { isAvailable, numState, unitOf } from "../../shared/util";
+import type { HomeAssistant } from "../../shared/types";
+import { canToggle, isAvailable, isOn, numState, unitOf } from "../../shared/util";
 import { buildThermostat, fmtTemp, round05 } from "../thermostat/logic";
 import { CONDITION_LABELS, iconFor, isNight, roundTemp, type IconKey } from "../weather/logic";
 
@@ -192,10 +192,7 @@ export function buildWeatherBadge(hass: HomeAssistant, cfg: WeatherBadgeConfig, 
   };
 }
 
-const OFF = new Set(["off", "closed", "not_home", "locked", "idle", "standby", "paused", "docked", "unavailable", "unknown", ""]);
-export const isOn = (s?: HassEntity) => !!s && !OFF.has(s.state);
-const TOGGLES = ["light", "switch", "input_boolean", "fan", "automation", "siren", "humidifier", "cover", "lock", "media_player", "climate", "group", "script"];
-export const canToggle = (entity?: string) => !!entity && TOGGLES.includes(entity.split(".")[0]);
+export { canToggle, isOn };
 
 export interface BooleanBadge { name: string; available: boolean; on: boolean; state: string; label: string }
 

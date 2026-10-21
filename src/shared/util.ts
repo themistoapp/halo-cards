@@ -3,6 +3,11 @@ import type { HassEntity } from "./types";
 export const isAvailable = (e?: HassEntity): e is HassEntity =>
   !!e && e.state !== "unavailable" && e.state !== "unknown" && e.state !== "";
 
+const OFF = new Set(["off", "closed", "not_home", "locked", "idle", "standby", "paused", "docked", "unavailable", "unknown", ""]);
+export const isOn = (s?: HassEntity) => !!s && !OFF.has(s.state);
+const TOGGLES = ["light", "switch", "input_boolean", "fan", "automation", "siren", "humidifier", "cover", "lock", "media_player", "climate", "group", "script"];
+export const canToggle = (entity?: string) => !!entity && TOGGLES.includes(entity.split(".")[0]);
+
 export function numState(e?: HassEntity): number | undefined {
   if (!isAvailable(e)) return undefined;
   const v = Number(e.state);

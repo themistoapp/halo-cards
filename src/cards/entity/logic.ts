@@ -1,9 +1,10 @@
 import type { ActionSet } from "../../shared/actions";
 import { GRADIENTS } from "../../shared/looks";
+import { chartColour } from "../../shared/tile";
 import { fmtNum } from "../../shared/format";
 import type { GraphScale } from "../../shared/history";
 import type { HassEntity, HomeAssistant } from "../../shared/types";
-import { isAvailable, unitOf } from "../../shared/util";
+import { canToggle, isAvailable, isOn, unitOf } from "../../shared/util";
 
 /** A colour by value: the first rule that matches recolours the icon and the graph. */
 export interface ColourRule { above?: number; below?: number; colour: string }
@@ -21,6 +22,8 @@ export interface HaloEntityConfig extends ActionSet {
   show_icon?: boolean;
   /** Palette name (grey, red, orange, yellow, green, teal, blue, purple, pink) or any CSS colour. */
   icon_colour?: string;
+  /** On/off entities: the disc behind the icon while on, a palette name or any CSS colour (default orange); none for no highlight. */
+  on_colour?: string;
   unit?: string;
   decimals?: number;
   /** Tile look: plain (the card surface, default), light (black on white), dark (white on black) or a gradient preset. */
@@ -87,6 +90,10 @@ export interface EntityTile {
   theme: Theme;
   showIcon: boolean;
   iconColour?: string;
+  /** On/off entities: true or false (unset for anything else, an attribute, or while unavailable). */
+  on?: boolean;
+  /** Set while on: the disc behind the icon, which turns white. */
+  onFill?: string;
   graphColour?: string;
   /** The line below: a second entity's name and value, or plain text. */
   secondary?: { name?: string; value: string; unit: string } | { text: string };
@@ -116,6 +123,13 @@ const ATTR_ICON: [RegExp, string][] = [
   [/temp|dew_point/, "mdi:thermometer"], [/humid/, "mdi:water-percent"], [/battery/, "mdi:battery"], [/wind/, "mdi:weather-windy"],
   [/pressure/, "mdi:gauge"], [/volume/, "mdi:volume-high"], [/brightness/, "mdi:brightness-6"], [/uv/, "mdi:sun-wireless"],
 ];
+/** Domains whose state is on or off. */
+const ON_OFF = new Set(["light", "switch", "input_boolean", "binary_sensor", "fan", "siren", "humidifier", "automation", "remote"]);
+/** The entity's state is on or off (not one of its attributes). */
+export const isOnOff = (entity: string | undefined, attribute?: string) => !!entity && !attribute && ON_OFF.has(entity.split(".")[0]);
+/** Tap toggles an on/off entity that can be toggled; anything else opens more-info. */
+export const tapDefault = (cfg: HaloEntityConfig) => (isOnOff(cfg.entity, cfg.attribute) && canToggle(cfg.entity) ? "toggle" : "more-info");
+
 const DOMAIN_ICON: Record<string, string> = { climate: "mdi:thermostat", weather: "mdi:weather-partly-cloudy", light: "mdi:lightbulb", switch: "mdi:toggle-switch", binary_sensor: "mdi:checkbox-blank-circle-outline" };
 
 /** "current_temperature" -> "Current temperature". */
@@ -178,10 +192,12 @@ export function buildTile(hass: HomeAssistant, cfg: HaloEntityConfig): EntityTil
   const rule = num === undefined ? undefined : matchRule(cfg.colour_rules, num);
   const hours = graphHours(cfg.graph_hours);
   const display = displayOf(cfg);
+  const on = isOnOff(cfg.entity, cfg.attribute) && isAvailable(s) ? isOn(s) : undefined;
+  const onFill = on && cfg.on_colour?.trim().toLowerCase() !== "none" ? chartColour(cfg.on_colour ?? "orange", false) : undefined;
   return {
     entity: cfg.entity, name, value, unit, available, num, svg: cfg.icon_svg?.trim() || undefined, ...iconFor(s, cfg),
     theme: isTheme(cfg.theme) ? cfg.theme : "plain", showIcon: cfg.show_icon !== false, secondary: secondaryOf(hass, cfg),
-    iconColour: rule ?? cfg.icon_colour, graphColour: rule ?? cfg.graph_colour,
+    on, onFill, iconColour: rule ?? cfg.icon_colour, graphColour: rule ?? cfg.graph_colour,
     gauge: display === "gauge" && num !== undefined ? gaugeOf(cfg, s, unit, num, rule ?? cfg.gauge_colour ?? cfg.icon_colour) : undefined,
     graph: display === "graph" && !cfg.attribute && s && num !== undefined
       ? { hours, scale: cfg.graph_scale ?? defaultScale(s, unit), min: cfg.graph_min, max: cfg.graph_max, statistics: hours > 24 && !!s.attributes.state_class }

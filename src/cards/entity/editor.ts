@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing } from "lit";
 import { state } from "lit/decorators.js";
 import { PALETTE_NAMES } from "../../shared/tile";
 import type { HomeAssistant } from "../../shared/types";
-import { THEME_LABELS, displayOf, valueOptions, type ColourRule, type HaloEntityConfig, type Theme } from "./logic";
+import { THEME_LABELS, displayOf, isOnOff, tapDefault, valueOptions, type ColourRule, type HaloEntityConfig, type Theme } from "./logic";
 import { sanitizeSvg, svgKind } from "./svg-icon";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -27,6 +27,7 @@ function schema(hass: HomeAssistant, c: HaloEntityConfig) {
     { type: "grid", name: "", schema: [{ name: "name", selector: { text: {} } }, { name: "shadow", selector: { boolean: {} } }] },
     { type: "expandable", title: "Icon", schema: [
       { type: "grid", name: "", schema: [{ name: "icon", selector: { icon: {} } }, { name: "icon_colour", selector: sel([{ value: TEXT, label: "Text colour" }, ...COLOURS], true) }] },
+      ...(isOnOff(c.entity, c.attribute) ? [{ name: "on_colour", selector: sel([{ value: "none", label: "None" }, ...COLOURS], true) }] : []),
       { name: "show_icon", selector: { boolean: {} } },
       { name: "icon_svg", selector: { text: { multiline: true } } },
     ] },
@@ -56,7 +57,7 @@ function schema(hass: HomeAssistant, c: HaloEntityConfig) {
       ] : []),
     ] },
     { type: "expandable", title: "Actions", schema: [
-      { name: "tap_action", selector: { ui_action: { default_action: "more-info" } } },
+      { name: "tap_action", selector: { ui_action: { default_action: tapDefault(c) } } },
       { name: "hold_action", selector: { ui_action: { default_action: "none" } } },
       { name: "double_tap_action", selector: { ui_action: { default_action: "none" } } },
     ] },
@@ -70,7 +71,7 @@ const RULE = [{ type: "grid", name: "", schema: [
 
 const LABELS: Record<string, string> = {
   entity: "Entity", attribute: "Value", size: "Size", theme: "Look", name: "Name - optional", shadow: "Drop shadow",
-  icon: "Icon", icon_colour: "Icon colour", show_icon: "Show icon", icon_svg: "Custom SVG icon - optional",
+  icon: "Icon", icon_colour: "Icon colour", on_colour: "On colour", show_icon: "Show icon", icon_svg: "Custom SVG icon - optional",
   unit: "Unit - optional", decimals: "Decimals - optional",
   secondary_text: "Your text - optional", secondary_entity: "Another entity - optional", secondary_attribute: "Its value", secondary_name: "Its name - optional",
   display: "Show", gauge_style: "Gauge style", gauge_min: "Min - optional", gauge_max: "Max - optional", gauge_colour: "Gauge colour",
@@ -83,6 +84,7 @@ const HELPERS: Record<string, string> = {
   size: "Small tiles are a quarter of a section and large ones half. Dragging the card's size in the layout editor works too.",
   theme: "Plain uses the card background. Black on white and white on black stay the same at night; gradients deepen a little.",
   icon_colour: "One of the colours, or type your own (e.g. #e8a33d).",
+  on_colour: "While on, the disc behind the icon fills with this colour and the icon turns white. None keeps the icon as it is.",
   display: "Graphs need a large tile and a number in the entity's state. Gauges fit any size and work on attributes too.",
   gauge_style: "The ring holds the figure; the line sits under it; the semicircle has the figure in its bowl.",
   gauge_min: "Leave empty for 0 to 100 on percentages, or a number entity's own min and max. Set both for anything else.",
@@ -101,7 +103,7 @@ export function cleanConfig(v: Record<string, unknown>): HaloEntityConfig {
   for (const [k, x] of Object.entries(v)) {
     if (x === "" || x === undefined || x === null || x === STATE || x === AUTO || x === TEXT || x === ICON) continue;
     if ((k === "theme" && x === "plain") || ((k === "show_icon" || k === "shadow") && x === true) || (k === "graph" && x === false)) continue;
-    if ((k === "graph_colour" && x === "grey") || (k === "graph_hours" && x === 24)) continue;
+    if ((k === "graph_colour" && x === "grey") || (k === "on_colour" && x === "orange") || (k === "graph_hours" && x === 24)) continue;
     if ((k === "display" && x === "none") || (k === "gauge_style" && x === "ring") || (k === "gauge_labels" && x === true) || (k === "gauge_bands" && x === false)) continue;
     if (k === "colour_rules" && Array.isArray(x) && !x.length) continue;
     out[k] = x;
@@ -164,7 +166,7 @@ export class HaloEntityCardEditor extends LitElement {
     const data = {
       size: "small", theme: "plain", shadow: true, show_icon: true, gauge_style: "ring", gauge_labels: true, gauge_bands: false, ...c, display: displayOf(c),
       attribute: c.attribute ?? STATE, secondary_attribute: c.secondary_attribute ?? STATE, graph_scale: c.graph_scale ?? AUTO,
-      icon_colour: c.icon_colour ?? TEXT, gauge_colour: c.gauge_colour ?? ICON, graph_colour: c.graph_colour ?? "grey", graph_hours: c.graph_hours ?? 24,
+      icon_colour: c.icon_colour ?? TEXT, on_colour: c.on_colour ?? "orange", gauge_colour: c.gauge_colour ?? ICON, graph_colour: c.graph_colour ?? "grey", graph_hours: c.graph_hours ?? 24,
     };
     const rules = c.colour_rules ?? [];
     return html`
