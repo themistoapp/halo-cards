@@ -2,7 +2,8 @@ import { css } from "lit";
 import { bloomStyles, shadowStyles, themeStyles } from "../../shared/bloom";
 
 export const styles = [themeStyles, bloomStyles, shadowStyles, css`
-  ha-card { --tone: var(--ink-2); }
+  /* No text selection: tapping − or + twice selected the name and dial, and the highlight greyed out the card. */
+  ha-card { --tone: var(--ink-2); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   ha-card.heat { --tone: #e8742f; --cur: var(--ink); }
   ha-card.heat.dark { --tone: #ff9a5c; }
   ha-card.cool { --tone: #2f86cf; }
