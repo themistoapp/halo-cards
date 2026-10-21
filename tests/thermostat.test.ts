@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import "../src/index";
 import { bloomOf, buildThermostat, dialAngle, dialValue, fmtTemp, glyphKeys, round05, snapTarget, stepTarget, toneOf, turnOnMode } from "../src/cards/thermostat/logic";
 import { ent, hassOf } from "./helpers";
 
@@ -90,6 +91,26 @@ describe("bloom", () => {
     expect(bloomOf("idle", "cool")).toEqual({ glow: "cool", bloom: "rest" });
     expect(bloomOf("idle", "heat_cool")).toEqual({ bloom: "none" });
     expect(bloomOf("cool", "heat_cool")).toEqual({ glow: "cool", bloom: "active" });
+  });
+});
+
+describe("bloom on the card", () => {
+  it("shrinks away in the colour it had, never grey, when off or unavailable", async () => {
+    const card = document.createElement("halo-thermostat-card") as any;
+    card.setConfig({ type: "custom:halo-thermostat-card", entity: "climate.hall" });
+    card.hass = hassOf([climate("heat", { hvac_action: "heating" })]);
+    document.body.append(card);
+    await card.updateComplete;
+    const style = () => (card.shadowRoot.querySelector("ha-card") as HTMLElement).style;
+    const heat = style().getPropertyValue("--c0");
+    expect(Number(style().getPropertyValue("--bw"))).toBeGreaterThan(0);
+    for (const s of [ent("climate.hall", "unavailable"), climate("off", { hvac_action: "off" })]) {
+      card.hass = hassOf([s]);
+      await card.updateComplete;
+      expect(style().getPropertyValue("--bw")).toBe("0");
+      expect(style().getPropertyValue("--c0")).toBe(heat);
+    }
+    card.remove();
   });
 });
 

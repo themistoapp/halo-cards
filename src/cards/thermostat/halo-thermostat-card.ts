@@ -53,6 +53,8 @@ export class HaloThermostatCard extends LitElement {
   private _glyphs = new Map<string, Glyph>();
   private _glyphsGone: [string, Glyph][] = [];
   private _glyphN = 0;
+  /** The bloom's last colour, kept while it shrinks away so it never fades through grey. */
+  private _lastGlow?: "heat" | "cool";
   private _unobserve?: () => void;
   private _send?: number;
   private _clear?: number;
@@ -344,10 +346,14 @@ export class HaloThermostatCard extends LitElement {
     const m = this._shown(buildThermostat(hass, cfg));
     const dark = !!hass.themes?.darkMode;
     const compact = this._h > 0 && this._h < 230;
-    const hex = m.glow === "heat" ? (dark ? HEAT.night : HEAT.day) : m.glow === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
+    // Off, idle in auto or a moment unavailable: the bloom shrinks away in the colour it had. Fading it to grey
+    // (quicker than it shrinks) washed the whole card grey for a second.
+    if (m.glow) this._lastGlow = m.glow;
+    const glow = m.glow ?? this._lastGlow;
+    const hex = glow === "heat" ? (dark ? HEAT.night : HEAT.day) : glow === "cool" ? (dark ? COOL.night : COOL.day) : undefined;
     const c = shadesFromHex(hex, dark) ?? (dark ? GREY_NIGHT : GREY_DAY);
     if (m.available && m.mode !== "off") this._remember(m.mode);
-    const [bw, bh] = BLOOM_SHAPE[compact ? "compact" : "dial"][hex ? m.bloom : "none"];
+    const [bw, bh] = BLOOM_SHAPE[compact ? "compact" : "dial"][m.glow ? m.bloom : "none"];
     const vars = { "--bw": String(bw), "--bh": String(bh), "--by": compact ? "114%" : "105%", "--c0": c.c0, "--c1": c.c1 };
     return html`<ha-card class="${dark ? "dark" : ""} ${m.tone} ${this._dragging ? "dragging" : ""} ${cfg.shadow === false ? "" : "halo-shadow"}" style=${styleMap(vars)}>
       <div class="bg"></div><div class="grain"></div>
