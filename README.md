@@ -2,6 +2,10 @@
 
 Home Assistant dashboard cards. Built for the Sections view on a phone.
 
+![Halo cards in the light: greeting, weather, thermostat, energy, scenes, lights, entity tiles and vehicle](images/preview.jpg)
+
+![The same cards at night](images/preview-dark.jpg)
+
 Each card is standalone: its own element, options and editor. Use any of them without the others. They all load from the one `halo-cards.js` resource.
 
 Numbers, times and dates follow your Home Assistant profile: language, number format (decimal comma or point) and 12- or 24-hour clock.
@@ -478,3 +482,5 @@ npm run build    # dist/halo-cards.js
 ```
 
 Tag `vX.Y.Z` to publish a release; the workflow attaches `halo-cards.js`.
+
+The README pictures are the harness scenes `readme-1` to `readme-3` (`/dev/index.html?scene=readme-1&now=11:30&bg`, add `&dark` for night), shot at 2x and set side by side in `images/`.

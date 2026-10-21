@@ -499,6 +499,19 @@ const SCENES: Record<string, Scene> = {
   "graph-agile-compact": one("halo-graph-card", AGILE, 2),
   "thermostat-large": one("halo-thermostat-card", th("climate.hallway"), 7),
   "thermostat-compact": one("halo-thermostat-card", th("climate.hallway"), 2),
+  // The README preview: three phone columns, stitched side by side (light, then ?dark), on ?bg for the view colour.
+  "readme-1": { w: 440, tiles: [
+    { tag: "halo-title-card", cfg: { type: "custom:halo-title-card", name: "Sam", weather: "weather.home" }, r: 2 },
+    { tag: "halo-weather-card", cfg: { type: "custom:halo-weather-card", entity: "weather.home" }, r: 2 },
+    { tag: "halo-thermostat-card", cfg: th("climate.hallway"), r: 7 }] },
+  "readme-2": { w: 440, over: balanced, tiles: [
+    { tag: "halo-energy-card", cfg: energy, r: 8 },
+    { tag: "halo-scenes-card", cfg: scenes, r: 2 },
+    { tag: "halo-single-light-card", cfg: { type: "custom:halo-single-light-card", entity: "light.garden", fitting: "path" }, r: 2 }] },
+  "readme-3": { w: 440, tiles: [
+    { tag: "halo-single-light-card", cfg: { type: "custom:halo-single-light-card", entity: "light.dining", fitting: "pendant" }, r: 4 },
+    ...mixTiles.slice(0, 2).map((t) => ({ ...t, row: 5 })),
+    { tag: "halo-vehicle-card", cfg: m140i, col: 1, row: 8, c: 12, r: 4 }] },
 };
 
 // ?badges renders every badge in rows, day then night, on a stand-in for the dashboard.
@@ -533,7 +546,7 @@ if (q.has("badges")) {
 const sceneName = q.get("scene");
 if (sceneName && SCENES[sceneName]) {
   const sc = SCENES[sceneName], dark = q.has("dark") || !!sc.dark;
-  document.body.style.cssText = "margin:0;padding:32px;background:transparent;display:block";
+  document.body.style.cssText = `margin:0;padding:32px;display:block;background:${q.has("bg") ? (dark ? "#0e0e11" : "#f2f2f4") : "transparent"}`;
   const grid = document.createElement("div");
   grid.className = dark ? "dk" : "";
   grid.style.cssText = `width:${sc.w}px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:56px;gap:8px;grid-auto-flow:row dense`;
